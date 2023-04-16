@@ -4,6 +4,8 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
+	"github.com/noxworld-dev/noxscript/ns/v4/spell"
+	"github.com/noxworld-dev/opennox-lib/object"
 	"github.com/noxworld-dev/opennox-lib/script"
 )
 
@@ -28,6 +30,7 @@ type Warrior struct {
 	abilities struct {
 		EyeOfTheWolfReady    bool // Cooldown is 20 seconds.
 		BerserkerChargeReady bool // Cooldown is 10 seconds.
+		WarCryReady          bool // Cooldown is 10 seconds.
 	}
 }
 
@@ -35,8 +38,11 @@ func (war *Warrior) init() {
 	// Reset abilities
 	war.abilities.BerserkerChargeReady = true
 	war.abilities.EyeOfTheWolfReady = true
-
-	war.unit = ns.CreateObject("NPC", ns.GetHost())
+	war.abilities.WarCryReady = true
+	war.unit = ns.CreateObject("NPC", RandomBotSpawn)
+	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
+	war.unit.MonsterStatusEnable(object.MonStatusAlert)
 	// TODO: Change location of item creation OR stop them from respawning automatically.
 	war.items.Longsword = ns.CreateObject("Longsword", war.unit)
 	war.items.WoodenShield = ns.CreateObject("WoodenShield", war.unit)
@@ -69,6 +75,22 @@ func (war *Warrior) init() {
 
 func (war *Warrior) onEnemySighted() {
 	// Script out a plan of action.
+	if war.abilities.WarCryReady {
+		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+		if war.target.MaxHealth() == 150 {
+		} else {
+			war.abilities.WarCryReady = false
+			war.unit.Enchant(enchant.HELD, ns.Seconds(1))
+			ns.AudioEvent("WarcryInvoke", war.unit)
+			ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
+			war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+			war.unit.EnchantOff(enchant.INVULNERABLE)
+			ns.NewTimer(ns.Seconds(10), func() {
+				war.abilities.WarCryReady = true
+			})
+		}
+
+	}
 }
 
 func (war *Warrior) onRetreat() {

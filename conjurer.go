@@ -5,6 +5,7 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
 	"github.com/noxworld-dev/noxscript/ns/v4/spell"
+	"github.com/noxworld-dev/opennox-lib/object"
 	"github.com/noxworld-dev/opennox-lib/script"
 )
 
@@ -17,28 +18,36 @@ func NewConjurer() *Conjurer {
 
 // Conjurer bot class.
 type Conjurer struct {
-	unit  ns.Obj
-	items struct {
+	unit         ns.Obj
+	target       ns.Obj
+	taggedPlayer ns.Obj
+	items        struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
 		StreetShirt    ns.Obj
 	}
 	spells struct {
-		Ready            bool // Duration unknown.
-		InfravisionReady bool // Duration is 30 seconds.
-		VampirismReady   bool // Duration is 30 seconds.
-		BlinkReady       bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
+		Ready                bool // Duration unknown.
+		InfravisionReady     bool // Duration is 30 seconds.
+		VampirismReady       bool // Duration is 30 seconds.
+		BlinkReady           bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
+		FistOfVengeanceReady bool // No real cooldown, mana cost 60.
+		StunReady            bool // No real cooldown.
 	}
 }
 
 func (con *Conjurer) init() {
 	// Reset spells
 	con.spells.Ready = true
+	con.spells.StunReady = true
 	con.spells.InfravisionReady = true
 	con.spells.VampirismReady = true
 	con.spells.BlinkReady = true
-
-	con.unit = ns.CreateObject("NPC", ns.GetHost())
+	con.spells.FistOfVengeanceReady = true
+	con.unit = ns.CreateObject("NPC", RandomBotSpawn)
+	con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+	con.unit.MonsterStatusEnable(object.MonStatusAlert)
 	con.items.StreetSneakers = ns.CreateObject("StreetSneakers", con.unit)
 	con.items.StreetPants = ns.CreateObject("StreetPants", con.unit)
 	con.items.StreetShirt = ns.CreateObject("StreetShirt", con.unit)
@@ -56,6 +65,8 @@ func (con *Conjurer) init() {
 	con.unit.RetreatLevel(0.2)
 	// Buff on respawn.
 	con.buffInitial()
+	// When an enemy is seen. //
+	con.unit.OnEvent(ns.EventEnemySighted, con.onEnemySighted)
 	// Escape.
 	con.unit.OnEvent(ns.EventRetreat, con.onRetreat)
 	// Enemy Lost.
@@ -65,7 +76,7 @@ func (con *Conjurer) init() {
 }
 
 func (con *Conjurer) buffInitial() {
-	if con.spells.VampirismReady {
+	if con.spells.VampirismReady && con.spells.Ready {
 		con.spells.VampirismReady = false
 		con.spells.Ready = false
 		castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
@@ -78,8 +89,24 @@ func (con *Conjurer) buffInitial() {
 	}
 }
 
+func (con *Conjurer) onEnemySighted() {
+	if con.spells.StunReady && con.spells.Ready {
+		con.spells.StunReady = false
+		con.spells.Ready = false
+		// Slow chant.
+		castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+			con.spells.Ready = true
+			con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
+			ns.CastSpell(spell.STUN, con.unit, con.target)
+			ns.NewTimer(ns.Seconds(5), func() {
+				con.spells.StunReady = true
+			})
+		})
+	}
+}
+
 func (con *Conjurer) onRetreat() {
-	if con.spells.BlinkReady {
+	if con.spells.BlinkReady && con.spells.Ready {
 		con.spells.BlinkReady = false
 		con.spells.Ready = false
 		castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
@@ -93,7 +120,7 @@ func (con *Conjurer) onRetreat() {
 }
 
 func (con *Conjurer) onLostEnemy() {
-	if con.spells.InfravisionReady {
+	if con.spells.InfravisionReady && con.spells.Ready {
 		con.spells.InfravisionReady = false
 		con.spells.Ready = false
 		castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhRight, PhLeft}, func() {
@@ -123,6 +150,31 @@ func (con *Conjurer) onDeath() {
 
 func (con *Conjurer) Update() {
 	con.findLoot()
+	con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
+	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+		con.spells.Ready = false
+		ns.NewTimer(ns.Seconds(3), func() {
+			con.spells.Ready = true
+		})
+	}
+	if con.target.HasEnchant(enchant.HELD) {
+		ns.NewTimer(ns.Frames(15), con.FistOfVengeance)
+	}
+}
+
+func (con *Conjurer) FistOfVengeance() {
+	if con.spells.FistOfVengeanceReady && con.spells.Ready {
+		con.spells.Ready = false
+		con.spells.FistOfVengeanceReady = false
+		// Fist of Vengeance chant.
+		castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+			ns.CastSpell(spell.FIST, con.unit, con.target)
+			con.spells.Ready = true
+			ns.NewTimer(ns.Seconds(10), func() {
+				con.spells.FistOfVengeanceReady = true
+			})
+		})
+	}
 }
 
 func (con *Conjurer) findLoot() {

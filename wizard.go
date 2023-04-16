@@ -30,6 +30,7 @@ type Wizard struct {
 	}
 	spells struct {
 		Ready              bool // Duration unknown.
+		DeathRayReady      bool // No cooldown, 60 mana.
 		MagicMissilesReady bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
 		ForceFieldReady    bool // Duration unknown.
 		ShockReady         bool // No real cooldown,
@@ -39,15 +40,20 @@ type Wizard struct {
 }
 
 func (wiz *Wizard) init() {
-	// Reset spells
+	// Reset spells.
 	wiz.spells.Ready = true
 	wiz.spells.MagicMissilesReady = true
 	wiz.spells.ForceFieldReady = true
 	wiz.spells.ShockReady = true
 	wiz.spells.SlowReady = true
 	wiz.spells.TrapReady = true
+	wiz.spells.DeathRayReady = true
 
-	wiz.unit = ns.CreateObject("NPC", ns.GetHost())
+	// Create wizard NPC.
+	wiz.unit = ns.CreateObject("NPC", RandomBotSpawn)
+	wiz.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+	wiz.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	wiz.unit.MonsterStatusEnable(object.MonStatusAlert)
 	wiz.items.StreetSneakers = ns.CreateObject("StreetSneakers", wiz.unit)
 	wiz.items.StreetPants = ns.CreateObject("StreetPants", wiz.unit)
 	wiz.items.StreetShirt = ns.CreateObject("StreetShirt", wiz.unit)
@@ -78,7 +84,7 @@ func (wiz *Wizard) init() {
 }
 
 func (wiz *Wizard) buffInitial() {
-	if wiz.spells.ForceFieldReady {
+	if wiz.spells.ForceFieldReady && wiz.spells.Ready {
 		wiz.spells.ForceFieldReady = true
 		wiz.spells.Ready = true
 		// Force Field chant.
@@ -90,6 +96,7 @@ func (wiz *Wizard) buffInitial() {
 				// Haste chant.
 				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhRight}, func() {
 					ns.CastSpell(spell.HASTE, wiz.unit, wiz.unit)
+
 				})
 			})
 		})
@@ -99,7 +106,7 @@ func (wiz *Wizard) buffInitial() {
 	}
 }
 func (wiz *Wizard) onEnemySighted() {
-	if wiz.spells.SlowReady {
+	if wiz.spells.SlowReady && wiz.spells.Ready {
 		wiz.spells.SlowReady = false
 		wiz.spells.Ready = false
 		// Slow chant.
@@ -112,9 +119,22 @@ func (wiz *Wizard) onEnemySighted() {
 			})
 		})
 	}
+	if wiz.spells.DeathRayReady && wiz.spells.Ready {
+		wiz.spells.DeathRayReady = false
+		wiz.spells.Ready = false
+		// Death Ray chant.
+		castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDownRight}, func() {
+			wiz.spells.Ready = true
+			wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
+			ns.CastSpell(spell.DEATH_RAY, wiz.unit, wiz.target)
+			ns.NewTimer(ns.Seconds(10), func() {
+				wiz.spells.DeathRayReady = true
+			})
+		})
+	}
 }
 func (wiz *Wizard) onCollide() {
-	if wiz.spells.ShockReady {
+	if wiz.spells.ShockReady && wiz.spells.Ready {
 		wiz.spells.Ready = false
 		wiz.spells.ShockReady = false
 		// Shock chant.
@@ -126,12 +146,24 @@ func (wiz *Wizard) onCollide() {
 			})
 		})
 	}
+	if wiz.spells.MagicMissilesReady && wiz.spells.Ready {
+		wiz.spells.Ready = false
+		wiz.spells.MagicMissilesReady = false
+		// Missiles of Magic chant.
+		castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
+			ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
+			wiz.spells.Ready = true
+			ns.NewTimer(ns.Seconds(5), func() {
+				wiz.spells.MagicMissilesReady = true
+			})
+		})
+	}
 }
 
 func (wiz *Wizard) onLostEnemy() {
-	if wiz.spells.TrapReady {
-		wiz.spells.Ready = true
-		// WizAITrapCooldown = 0
+	if wiz.spells.TrapReady && wiz.spells.Ready {
+		wiz.spells.Ready = false
+		wiz.spells.TrapReady = false
 		// Ring of Fire chant.
 		castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDown, PhDownLeft, PhUp}, func() {
 			// Pause of Glyph concentration.
@@ -177,6 +209,17 @@ func (wiz *Wizard) onDeath() {
 
 func (wiz *Wizard) Update() {
 	wiz.findLoot()
+	if wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+		wiz.spells.Ready = false
+		ns.NewTimer(ns.Seconds(3), func() {
+			wiz.spells.Ready = true
+		})
+	}
+	//ns.PrintStrToAll("checking for missiles")
+	//found := ns.FindClosestObject(wiz.unit, ns.InCirclef{Center: wiz.unit, R: 300}, ns.HasClass(object.ClassMissile))
+	//if found != nil {
+	//	ns.PrintStrToAll("hello")
+	//}
 }
 
 func (wiz *Wizard) findLoot() {

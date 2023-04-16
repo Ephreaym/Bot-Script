@@ -6,9 +6,10 @@ type Bot interface {
 	Update()
 }
 
-var bots []Bot // bots array; can contain any number of bots
+var bots []Bot // bots array; can contain any number of bots.
 
 func init() {
+
 	// Add this many bots on map launch.
 	const (
 		warriors  = 1

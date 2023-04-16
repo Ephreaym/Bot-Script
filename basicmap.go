@@ -4,13 +4,21 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 )
 
+var RandomBotSpawn ns.Obj
+
 func init() {
 	ns.Music(15, 20)
+	RandomBotSpawn = ns.CreateObject("InvisibleExitArea", ns.GetHost())
+
 }
 
 // OnFrame is called by the server.
 func OnFrame() {
 	UpdateBots()
+	spawns := ns.FindAllObjects(ns.HasTypeName{"PlayerStart"})
+	randomIndex := ns.Random(0, len(spawns)-1)
+	pick := spawns[randomIndex]
+	RandomBotSpawn.SetPos(pick.Pos())
 }
 
 func DialogOptions() {
