@@ -9,7 +9,6 @@ var RandomBotSpawn ns.Obj
 func init() {
 	ns.Music(15, 20)
 	RandomBotSpawn = ns.CreateObject("InvisibleExitArea", ns.GetHost())
-
 }
 
 // OnFrame is called by the server.

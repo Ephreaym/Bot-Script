@@ -21,6 +21,7 @@ type Conjurer struct {
 	unit         ns.Obj
 	target       ns.Obj
 	taggedPlayer ns.Obj
+	bomber       ns.Obj
 	items        struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
@@ -33,17 +34,33 @@ type Conjurer struct {
 		BlinkReady           bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
 		FistOfVengeanceReady bool // No real cooldown, mana cost 60.
 		StunReady            bool // No real cooldown.
+		SummonBomberReady    bool // No real cooldown.
+		SummonGhostReady     bool
+		ProtFromFireReady    bool // Duration is 60 seconds.
+		ProtFromPoisonReady  bool
+		ProtFromShockReady   bool
+		PixieSwarmReady      bool
 	}
 }
 
 func (con *Conjurer) init() {
-	// Reset spells
+	// Reset spells.
 	con.spells.Ready = true
 	con.spells.StunReady = true
 	con.spells.InfravisionReady = true
 	con.spells.VampirismReady = true
 	con.spells.BlinkReady = true
 	con.spells.FistOfVengeanceReady = true
+	con.spells.PixieSwarmReady = true
+	// Summons.
+	con.spells.SummonGhostReady = true
+	con.spells.SummonBomberReady = true
+	// Buff spells.
+	con.spells.ProtFromFireReady = true
+	con.spells.ProtFromPoisonReady = true
+	con.spells.ProtFromShockReady = true
+
+	// Create Conjurer bot.
 	con.unit = ns.CreateObject("NPC", RandomBotSpawn)
 	con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
@@ -65,14 +82,27 @@ func (con *Conjurer) init() {
 	con.unit.RetreatLevel(0.2)
 	// Buff on respawn.
 	con.buffInitial()
-	// When an enemy is seen. //
+	// When an enemy is seen.
 	con.unit.OnEvent(ns.EventEnemySighted, con.onEnemySighted)
+	// When touched by another object.
+	con.unit.OnEvent(ns.EventCollision, con.onCollide)
 	// Escape.
 	con.unit.OnEvent(ns.EventRetreat, con.onRetreat)
 	// Enemy Lost.
 	con.unit.OnEvent(ns.EventLostEnemy, con.onLostEnemy)
 	// On Death.
 	con.unit.OnEvent(ns.EventDeath, con.onDeath)
+	// Looking for a target.
+	con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
+	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
+}
+
+func (con *Conjurer) onLookingForTarget() {
+
+}
+
+func (con *Conjurer) onCollide() {
+
 }
 
 func (con *Conjurer) buffInitial() {
@@ -93,33 +123,40 @@ func (con *Conjurer) onEnemySighted() {
 	if con.spells.StunReady && con.spells.Ready {
 		con.spells.StunReady = false
 		con.spells.Ready = false
-		// Slow chant.
-		castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
-			con.spells.Ready = true
-			con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
-			ns.CastSpell(spell.STUN, con.unit, con.target)
-			ns.NewTimer(ns.Seconds(5), func() {
-				con.spells.StunReady = true
+		ns.NewTimer(ns.Frames(15), func() {
+			// Stun chant.
+			castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				con.spells.Ready = true
+				con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
+				con.unit.LookAtObject(con.target)
+				ns.CastSpell(spell.STUN, con.unit, con.target)
+				ns.NewTimer(ns.Seconds(5), func() {
+					con.spells.StunReady = true
+				})
 			})
 		})
 	}
 }
 
 func (con *Conjurer) onRetreat() {
+	// Cast blink when retreating. TODO: fix trap workaround.
 	if con.spells.BlinkReady && con.spells.Ready {
 		con.spells.BlinkReady = false
 		con.spells.Ready = false
-		castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
-			ns.NewTrap(con.unit, spell.BLINK) // TODO: FIX IT so it doesn't have to be a trap.
-			con.spells.Ready = true
-		})
-		ns.NewTimer(ns.Seconds(2), func() {
-			con.spells.BlinkReady = true
+		ns.NewTimer(ns.Frames(15), func() {
+			castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
+				ns.NewTrap(con.unit, spell.BLINK) // TODO: FIX IT so it doesn't have to be a trap.
+				con.spells.Ready = true
+			})
+			ns.NewTimer(ns.Seconds(2), func() {
+				con.spells.BlinkReady = true
+			})
 		})
 	}
 }
 
 func (con *Conjurer) onLostEnemy() {
+	// Cast Infravision when an enemy is lost.
 	if con.spells.InfravisionReady && con.spells.Ready {
 		con.spells.InfravisionReady = false
 		con.spells.Ready = false
@@ -129,6 +166,34 @@ func (con *Conjurer) onLostEnemy() {
 		})
 		ns.NewTimer(ns.Seconds(30), func() {
 			con.spells.InfravisionReady = true
+		})
+	}
+	// Summon Ghost.
+	// Set maximum of summons based on size.
+	if con.spells.SummonGhostReady && con.spells.Ready {
+		con.spells.SummonGhostReady = false
+		con.spells.Ready = false
+		castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
+			ns.CastSpell(spell.SUMMON_GHOST, con.unit, con.unit)
+			con.spells.Ready = true
+			ns.NewTimer(ns.Seconds(10), func() {
+				con.spells.SummonGhostReady = true
+			})
+		})
+	}
+	// Summon Bomber.
+	// TODO: Set maximum of 2 active.
+	if con.spells.SummonBomberReady && con.spells.Ready {
+		con.spells.SummonBomberReady = false
+		con.spells.Ready = false
+		castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+			con.bomber = ns.CreateObject("Bomber", con.unit)
+			con.bomber.SetOwner(con.unit)
+			con.bomber.TrapSpells(spell.POISON, spell.METEOR, spell.STUN)
+			con.spells.Ready = true
+		})
+		ns.NewTimer(ns.Seconds(10), func() {
+			con.spells.SummonBomberReady = true
 		})
 	}
 }
@@ -157,8 +222,91 @@ func (con *Conjurer) Update() {
 			con.spells.Ready = true
 		})
 	}
+	if con.unit.HasEnchant(enchant.HELD) {
+		if con.spells.BlinkReady && con.spells.Ready {
+			con.spells.BlinkReady = false
+			con.spells.Ready = false
+			ns.NewTimer(ns.Frames(15), func() {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
+					ns.NewTrap(con.unit, spell.BLINK) // TODO: FIX IT so it doesn't have to be a trap.
+					con.spells.Ready = true
+				})
+				ns.NewTimer(ns.Seconds(2), func() {
+					con.spells.BlinkReady = true
+				})
+			})
+		}
+	}
 	if con.target.HasEnchant(enchant.HELD) {
 		ns.NewTimer(ns.Frames(15), con.FistOfVengeance)
+	}
+	// Buffing logic.
+	if !con.unit.HasEnchant(enchant.VAMPIRISM) {
+		if con.spells.VampirismReady && con.spells.Ready {
+			con.spells.VampirismReady = false
+			con.spells.Ready = false
+			castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+				ns.CastSpell(spell.VAMPIRISM, con.unit, con.unit)
+				con.spells.Ready = true
+			})
+			ns.NewTimer(ns.Seconds(30), func() {
+				con.spells.VampirismReady = true
+			})
+		}
+	}
+	if !con.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) {
+		if con.spells.ProtFromFireReady && con.spells.Ready {
+			con.spells.Ready = false
+			con.spells.ProtFromFireReady = false
+			// Protection from Fire chant.
+			castPhonemes(con.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
+				ns.CastSpell(spell.PROTECTION_FROM_FIRE, con.unit, con.unit)
+				con.spells.Ready = true
+				ns.NewTimer(ns.Seconds(60), func() {
+					con.spells.ProtFromFireReady = true
+				})
+			})
+		}
+	}
+	if !con.unit.HasEnchant(enchant.PROTECT_FROM_POISON) {
+		if con.spells.ProtFromPoisonReady && con.spells.Ready {
+			con.spells.Ready = false
+			con.spells.ProtFromPoisonReady = false
+			// Protection from Poison chant.
+			castPhonemes(con.unit, []audio.Name{PhLeft, PhRight, PhDownLeft, PhUpRight}, func() {
+				ns.CastSpell(spell.PROTECTION_FROM_POISON, con.unit, con.unit)
+				con.spells.Ready = true
+				ns.NewTimer(ns.Seconds(60), func() {
+					con.spells.ProtFromPoisonReady = true
+				})
+			})
+		}
+	}
+	if !con.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) {
+		if con.spells.ProtFromShockReady && con.spells.Ready {
+			con.spells.Ready = false
+			con.spells.ProtFromShockReady = false
+			// Protection from Shock chant.
+			castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
+				ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, con.unit, con.unit)
+				con.spells.Ready = true
+				ns.NewTimer(ns.Seconds(60), func() {
+					con.spells.ProtFromShockReady = true
+				})
+			})
+		}
+	}
+	if con.spells.PixieSwarmReady && con.spells.Ready {
+		con.spells.Ready = false
+		con.spells.PixieSwarmReady = false
+		// Pixie Swarm chant.
+		castPhonemes(con.unit, []audio.Name{PhLeft, PhDown, PhRight, PhDown}, func() {
+			ns.CastSpell(spell.PIXIE_SWARM, con.unit, con.unit)
+			con.spells.Ready = true
+			ns.NewTimer(ns.Seconds(10), func() {
+				con.spells.PixieSwarmReady = true
+			})
+		})
 	}
 }
 
@@ -168,6 +316,7 @@ func (con *Conjurer) FistOfVengeance() {
 		con.spells.FistOfVengeanceReady = false
 		// Fist of Vengeance chant.
 		castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+			con.unit.LookAtObject(con.target)
 			ns.CastSpell(spell.FIST, con.unit, con.target)
 			con.spells.Ready = true
 			ns.NewTimer(ns.Seconds(10), func() {

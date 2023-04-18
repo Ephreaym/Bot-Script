@@ -40,6 +40,7 @@ func (war *Warrior) init() {
 	war.abilities.EyeOfTheWolfReady = true
 	war.abilities.WarCryReady = true
 	war.unit = ns.CreateObject("NPC", RandomBotSpawn)
+
 	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
 	war.unit.MonsterStatusEnable(object.MonStatusAlert)
@@ -80,13 +81,15 @@ func (war *Warrior) onEnemySighted() {
 		if war.target.MaxHealth() == 150 {
 		} else {
 			war.abilities.WarCryReady = false
-			war.unit.Enchant(enchant.HELD, ns.Seconds(1))
-			ns.AudioEvent("WarcryInvoke", war.unit)
-			ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
-			war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
-			war.unit.EnchantOff(enchant.INVULNERABLE)
-			ns.NewTimer(ns.Seconds(10), func() {
-				war.abilities.WarCryReady = true
+			ns.NewTimer(ns.Frames(15), func() {
+				war.unit.Enchant(enchant.HELD, ns.Seconds(1))
+				ns.AudioEvent("WarcryInvoke", war.unit)
+				ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
+				war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+				war.unit.EnchantOff(enchant.INVULNERABLE)
+				ns.NewTimer(ns.Seconds(10), func() {
+					war.abilities.WarCryReady = true
+				})
 			})
 		}
 
