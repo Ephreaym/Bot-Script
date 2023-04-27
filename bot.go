@@ -13,7 +13,7 @@ func init() {
 	// Add this many bots on map launch.
 	const (
 		warriors  = 1
-		wizards   = 1
+		wizards   = 0
 		conjurers = 1
 	)
 	for i := 0; i < warriors; i++ {

@@ -4,6 +4,8 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 )
 
+var conCorsor = ns.NewWaypoint("ConCursor", ns.Ptf(123, 456))
+var wizCorsor = ns.NewWaypoint("WizCursor", ns.Ptf(124, 457))
 var RandomBotSpawn ns.Obj
 
 func init() {
@@ -30,4 +32,7 @@ func DialogOptions() {
 	// C5OGK02E "too bad you must die now"
 	// C5OGK01E "youre very bold for such a little man"
 	// C5OGK05E "Ill crush your bones"
+	// WarAI.Chat("War01A.scr:Bully1") // this is a robbery! Your money AND your life!
+	// ns.AudioEvent("F1ROG01E", WarAI)
+	// TODO: Add audio to match the chat: F1ROG01E.
 }

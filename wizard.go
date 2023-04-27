@@ -43,33 +43,50 @@ type Wizard struct {
 		ProtFromShockReady  bool
 		BlinkReady          bool
 		HasteReady          bool // Duration is 20 seconds
+		InvisibilityReady   bool // Duration is 60 seconds, 30 mana.
 	}
+	reactionTime int
 }
 
 func (wiz *Wizard) init() {
-	// Reset spells.
+	// Reset spells WizBot.
 	wiz.spells.Ready = true
-	wiz.spells.MagicMissilesReady = true
-	wiz.spells.ShockReady = true
+	// Debuff spells.
 	wiz.spells.SlowReady = true
+	// Offensive spells.
+	wiz.spells.MagicMissilesReady = true
 	wiz.spells.TrapReady = true
 	wiz.spells.DeathRayReady = true
 	wiz.spells.EnergyBoltReady = true
 	wiz.spells.FireballReady = true
+	// Defensive spells.
 	wiz.spells.BlinkReady = true
 	// Buff spells
+	wiz.spells.ShockReady = true
 	wiz.spells.ProtFromFireReady = true
 	wiz.spells.ProtFromPoisonReady = true
 	wiz.spells.ProtFromShockReady = true
 	wiz.spells.HasteReady = true
 	wiz.spells.ForceFieldReady = true
-
-	// Create wizard NPC.
+	wiz.spells.InvisibilityReady = true
+	// Create WizBot.
 	wiz.unit = ns.CreateObject("NPC", RandomBotSpawn)
-
+	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	wiz.unit.SetMaxHealth(75)
+	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
+	wiz.reactionTime = 15
+	// Set WizBot properties.
 	wiz.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
 	wiz.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	wiz.unit.MonsterStatusEnable(object.MonStatusAlert)
+	wiz.unit.AggressionLevel(0.16)
+	ns.NewTimer(ns.Seconds(3), func() {
+		wiz.unit.AggressionLevel(0.83)
+	})
+	wiz.unit.Hunt()
+	wiz.unit.ResumeLevel(0.8)
+	wiz.unit.RetreatLevel(0.2)
+	// Create and equip WizBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
 	wiz.items.StreetSneakers = ns.CreateObject("StreetSneakers", wiz.unit)
 	wiz.items.StreetPants = ns.CreateObject("StreetPants", wiz.unit)
 	wiz.items.StreetShirt = ns.CreateObject("StreetShirt", wiz.unit)
@@ -78,22 +95,13 @@ func (wiz *Wizard) init() {
 	wiz.unit.Equip(wiz.items.StreetPants)
 	wiz.unit.Equip(wiz.items.StreetShirt)
 	wiz.unit.Equip(wiz.items.WizardRobe)
-	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
-	wiz.unit.SetMaxHealth(75)
-	wiz.unit.AggressionLevel(0.16)
-	ns.NewTimer(ns.Seconds(3), func() {
-		wiz.unit.AggressionLevel(0.83)
-	})
-	wiz.unit.Hunt()
-	wiz.unit.ResumeLevel(0.8)
-	wiz.unit.RetreatLevel(0.2)
 	// Buff on respawn.
 	wiz.buffInitial()
 	// On retreat.
 	wiz.unit.OnEvent(ns.EventRetreat, wiz.onRetreat)
-	// When an enemy is seen.
+	// Enemy sighted.
 	wiz.unit.OnEvent(ns.EventEnemySighted, wiz.onEnemySighted)
-	// On enemy heard.
+	// On heard.
 	wiz.unit.OnEvent(ns.EventEnemyHeard, wiz.onEnemyHeard)
 	// On collision.
 	wiz.unit.OnEvent(ns.EventCollision, wiz.onCollide)
@@ -104,16 +112,16 @@ func (wiz *Wizard) init() {
 }
 
 func (wiz *Wizard) buffInitial() {
+	// Cast Force Field.
 	if wiz.spells.ForceFieldReady && wiz.spells.Ready {
 		wiz.spells.ForceFieldReady = false
 		wiz.spells.HasteReady = false
 		wiz.spells.Ready = false
-		// Force Field chant.
 		castPhonemes(wiz.unit, []audio.Name{PhUp, PhLeft, PhDown, PhRight, PhUp, PhLeft, PhDown, PhRight}, func() {
 			ns.CastSpell(spell.SHIELD, wiz.unit, wiz.unit)
 			// Pause for concentration.
 			ns.NewTimer(ns.Frames(3), func() {
-				// Haste chant.
+				// Cast Haste.
 				wiz.spells.Ready = true
 				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhRight}, func() {
 					ns.CastSpell(spell.HASTE, wiz.unit, wiz.unit)
@@ -128,13 +136,14 @@ func (wiz *Wizard) buffInitial() {
 }
 
 func (wiz *Wizard) onRetreat() {
-	// Cast blink when retreating. TODO: fix trap workaround.
+	// Cast Blink.
 	if wiz.spells.BlinkReady && wiz.spells.Ready {
 		wiz.spells.BlinkReady = false
 		wiz.spells.Ready = false
 		ns.NewTimer(ns.Frames(15), func() {
 			castPhonemes(wiz.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
-				ns.NewTrap(wiz.unit, spell.BLINK) // TODO: FIX IT so it doesn't have to be a trap.
+				ns.NewTrap(wiz.unit, spell.BLINK)
+				ns.CastSpell(spell.TRIGGER_GLYPH, wiz.unit, wiz.unit)
 				wiz.spells.Ready = true
 			})
 			ns.NewTimer(ns.Seconds(2), func() {
@@ -145,11 +154,11 @@ func (wiz *Wizard) onRetreat() {
 }
 
 func (wiz *Wizard) onEnemySighted() {
+	// Cast Slow.
 	if wiz.spells.SlowReady && wiz.spells.Ready {
 		wiz.spells.SlowReady = false
 		wiz.spells.Ready = false
 		ns.NewTimer(ns.Frames(15), func() {
-			// Slow chant.
 			castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 				wiz.spells.Ready = true
 				wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
@@ -161,11 +170,11 @@ func (wiz *Wizard) onEnemySighted() {
 			})
 		})
 	}
+	// Cast Death Ray.
 	if wiz.spells.DeathRayReady && wiz.spells.Ready {
 		wiz.spells.DeathRayReady = false
 		wiz.spells.Ready = false
 		ns.NewTimer(ns.Frames(15), func() {
-			// Death Ray chant.
 			castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDownRight}, func() {
 				wiz.spells.Ready = true
 				wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
@@ -180,15 +189,28 @@ func (wiz *Wizard) onEnemySighted() {
 }
 
 func (wiz *Wizard) onEnemyHeard() {
-
+	// Cast Inivsibility.
+	if wiz.spells.InvisibilityReady && wiz.spells.Ready {
+		wiz.spells.InvisibilityReady = false
+		wiz.spells.Ready = false
+		ns.NewTimer(ns.Frames(15), func() {
+			castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhLeft, PhRight}, func() {
+				ns.CastSpell(spell.INVISIBILITY, wiz.unit, wiz.unit)
+				wiz.spells.Ready = true
+				ns.NewTimer(ns.Seconds(60), func() {
+					wiz.spells.InvisibilityReady = true
+				})
+			})
+		})
+	}
 }
 
 func (wiz *Wizard) onCollide() {
+	// Cast Shock.
 	if wiz.spells.ShockReady && wiz.spells.Ready {
 		wiz.spells.Ready = false
 		wiz.spells.ShockReady = false
 		ns.NewTimer(ns.Frames(15), func() {
-			// Shock chant.
 			castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
 				ns.CastSpell(spell.SHOCK, wiz.unit, wiz.unit)
 				wiz.spells.Ready = true
@@ -200,10 +222,10 @@ func (wiz *Wizard) onCollide() {
 	}
 	wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 	if wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
+		// Cast Missiles of Magic.
 		wiz.spells.Ready = false
 		wiz.spells.MagicMissilesReady = false
 		ns.NewTimer(ns.Frames(15), func() {
-			// Missiles of Magic chant.
 			castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
 				wiz.unit.LookAtObject(wiz.target)
 				ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
@@ -217,6 +239,7 @@ func (wiz *Wizard) onCollide() {
 }
 
 func (wiz *Wizard) onLostEnemy() {
+	// Cast trap (Ring of Fire, Missiles of Magic, Shock).
 	if wiz.spells.TrapReady && wiz.spells.Ready {
 		wiz.spells.Ready = false
 		wiz.spells.TrapReady = false
@@ -294,9 +317,9 @@ func (wiz *Wizard) Update() {
 		// Fireball chant.
 		ns.NewTimer(ns.Frames(15), func() {
 			castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
-				wiz.spells.Ready = true
 				wiz.unit.LookAtObject(wiz.target)
 				ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.target)
+				wiz.spells.Ready = true
 				ns.NewTimer(ns.Seconds(10), func() {
 					wiz.spells.FireballReady = true
 				})

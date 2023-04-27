@@ -21,6 +21,7 @@ type Warrior struct {
 	unit         ns.Obj
 	target       ns.Obj
 	taggedPlayer ns.Obj
+	targetPotion ns.Obj
 	items        struct {
 		Longsword      ns.Obj
 		WoodenShield   ns.Obj
@@ -28,23 +29,34 @@ type Warrior struct {
 		StreetPants    ns.Obj
 	}
 	abilities struct {
-		EyeOfTheWolfReady    bool // Cooldown is 20 seconds.
 		BerserkerChargeReady bool // Cooldown is 10 seconds.
 		WarCryReady          bool // Cooldown is 10 seconds.
+		HarpoonReady         bool
+		EyeOfTheWolfReady    bool // Cooldown is 20 seconds.
+		TreadLightlyReady    bool
 	}
 }
 
 func (war *Warrior) init() {
-	// Reset abilities
+	// Reset abilities WarBot.
 	war.abilities.BerserkerChargeReady = true
-	war.abilities.EyeOfTheWolfReady = true
 	war.abilities.WarCryReady = true
+	war.abilities.HarpoonReady = true
+	war.abilities.EyeOfTheWolfReady = true
+	war.abilities.TreadLightlyReady = true
+	// Create WarBot.
 	war.unit = ns.CreateObject("NPC", RandomBotSpawn)
-
+	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	war.unit.SetMaxHealth(150)
+	// Set WarBot properties.
 	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
 	war.unit.MonsterStatusEnable(object.MonStatusAlert)
-	// TODO: Change location of item creation OR stop them from respawning automatically.
+	war.unit.AggressionLevel(0.83)
+	war.unit.Hunt()
+	war.unit.ResumeLevel(0.8)
+	war.unit.RetreatLevel(0.4)
+	// Create and equip WarBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
 	war.items.Longsword = ns.CreateObject("Longsword", war.unit)
 	war.items.WoodenShield = ns.CreateObject("WoodenShield", war.unit)
 	war.items.StreetSneakers = ns.CreateObject("StreetSneakers", war.unit)
@@ -53,29 +65,26 @@ func (war *Warrior) init() {
 	war.unit.Equip(war.items.WoodenShield)
 	war.unit.Equip(war.items.StreetSneakers)
 	war.unit.Equip(war.items.StreetPants)
-	// TODO: Give different audio and chat for each set so they feel like different characters.
-	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
-	war.unit.SetMaxHealth(150)
-	war.unit.AggressionLevel(0.83)
-	war.unit.Hunt()
-	war.unit.ResumeLevel(0.8)
-	war.unit.RetreatLevel(0.2)
-	// WarAI.Chat("War01A.scr:Bully1") // this is a robbery! Your money AND your life!
-	// ns.AudioEvent("F1ROG01E", WarAI)
-	// TODO: Add audio to match the chat: F1ROG01E.
-	// Enemy Sighted. //
+	// Select a WarBot loadout (tactical preference, dialog). TODO: Give different audio and chat for each set so they feel like different characters.
+	// Enemy sighted.
 	war.unit.OnEvent(ns.EventEnemySighted, war.onEnemySighted)
+	// Retreat.
 	war.unit.OnEvent(ns.EventRetreat, war.onRetreat)
-	// Enemy Lost.
+	// Enemy lost.
 	war.unit.OnEvent(ns.EventLostEnemy, war.onLostEnemy)
-	// On Hit.
+	// On hit.
 	war.unit.OnEvent(ns.EventIsHit, war.onHit)
-	// On Death.
+	// On collision.
+	war.unit.OnEvent(ns.EventCollision, war.onCollide)
+	// On death.
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 }
 
+func (war *Warrior) onCollide() {
+	// TODO: determine tactic.
+}
+
 func (war *Warrior) onEnemySighted() {
-	// Script out a plan of action.
 	if war.abilities.WarCryReady {
 		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
 		if war.target.MaxHealth() == 150 {
@@ -97,10 +106,16 @@ func (war *Warrior) onEnemySighted() {
 }
 
 func (war *Warrior) onRetreat() {
+	// TODO: FIX IT!
 	// Walk to nearest RedPotion.
+	war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
+	// war.unit.AggressionLevel(0.16)
+	// war.unit.WalkTo(war.targetPotion.Pos())
+
 }
 
 func (war *Warrior) onLostEnemy() {
+	// When an enemy is lost the WarBot will activate Eye of the Wolf if it's off cooldown.
 	if war.abilities.EyeOfTheWolfReady {
 		war.unit.Enchant(enchant.INFRAVISION, ns.Seconds(10))
 		war.abilities.EyeOfTheWolfReady = false
@@ -134,9 +149,7 @@ func (war *Warrior) Update() {
 
 func (war *Warrior) findLoot() {
 	const dist = 75
-	// TODO: Setup different builds and tactics / voices / dialog / chat.
-
-	// Weapons
+	// Weapons.
 	weapons := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
@@ -152,7 +165,7 @@ func (war *Warrior) findLoot() {
 		war.unit.Equip(item)
 	}
 
-	// Armor
+	// Armor.
 	armor := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
