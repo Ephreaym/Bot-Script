@@ -4,8 +4,8 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 )
 
-var conCorsor = ns.NewWaypoint("ConCursor", ns.Ptf(123, 456))
-var wizCorsor = ns.NewWaypoint("WizCursor", ns.Ptf(124, 457))
+var conCursor = ns.NewWaypoint("ConCursor", ns.Ptf(123, 456))
+var wizCursor = ns.NewWaypoint("WizCursor", ns.Ptf(124, 457))
 var RandomBotSpawn ns.Obj
 
 func init() {
@@ -15,11 +15,11 @@ func init() {
 
 // OnFrame is called by the server.
 func OnFrame() {
-	UpdateBots()
 	spawns := ns.FindAllObjects(ns.HasTypeName{"PlayerStart"})
 	randomIndex := ns.Random(0, len(spawns)-1)
 	pick := spawns[randomIndex]
 	RandomBotSpawn.SetPos(pick.Pos())
+	UpdateBots()
 }
 
 func DialogOptions() {

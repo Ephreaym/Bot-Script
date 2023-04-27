@@ -79,7 +79,7 @@ func (con *Conjurer) init() {
 	con.unit.SetMaxHealth(100)
 	// Create ConBot mouse cursor.
 	con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
-	conCorsor.SetPos(con.target.Pos())
+	conCursor.SetPos(con.target.Pos())
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	con.reactionTime = 15
 	// Set ConBot properties.
@@ -182,6 +182,9 @@ func (con *Conjurer) Update() {
 		con.castToxicCloud()
 		con.castSlow()
 		con.castMeteor()
+
+	}
+	if !con.unit.CanSee(con.target) {
 		con.castVampirism()
 		con.castProtectionFromShock()
 		con.castProtectionFromFire()
@@ -369,7 +372,7 @@ func (con *Conjurer) castFistOfVengeance() {
 	if !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
 		// Select target.
 		con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
-		conCorsor.SetPos(con.target.Pos())
+		conCursor.SetPos(con.target.Pos())
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -383,7 +386,7 @@ func (con *Conjurer) castFistOfVengeance() {
 						con.unit.LookAtObject(con.target)
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.FistOfVengeanceReady = false
-						ns.CastSpell(spell.FIST, con.unit, conCorsor)
+						ns.CastSpell(spell.FIST, con.unit, conCursor)
 						// Global cooldown.
 						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
@@ -493,7 +496,7 @@ func (con *Conjurer) castToxicCloud() {
 	if !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
 		// Select target.
 		con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
-		conCorsor.SetPos(con.target.Pos())
+		conCursor.SetPos(con.target.Pos())
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -507,7 +510,7 @@ func (con *Conjurer) castToxicCloud() {
 						con.unit.LookAtObject(con.target)
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.ToxicCloudReady = false
-						ns.CastSpell(spell.TOXIC_CLOUD, con.unit, conCorsor)
+						ns.CastSpell(spell.TOXIC_CLOUD, con.unit, conCursor)
 						// Global cooldown.
 						con.spells.Ready = true
 						// Toxic Cloud cooldown.
@@ -558,7 +561,7 @@ func (con *Conjurer) castMeteor() {
 	if !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
 		// Select target.
 		con.target = ns.FindClosestObject(con.unit, ns.HasClass(object.ClassPlayer))
-		conCorsor.SetPos(con.target.Pos())
+		conCursor.SetPos(con.target.Pos())
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -572,7 +575,7 @@ func (con *Conjurer) castMeteor() {
 						con.unit.LookAtObject(con.target)
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.MeteorReady = false
-						ns.CastSpell(spell.METEOR, con.unit, conCorsor)
+						ns.CastSpell(spell.METEOR, con.unit, conCursor)
 						// Global cooldown.
 						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {

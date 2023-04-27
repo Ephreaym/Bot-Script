@@ -7,6 +7,7 @@ import (
 
 // Shortcuts for phoneme audio effects.
 const (
+	// Male chant.
 	PhUp        = audio.SpellPhonemeUp
 	PhDown      = audio.SpellPhonemeDown
 	PhLeft      = audio.NPCSpellPhonemeLeft
@@ -15,6 +16,15 @@ const (
 	PhUpRight   = audio.NPCSpellPhonemeUpRight
 	PhDownLeft  = audio.NPCSpellPhonemeDownLeft
 	PhDownRight = audio.NPCSpellPhonemeDownRight
+	// Female chant.
+	FPhUp        = audio.FemaleSpellPhonemeUp
+	FPhDown      = audio.FemaleSpellPhonemeDown
+	FPhLeft      = audio.FemaleSpellPhonemeLeft
+	FPhRight     = audio.FemaleSpellPhonemeRight
+	FPhUpLeft    = audio.FemaleSpellPhonemeUpLeft
+	FPhUpRight   = audio.FemaleSpellPhonemeUpRight
+	FPhDownLeft  = audio.FemaleSpellPhonemeDownLef
+	FPhDownRight = audio.FemaleSpellPhonemeDownRig
 )
 
 // castPhonemes emulates the spell casting audio effect and then calls a given function.
