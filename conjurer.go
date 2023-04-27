@@ -184,7 +184,7 @@ func (con *Conjurer) Update() {
 		con.castMeteor()
 
 	}
-	if !con.unit.CanSee(con.target) {
+	if !con.unit.CanSee(con.target) && con.spells.Ready {
 		con.castVampirism()
 		con.castProtectionFromShock()
 		con.castProtectionFromFire()

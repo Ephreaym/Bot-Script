@@ -74,7 +74,7 @@ func (wiz *Wizard) init() {
 	wiz.unit = ns.CreateObject("NPC", RandomBotSpawn)
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	wiz.unit.SetMaxHealth(75)
-	// Create ConBot mouse cursor.
+	// Create WarBot mouse cursor.
 	wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 	wizCursor.SetPos(wiz.target.Pos())
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
@@ -177,7 +177,7 @@ func (wiz *Wizard) Update() {
 		wiz.castForceField()
 		wiz.castShock()
 	}
-	if !wiz.unit.CanSee(wiz.target) {
+	if !wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
 		wiz.castHaste()
 		wiz.castProtectionFromShock()
 		wiz.castProtectionFromFire()

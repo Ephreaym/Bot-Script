@@ -35,6 +35,7 @@ type Warrior struct {
 		EyeOfTheWolfReady    bool // Cooldown is 20 seconds.
 		TreadLightlyReady    bool
 	}
+	reactionTime int
 }
 
 func (war *Warrior) init() {
@@ -48,6 +49,11 @@ func (war *Warrior) init() {
 	war.unit = ns.CreateObject("NPC", RandomBotSpawn)
 	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	war.unit.SetMaxHealth(150)
+	// Create WarBot mouse cursor.
+	war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+	warCursor.SetPos(war.target.Pos())
+	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
+	war.reactionTime = 15
 	// Set WarBot properties.
 	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
@@ -85,24 +91,8 @@ func (war *Warrior) onCollide() {
 }
 
 func (war *Warrior) onEnemySighted() {
-	if war.abilities.WarCryReady {
-		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
-		if war.target.MaxHealth() == 150 {
-		} else {
-			war.abilities.WarCryReady = false
-			ns.NewTimer(ns.Frames(15), func() {
-				war.unit.Enchant(enchant.HELD, ns.Seconds(1))
-				ns.AudioEvent("WarcryInvoke", war.unit)
-				ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
-				war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
-				war.unit.EnchantOff(enchant.INVULNERABLE)
-				ns.NewTimer(ns.Seconds(10), func() {
-					war.abilities.WarCryReady = true
-				})
-			})
-		}
-
-	}
+	war.useWarCry()
+	// war.useBerserkerCharge()
 }
 
 func (war *Warrior) onRetreat() {
@@ -115,14 +105,7 @@ func (war *Warrior) onRetreat() {
 }
 
 func (war *Warrior) onLostEnemy() {
-	// When an enemy is lost the WarBot will activate Eye of the Wolf if it's off cooldown.
-	if war.abilities.EyeOfTheWolfReady {
-		war.unit.Enchant(enchant.INFRAVISION, ns.Seconds(10))
-		war.abilities.EyeOfTheWolfReady = false
-		ns.NewTimer(ns.Seconds(20), func() {
-			war.abilities.EyeOfTheWolfReady = true
-		})
-	}
+	war.useEyeOfTheWolf()
 }
 
 func (war *Warrior) onHit() {
@@ -145,6 +128,7 @@ func (war *Warrior) onDeath() {
 
 func (war *Warrior) Update() {
 	war.findLoot()
+	war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
 }
 
 func (war *Warrior) findLoot() {
@@ -185,4 +169,71 @@ func (war *Warrior) findLoot() {
 	for _, item := range armor {
 		war.unit.Equip(item)
 	}
+}
+
+func (war *Warrior) useWarCry() {
+	if war.abilities.WarCryReady {
+		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+		if war.target.MaxHealth() == 150 {
+		} else {
+			war.abilities.WarCryReady = false
+			ns.NewTimer(ns.Frames(15), func() {
+				war.unit.Enchant(enchant.HELD, ns.Seconds(1))
+				ns.AudioEvent("WarcryInvoke", war.unit)
+				ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
+				war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+				war.unit.EnchantOff(enchant.INVULNERABLE)
+				ns.NewTimer(ns.Seconds(10), func() {
+					war.abilities.WarCryReady = true
+				})
+			})
+		}
+	}
+}
+
+func (war *Warrior) useEyeOfTheWolf() {
+	// Check if cooldown is ready.
+	if war.abilities.EyeOfTheWolfReady {
+		// Trigger cooldown.
+		war.abilities.EyeOfTheWolfReady = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(war.reactionTime), func() {
+			// Use ability.
+			war.unit.Enchant(enchant.INFRAVISION, ns.Seconds(10))
+		})
+		// Eye Of The Wolf cooldown.
+		ns.NewTimer(ns.Seconds(20), func() {
+			war.abilities.EyeOfTheWolfReady = true
+		})
+	}
+}
+
+func (war *Warrior) useBerserkerCharge() {
+	// Check if cooldown is ready.
+	if war.abilities.BerserkerChargeReady && war.unit.CanSee(war.target) {
+		ns.PrintStrToAll("useBeserkerCharge")
+		// Select target.
+		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+		warCursor.SetPos(war.target.Pos())
+		// Trigger cooldown.
+		war.abilities.BerserkerChargeReady = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(war.reactionTime), func() {
+			// Use ability.
+			ns.AudioEvent("BerserkerChargeInvoke", war.unit)
+			war.unit.LookAtObject(warCursor)
+			war.loopBerserker()
+		})
+		// Berserker Charge cooldown.
+		ns.NewTimer(ns.Seconds(10), func() {
+			war.abilities.BerserkerChargeReady = true
+		})
+	}
+}
+
+func (war *Warrior) loopBerserker() {
+	war.unit.SetZ(3)
+	war.unit.Move(warCursor)
+	war.unit.WalkTo(warCursor.Pos())
+	ns.NewTimer(ns.Frames(1), war.loopBerserker)
 }

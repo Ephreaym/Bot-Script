@@ -6,6 +6,7 @@ import (
 
 var conCursor = ns.NewWaypoint("ConCursor", ns.Ptf(123, 456))
 var wizCursor = ns.NewWaypoint("WizCursor", ns.Ptf(124, 457))
+var warCursor = ns.NewWaypoint("warCursor", ns.Ptf(125, 458))
 var RandomBotSpawn ns.Obj
 
 func init() {
