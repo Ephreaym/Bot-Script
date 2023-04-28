@@ -131,6 +131,10 @@ void EyeOfTheWolfCooldownReset()
     {
     }
 }
+
+// ------------------------------------- BERSERKERCHARGE SCRIPT ---------------------------------------------- //
+
+
 float UnitRatioX(int unit, int target, float size)
 {
     return (GetObjectX(unit) - GetObjectX(target)) * size / Distance(GetObjectX(unit), GetObjectY(unit), GetObjectX(target), GetObjectY(target));
