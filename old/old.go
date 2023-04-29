@@ -151,7 +151,9 @@ func BerserkerInRange(owner, target ns3.ObjectID, wait int) {
 			ns3.Raise(unit, ToFloat(owner))
 			ns3.Raise(unit+1, ToFloat(target))
 			ns3.LookWithAngle(unit, wait)
-			ns3.FrameTimerWithArg(1, unit, BerserkerWaitStrike)
+			ns3.FrameTimer(1, func() {
+				BerserkerWaitStrike(unit)
+			})
 		}
 	}
 }
@@ -168,7 +170,9 @@ func BerserkerWaitStrike(ptr ns3.ObjectID) {
 					BerserkerCharge(owner, target)
 				} else {
 					ns3.LookWithAngle(ptr, count-1)
-					ns3.FrameTimerWithArg(6, ptr, BerserkerWaitStrike)
+					ns3.FrameTimer(6, func() {
+						BerserkerWaitStrike(ptr)
+					})
 					break
 				}
 			}
@@ -200,7 +204,9 @@ func BerserkerCharge(owner, target ns3.ObjectID) {
 		ns3.SetCallback(owner, 9, BerserkerTouched)
 		ns3.Raise(unit, ToFloat(target))
 		ns3.LookAtObject(unit+1, target)
-		ns3.FrameTimerWithArg(1, unit, BerserkerLoop)
+		ns3.FrameTimer(1, func() {
+			BerserkerLoop(unit)
+		})
 	}
 }
 
@@ -216,7 +222,9 @@ func BerserkerLoop(ptr ns3.ObjectID) {
 		} else {
 			ns3.LookWithAngle(ptr, 100)
 		}
-		ns3.FrameTimerWithArg(1, ptr, BerserkerLoop)
+		ns3.FrameTimer(1, func() {
+			BerserkerLoop(ptr)
+		})
 	} else {
 		ns3.SetCallback(owner, 9, NullCollide)
 		ns3.Delete(ptr)
