@@ -68,8 +68,7 @@ func RespawnWiz() {
 }
 func WarCry() {
 	self, other := GetTrigger(), GetCaller()
-	if MaxHealth(other) == 150 {
-	} else {
+	if MaxHealth(other) != 150 {
 		if (WarCryCooldown == 0) && (GlobalCooldown == 0) {
 			MoveWaypoint(WarSound, GetObjectX(WarBot), GetObjectY(WarBot))
 			AudioEvent("WarcryInvoke", WarSound)
@@ -82,14 +81,12 @@ func WarCry() {
 			GlobalCooldown = 1
 			SecondTimer(10, WarCryCooldownReset)
 			SecondTimer(1, GlobalCooldownReset)
-		} else {
 		}
 	}
 }
 func WarCryCooldownReset() {
 	if RespawnCooldownDelay == 0 {
 		WarCryCooldown = 0
-	} else {
 	}
 }
 func EyeOfTheWolf() {
@@ -99,13 +96,11 @@ func EyeOfTheWolf() {
 		Enchant(self, "ENCHANT_INFRAVISION", 10.0)
 		EyeOfTheWolfCooldown = 1
 		SecondTimer(20, EyeOfTheWolfCooldownReset)
-	} else {
 	}
 }
 func EyeOfTheWolfCooldownReset() {
 	if RespawnCooldownDelay == 0 {
 		EyeOfTheWolfCooldown = 0
-	} else {
 	}
 }
 
@@ -131,7 +126,6 @@ func WarBotDetectEnemy() {
 	} else {
 		if WarCryCooldown == 0 {
 			WarCry()
-		} else {
 		}
 	}
 }
@@ -139,7 +133,6 @@ func CheckUnitFrontSight(unit ObjectID, dtX, dtY float32) bool {
 	MoveWaypoint(1, GetObjectX(unit)+dtX, GetObjectY(unit)+dtY)
 	temp := CreateObject("InvisibleLightBlueHigh", 1)
 	res := IsVisibleTo(unit, temp)
-
 	Delete(temp)
 	return res
 }
@@ -259,12 +252,10 @@ func BerserkerTouched() {
 	SecondTimer(10, BerserkerChargeCooldownReset)
 }
 func NullCollide() {
-	return
 }
 func BerserkerChargeCooldownReset() {
 	if RespawnCooldownDelay == 0 {
 		BerserkerChargeCooldown = 0
-	} else {
 	}
 }
 func GlobalCooldownReset() {
