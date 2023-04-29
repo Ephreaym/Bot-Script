@@ -147,31 +147,24 @@ func BerserkerInRange(owner, target ns3.ObjectID, wait int) {
 			ns3.MoveWaypoint(1, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
 			unit := ns3.CreateObject("InvisibleLightBlueHigh", 1)
 			ns3.MoveWaypoint(1, ns3.GetObjectX(unit), ns3.GetObjectY(unit))
-			ns3.CreateObject("InvisibleLightBlueHigh", 1)
-			ns3.Raise(unit, ToFloat(owner))
-			ns3.Raise(unit+1, ToFloat(target))
+			unit1 := ns3.CreateObject("InvisibleLightBlueHigh", 1)
 			ns3.LookWithAngle(unit, wait)
 			ns3.FrameTimer(1, func() {
-				BerserkerWaitStrike(unit)
+				BerserkerWaitStrike(unit, unit1, owner, target, wait)
 			})
 		}
 	}
 }
 
-func BerserkerWaitStrike(ptr ns3.ObjectID) {
-	count := ns3.GetDirection(ptr)
-	owner := ToInt(ns3.GetObjectZ(ptr))
-	target := ToInt(ns3.GetObjectZ(ptr + 1))
-
+func BerserkerWaitStrike(ptr, ptr1, owner, target ns3.ObjectID, count int) {
 	for {
 		if ns3.IsObjectOn(ptr) && ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 && ns3.IsObjectOn(owner) {
 			if count != 0 {
 				if ns3.IsVisibleTo(owner, target) && ns3.Distance(ns3.GetObjectX(owner), ns3.GetObjectY(owner), ns3.GetObjectX(target), ns3.GetObjectY(target)) < 400.0 {
 					BerserkerCharge(owner, target)
 				} else {
-					ns3.LookWithAngle(ptr, count-1)
 					ns3.FrameTimer(6, func() {
-						BerserkerWaitStrike(ptr)
+						BerserkerWaitStrike(ptr, ptr1, owner, target, count-1)
 					})
 					break
 				}
@@ -182,7 +175,7 @@ func BerserkerWaitStrike(ptr ns3.ObjectID) {
 		}
 		if ns3.IsObjectOn(ptr) {
 			ns3.Delete(ptr)
-			ns3.Delete(ptr + 1)
+			ns3.Delete(ptr1)
 		}
 		break
 	}
@@ -194,43 +187,42 @@ func BerserkerCharge(owner, target ns3.ObjectID) {
 		ns3.MoveWaypoint(2, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
 		ns3.AudioEvent("BerserkerChargeInvoke", 2)
 		ns3.MoveWaypoint(1, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+
 		unit := ns3.CreateObject("InvisibleLightBlueHigh", 1)
 		ns3.MoveWaypoint(1, ns3.GetObjectX(unit), ns3.GetObjectY(unit))
-		ns3.Raise(ns3.CreateObject("InvisibleLightBlueHigh", 1), UnitRatioX(target, owner, 23.0))
-		ns3.Raise(ns3.CreateObject("InvisibleLightBlueHigh", 1), UnitRatioY(target, owner, 23.0))
-		ns3.CreateObject("InvisibleLightBlueHigh", 1)
-		ns3.Raise(unit+3, ToFloat(owner))
+
+		unit1 := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+		ns3.LookAtObject(unit1, target)
+
 		ns3.LookWithAngle(ns3.GetLastItem(owner), 0)
 		ns3.SetCallback(owner, 9, BerserkerTouched)
-		ns3.Raise(unit, ToFloat(target))
-		ns3.LookAtObject(unit+1, target)
+
+		ratioX := UnitRatioX(target, owner, 23.0)
+		ratioY := UnitRatioY(target, owner, 23.0)
 		ns3.FrameTimer(1, func() {
-			BerserkerLoop(unit)
+			BerserkerLoop(unit, unit1, owner, target, ratioX, ratioY)
 		})
 	}
 }
 
-func BerserkerLoop(ptr ns3.ObjectID) {
-	owner := ToInt(ns3.GetObjectZ(ptr + 3))
+func BerserkerLoop(ptr, ptr1, owner, target ns3.ObjectID, ratioX, ratioY float32) {
 	count := ns3.GetDirection(ptr)
 
 	if ns3.CurrentHealth(owner) != 0 && count < 60 && ns3.IsObjectOn(ptr) && ns3.IsObjectOn(owner) {
-		if CheckUnitFrontSight(owner, ns3.GetObjectZ(ptr+1)*1.5, ns3.GetObjectZ(ptr+2)*1.5) && ns3.GetDirection(ns3.GetLastItem(owner)) == 0 {
-			ns3.MoveObject(owner, ns3.GetObjectX(owner)+ns3.GetObjectZ(ptr+1), ns3.GetObjectY(owner)+ns3.GetObjectZ(ptr+2))
-			ns3.LookWithAngle(owner, ns3.GetDirection(ptr+1))
+		if CheckUnitFrontSight(owner, ratioX*1.5, ratioY*1.5) && ns3.GetDirection(ns3.GetLastItem(owner)) == 0 {
+			ns3.MoveObject(owner, ns3.GetObjectX(owner)+ratioX, ns3.GetObjectY(owner)+ratioY)
+			ns3.LookWithAngle(owner, ns3.GetDirection(ptr1))
 			ns3.Walk(owner, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
 		} else {
 			ns3.LookWithAngle(ptr, 100)
 		}
 		ns3.FrameTimer(1, func() {
-			BerserkerLoop(ptr)
+			BerserkerLoop(ptr, ptr1, owner, target, ratioX, ratioY)
 		})
 	} else {
 		ns3.SetCallback(owner, 9, NullCollide)
 		ns3.Delete(ptr)
-		ns3.Delete(ptr + 1)
-		ns3.Delete(ptr + 2)
-		ns3.Delete(ptr + 3)
+		ns3.Delete(ptr1)
 	}
 }
 
