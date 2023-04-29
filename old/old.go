@@ -67,6 +67,7 @@ func RespawnWiz() {
 	Enchant(WizBot, "ENCHANT_INVULNERABLE", 5.0)
 }
 func WarCry() {
+	self, other := GetTrigger(), GetCaller()
 	if MaxHealth(other) == 150 {
 	} else {
 		if (WarCryCooldown == 0) && (GlobalCooldown == 0) {
@@ -92,6 +93,7 @@ func WarCryCooldownReset() {
 	}
 }
 func EyeOfTheWolf() {
+	self := GetTrigger()
 	Wander(WarBot)
 	if EyeOfTheWolfCooldown == 0 {
 		Enchant(self, "ENCHANT_INFRAVISION", 10.0)
@@ -109,11 +111,11 @@ func EyeOfTheWolfCooldownReset() {
 
 // ------------------------------------- BERSERKERCHARGE SCRIPT ---------------------------------------------- //
 
-func UnitRatioX(unit, target int, size float32) float32 {
+func UnitRatioX(unit, target ObjectID, size float32) float32 {
 	return (GetObjectX(unit) - GetObjectX(target)) * size / Distance(GetObjectX(unit), GetObjectY(unit), GetObjectX(target), GetObjectY(target))
 }
 
-func UnitRatioY(unit, target int, size float32) float32 {
+func UnitRatioY(unit, target ObjectID, size float32) float32 {
 	return (GetObjectY(unit) - GetObjectY(target)) * size / Distance(GetObjectX(unit), GetObjectY(unit), GetObjectX(target), GetObjectY(target))
 }
 func WarBotDetectEnemy() {
@@ -133,7 +135,7 @@ func WarBotDetectEnemy() {
 		}
 	}
 }
-func CheckUnitFrontSight(unit int, dtX, dtY float32) int {
+func CheckUnitFrontSight(unit ObjectID, dtX, dtY float32) int {
 	MoveWaypoint(1, GetObjectX(unit)+dtX, GetObjectY(unit)+dtY)
 	temp := CreateObject("InvisibleLightBlueHigh", 1)
 	res := IsVisibleTo(unit, temp)
@@ -143,7 +145,7 @@ func CheckUnitFrontSight(unit int, dtX, dtY float32) int {
 }
 func pointedByPlr() {
 }
-func BerserkerInRange(owner, target int, wait int) {
+func BerserkerInRange(owner, target ObjectID, wait int) {
 	if CurrentHealth(owner) && CurrentHealth(target) {
 		if !HasEnchant(owner, "ENCHANT_ETHEREAL") {
 			Enchant(owner, "ENCHANT_ETHEREAL", 0.0)
@@ -159,7 +161,7 @@ func BerserkerInRange(owner, target int, wait int) {
 	}
 }
 
-func BerserkerWaitStrike(ptr int) {
+func BerserkerWaitStrike(ptr ObjectID) {
 	count := GetDirection(ptr)
 	owner := ToInt(GetObjectZ(ptr))
 	target := ToInt(GetObjectZ(ptr + 1))
@@ -187,7 +189,7 @@ func BerserkerWaitStrike(ptr int) {
 	}
 }
 
-func BerserkerCharge(owner, target int) {
+func BerserkerCharge(owner, target ObjectID) {
 	if CurrentHealth(owner) && CurrentHealth(target) {
 		EnchantOff(owner, "ENCHANT_INVULNERABLE")
 		MoveWaypoint(2, GetObjectX(owner), GetObjectY(owner))
@@ -207,7 +209,7 @@ func BerserkerCharge(owner, target int) {
 	}
 }
 
-func BerserkerLoop(ptr int) {
+func BerserkerLoop(ptr ObjectID) {
 	owner := ToInt(GetObjectZ(ptr + 3))
 	count := GetDirection(ptr)
 
@@ -230,6 +232,7 @@ func BerserkerLoop(ptr int) {
 }
 
 func BerserkerTouched() {
+	self, other := GetTrigger(), GetCaller()
 	if IsObjectOn(self) {
 		for {
 			if !GetCaller() || (HasClass(other, "IMMOBILE") && !HasClass(other, "DOOR") && !HasClass(other, "TRIGGER")) && !HasClass(other, "DANGEROUS") {
@@ -272,15 +275,15 @@ func RespawnCooldownDelayReset() {
 }
 
 var (
-	BotSpawn                int
-	WarBot                  int
-	WizBot                  int
-	WizBotCorpse            int
-	WarBotCorpse            int
-	OutOfGameWar            int
-	OutOfGameWiz            int
-	WarSound                int
-	WizSound                int
+	BotSpawn                ObjectID
+	WarBot                  ObjectID
+	WizBot                  ObjectID
+	WizBotCorpse            ObjectID
+	WarBotCorpse            ObjectID
+	OutOfGameWar            WaypointID
+	OutOfGameWiz            WaypointID
+	WarSound                WaypointID
+	WizSound                WaypointID
 	WarCryCooldown          int
 	EyeOfTheWolfCooldown    int
 	BerserkerChargeCooldown int
