@@ -13,11 +13,11 @@ func MapInitialize() {
 	OutOfGameWiz = ns3.Waypoint("OutOfGameWiz")
 	WarSound = ns3.Waypoint("WarSound")
 	WizSound = ns3.Waypoint("WizSound")
-	WarCryCooldown = 0
-	EyeOfTheWolfCooldown = 0
-	BerserkerChargeCooldown = 0
-	GlobalCooldown = 0
-	RespawnCooldownDelay = 0
+	WarCryCooldown = false
+	EyeOfTheWolfCooldown = false
+	BerserkerChargeCooldown = false
+	GlobalCooldown = false
+	RespawnCooldownDelay = false
 	ns3.SecondTimer(2, Respawn)
 	ns3.SecondTimer(2, RespawnWiz)
 }
@@ -47,16 +47,16 @@ func DeadBotWiz() {
 }
 func Respawn() {
 	ns3.RestoreHealth(WarBot, ns3.MaxHealth(WarBot)-ns3.CurrentHealth(WarBot))
-	WarCryCooldown = 0
-	EyeOfTheWolfCooldown = 0
-	BerserkerChargeCooldown = 0
+	WarCryCooldown = false
+	EyeOfTheWolfCooldown = false
+	BerserkerChargeCooldown = false
 	ns3.MoveWaypoint(WarSound, ns3.GetObjectX(WarBotCorpse), ns3.GetObjectY(WarBotCorpse))
 	ns3.AudioEvent("BlinkCast", WarSound)
 	BotSpawn = ns3.Object("BotSpawn" + ns3.IntToString(ns3.Random(1, 14)))
 	ns3.MoveObject(WarBot, ns3.GetObjectX(BotSpawn), ns3.GetObjectY(BotSpawn))
 	ns3.MoveObject(WarBotCorpse, ns3.GetWaypointX(OutOfGameWar), ns3.GetWaypointY(OutOfGameWar))
 	ns3.Enchant(WarBot, "ENCHANT_INVULNERABLE", 5.0)
-	RespawnCooldownDelay = 1
+	RespawnCooldownDelay = true
 	ns3.SecondTimer(10, RespawnCooldownDelayReset)
 }
 func RespawnWiz() {
@@ -71,7 +71,7 @@ func RespawnWiz() {
 func WarCry() {
 	self, other := ns3.GetTrigger(), ns3.GetCaller()
 	if ns3.MaxHealth(other) != 150 {
-		if (WarCryCooldown == 0) && (GlobalCooldown == 0) {
+		if !WarCryCooldown && !GlobalCooldown {
 			ns3.MoveWaypoint(WarSound, ns3.GetObjectX(WarBot), ns3.GetObjectY(WarBot))
 			ns3.AudioEvent("WarcryInvoke", WarSound)
 			ns3.PauseObject(WarBot, 45)
@@ -79,30 +79,30 @@ func WarCry() {
 			ns3.Enchant(other, "ENCHANT_ANTI_MAGIC", 3.0)
 			ns3.EnchantOff(self, "ENCHANT_SHOCK")
 			ns3.EnchantOff(self, "ENCHANT_INVULNERABLE")
-			WarCryCooldown = 1
-			GlobalCooldown = 1
+			WarCryCooldown = true
+			GlobalCooldown = true
 			ns3.SecondTimer(10, WarCryCooldownReset)
 			ns3.SecondTimer(1, GlobalCooldownReset)
 		}
 	}
 }
 func WarCryCooldownReset() {
-	if RespawnCooldownDelay == 0 {
-		WarCryCooldown = 0
+	if !RespawnCooldownDelay {
+		WarCryCooldown = false
 	}
 }
 func EyeOfTheWolf() {
 	self := ns3.GetTrigger()
 	ns3.Wander(WarBot)
-	if EyeOfTheWolfCooldown == 0 {
+	if !EyeOfTheWolfCooldown {
 		ns3.Enchant(self, "ENCHANT_INFRAVISION", 10.0)
-		EyeOfTheWolfCooldown = 1
+		EyeOfTheWolfCooldown = true
 		ns3.SecondTimer(20, EyeOfTheWolfCooldownReset)
 	}
 }
 func EyeOfTheWolfCooldownReset() {
-	if RespawnCooldownDelay == 0 {
-		EyeOfTheWolfCooldown = 0
+	if !RespawnCooldownDelay {
+		EyeOfTheWolfCooldown = false
 	}
 }
 
@@ -116,17 +116,17 @@ func UnitRatioY(unit, target ns3.ObjectID, size float32) float32 {
 	return (ns3.GetObjectY(unit) - ns3.GetObjectY(target)) * size / ns3.Distance(ns3.GetObjectX(unit), ns3.GetObjectY(unit), ns3.GetObjectX(target), ns3.GetObjectY(target))
 }
 func WarBotDetectEnemy() {
-	if (BerserkerChargeCooldown == 0) && (GlobalCooldown == 0) {
+	if !BerserkerChargeCooldown && !GlobalCooldown {
 		rnd := ns3.Random(0, 2)
 
 		if (rnd == 0) || (rnd == 1) {
-			BerserkerChargeCooldown = 1
-			GlobalCooldown = 1
+			BerserkerChargeCooldown = true
+			GlobalCooldown = true
 			ns3.SecondTimer(1, GlobalCooldownReset)
 			BerserkerInRange(ns3.GetTrigger(), ns3.GetCaller(), 10)
 		}
 	} else {
-		if WarCryCooldown == 0 {
+		if !WarCryCooldown {
 			WarCry()
 		}
 	}
@@ -256,15 +256,15 @@ func BerserkerTouched() {
 func NullCollide() {
 }
 func BerserkerChargeCooldownReset() {
-	if RespawnCooldownDelay == 0 {
-		BerserkerChargeCooldown = 0
+	if !RespawnCooldownDelay {
+		BerserkerChargeCooldown = false
 	}
 }
 func GlobalCooldownReset() {
-	GlobalCooldown = 0
+	GlobalCooldown = false
 }
 func RespawnCooldownDelayReset() {
-	RespawnCooldownDelay = 0
+	RespawnCooldownDelay = false
 }
 
 var (
@@ -277,9 +277,9 @@ var (
 	OutOfGameWiz            ns3.WaypointID
 	WarSound                ns3.WaypointID
 	WizSound                ns3.WaypointID
-	WarCryCooldown          int
-	EyeOfTheWolfCooldown    int
-	BerserkerChargeCooldown int
-	GlobalCooldown          int
-	RespawnCooldownDelay    int
+	WarCryCooldown          bool
+	EyeOfTheWolfCooldown    bool
+	BerserkerChargeCooldown bool
+	GlobalCooldown          bool
+	RespawnCooldownDelay    bool
 )
