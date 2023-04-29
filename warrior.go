@@ -20,6 +20,7 @@ func NewWarrior() *Warrior {
 type Warrior struct {
 	unit         ns.Obj
 	target       ns.Obj
+	cursor       ns.Pointf
 	taggedPlayer ns.Obj
 	targetPotion ns.Obj
 	items        struct {
@@ -51,7 +52,7 @@ func (war *Warrior) init() {
 	war.unit.SetMaxHealth(150)
 	// Create WarBot mouse cursor.
 	war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
-	warCursor.SetPos(war.target.Pos())
+	war.cursor = war.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	war.reactionTime = 15
 	// Set WarBot properties.
@@ -216,14 +217,14 @@ func (war *Warrior) useBerserkerCharge() {
 		ns.PrintStrToAll("useBeserkerCharge")
 		// Select target.
 		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
-		warCursor.SetPos(war.target.Pos())
+		war.cursor = war.target.Pos()
 		// Trigger cooldown.
 		war.abilities.BerserkerChargeReady = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(war.reactionTime), func() {
 			// Use ability.
 			ns.AudioEvent("BerserkerChargeInvoke", war.unit)
-			war.unit.LookAtObject(warCursor)
+			war.unit.LookAtObject(war.cursor)
 			war.loopBerserker()
 		})
 		// Berserker Charge cooldown.
@@ -235,7 +236,7 @@ func (war *Warrior) useBerserkerCharge() {
 
 func (war *Warrior) loopBerserker() {
 	war.unit.SetZ(3)
-	war.unit.Move(warCursor)
-	war.unit.WalkTo(warCursor.Pos())
+	//war.unit.Move(war.cursor)
+	war.unit.WalkTo(war.cursor.Pos())
 	ns.NewTimer(ns.Frames(1), war.loopBerserker)
 }
