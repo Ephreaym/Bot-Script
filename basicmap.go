@@ -36,4 +36,16 @@ func DialogOptions() {
 	// WarAI.Chat("War01A.scr:Bully1") // this is a robbery! Your money AND your life!
 	// ns.AudioEvent("F1ROG01E", WarAI)
 	// TODO: Add audio to match the chat: F1ROG01E.
+
+	//     TauntLaugh,
+	//     TauntShakeFist,
+	//     TauntPoint,
+
+	//HumanMaleHurtLight,
+	//     HumanMaleHurtMedium,
+	//     HumanMaleHurtHeavy,
+
+	//HumanFemaleHurtLight,
+	//     HumanFemaleHurtMedium,
+	//     HumanFemaleHurtHeavy,
 }

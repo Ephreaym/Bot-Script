@@ -30,6 +30,7 @@ type Wizard struct {
 		WizardRobe     ns.Obj
 	}
 	spells struct {
+		isAlive             bool
 		Ready               bool // Duration unknown.
 		DeathRayReady       bool // No cooldown, 60 mana.
 		MagicMissilesReady  bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
@@ -74,6 +75,7 @@ func (wiz *Wizard) init() {
 	wiz.unit = ns.CreateObject("NPC", RandomBotSpawn)
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	wiz.unit.SetMaxHealth(75)
+	wiz.spells.isAlive = true
 	// Create WarBot mouse cursor.
 	wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 	wizCursor.SetPos(wiz.target.Pos())
@@ -146,6 +148,7 @@ func (wiz *Wizard) onLostEnemy() {
 }
 
 func (wiz *Wizard) onDeath() {
+	wiz.spells.isAlive = false
 	wiz.spells.Ready = false
 	wiz.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, wiz.unit)
@@ -157,6 +160,7 @@ func (wiz *Wizard) onDeath() {
 		wiz.items.StreetPants.Delete()
 		wiz.items.StreetSneakers.Delete()
 		wiz.items.StreetShirt.Delete()
+		wiz.items.WizardRobe.Delete()
 		wiz.init()
 	})
 }
@@ -219,46 +223,46 @@ func (wiz *Wizard) findLoot() {
 }
 
 func (wiz *Wizard) castTrap() {
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.TrapReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.TrapReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				// Ring of Fire chant.
 				castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDown, PhDownLeft, PhUp}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
-						if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 							// Magic Missiles chant.
 							castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
 								// Pause for concentration.
 								ns.NewTimer(ns.Frames(3), func() {
 									// Check for War Cry before chant.
-									if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 										// Shock chant.
 										castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
 											// Pause for concentration.
 											ns.NewTimer(ns.Frames(3), func() {
 												// Check for War Cry before chant.
-												if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+												if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 													// Glyph chant.
 													castPhonemes(wiz.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
-														if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+														if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 															wiz.spells.TrapReady = false
 															ns.AudioEvent(audio.TrapDrop, wiz.unit)
 															wiz.trap = ns.NewTrap(wiz.unit, spell.CLEANSING_FLAME, spell.MAGIC_MISSILE, spell.SHOCK)
 															wiz.trap.SetOwner(wiz.unit)
+															// Global cooldown.
+															wiz.spells.Ready = true
+															// Trap cooldown.
+															ns.NewTimer(ns.Seconds(5), func() {
+																wiz.spells.TrapReady = true
+															})
 														}
-														// Global cooldown.
-														wiz.spells.Ready = true
-														// Trap cooldown.
-														ns.NewTimer(ns.Seconds(5), func() {
-															wiz.spells.TrapReady = true
-														})
 													})
 												}
 											})
@@ -276,25 +280,25 @@ func (wiz *Wizard) castTrap() {
 
 func (wiz *Wizard) castShock() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHOCK) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.ShockReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHOCK) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.ShockReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ShockReady = false
 						ns.CastSpell(spell.SHOCK, wiz.unit, wiz.unit)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Shock cooldown.
+						ns.NewTimer(ns.Seconds(20), func() {
+							wiz.spells.ShockReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Shock cooldown.
-					ns.NewTimer(ns.Seconds(20), func() {
-						wiz.spells.ShockReady = true
-					})
 				})
 			}
 		})
@@ -303,25 +307,25 @@ func (wiz *Wizard) castShock() {
 
 func (wiz *Wizard) castInvisibility() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhLeft, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.InvisibilityReady = false
 						ns.CastSpell(spell.INVISIBILITY, wiz.unit, wiz.unit)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Invisibility cooldown.
+						ns.NewTimer(ns.Seconds(60), func() {
+							wiz.spells.InvisibilityReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Invisibility cooldown.
-					ns.NewTimer(ns.Seconds(60), func() {
-						wiz.spells.InvisibilityReady = true
-					})
 				})
 			}
 		})
@@ -330,7 +334,7 @@ func (wiz *Wizard) castInvisibility() {
 
 func (wiz *Wizard) castEnergyBolt() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 		// Trigger cooldown.
@@ -338,10 +342,10 @@ func (wiz *Wizard) castEnergyBolt() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
@@ -362,7 +366,7 @@ func (wiz *Wizard) castEnergyBolt() {
 
 func (wiz *Wizard) castDeathRay() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 		wizCursor.SetPos(wiz.target.Pos())
@@ -371,10 +375,10 @@ func (wiz *Wizard) castDeathRay() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDownRight}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
@@ -395,7 +399,7 @@ func (wiz *Wizard) castDeathRay() {
 
 func (wiz *Wizard) castFireball() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 		wizCursor.SetPos(wiz.target.Pos())
@@ -404,10 +408,10 @@ func (wiz *Wizard) castFireball() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
@@ -428,7 +432,7 @@ func (wiz *Wizard) castFireball() {
 
 func (wiz *Wizard) castFireballAtHeard() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 		// Trigger cooldown.
@@ -436,10 +440,10 @@ func (wiz *Wizard) castFireballAtHeard() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
@@ -460,25 +464,25 @@ func (wiz *Wizard) castFireballAtHeard() {
 
 func (wiz *Wizard) castBlink() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.BlinkReady = false
 						ns.NewTrap(wiz.unit, spell.BLINK)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Blink cooldown.
+						ns.NewTimer(ns.Seconds(1), func() {
+							wiz.spells.BlinkReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Blink cooldown.
-					ns.NewTimer(ns.Seconds(1), func() {
-						wiz.spells.BlinkReady = true
-					})
 				})
 			}
 		})
@@ -487,7 +491,7 @@ func (wiz *Wizard) castBlink() {
 
 func (wiz *Wizard) castMissilesOfMagic() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 		// Trigger cooldown.
@@ -495,10 +499,10 @@ func (wiz *Wizard) castMissilesOfMagic() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
@@ -519,7 +523,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 
 func (wiz *Wizard) castSlow() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
 		// Trigger cooldown.
@@ -527,10 +531,10 @@ func (wiz *Wizard) castSlow() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
@@ -551,25 +555,25 @@ func (wiz *Wizard) castSlow() {
 
 func (wiz *Wizard) castHaste() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.HASTED) && wiz.spells.Ready && wiz.spells.HasteReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.HASTED) && wiz.spells.Ready && wiz.spells.HasteReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.HasteReady = false
 						ns.CastSpell(spell.HASTE, wiz.unit, wiz.unit)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Haste cooldown.
+						ns.NewTimer(ns.Seconds(20), func() {
+							wiz.spells.HasteReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Haste cooldown.
-					ns.NewTimer(ns.Seconds(20), func() {
-						wiz.spells.HasteReady = true
-					})
 				})
 			}
 		})
@@ -577,27 +581,27 @@ func (wiz *Wizard) castHaste() {
 }
 
 func (wiz *Wizard) castForceField() {
-	// if !wiz.unit.HasEnchant(enchant.SHIELD)
+	// if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.SHIELD)
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHIELD) && wiz.spells.Ready && wiz.spells.ForceFieldReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHIELD) && wiz.spells.Ready && wiz.spells.ForceFieldReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhUp, PhLeft, PhDown, PhRight, PhUp, PhLeft, PhDown, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ForceFieldReady = false
 						ns.CastSpell(spell.SHIELD, wiz.unit, wiz.unit)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Force Field cooldown.
+						ns.NewTimer(ns.Seconds(60), func() {
+							wiz.spells.ForceFieldReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Force Field cooldown.
-					ns.NewTimer(ns.Seconds(60), func() {
-						wiz.spells.ForceFieldReady = true
-					})
 				})
 			}
 		})
@@ -606,25 +610,25 @@ func (wiz *Wizard) castForceField() {
 
 func (wiz *Wizard) castProtectionFromFire() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && wiz.spells.Ready && wiz.spells.ProtFromFireReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && wiz.spells.Ready && wiz.spells.ProtFromFireReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ProtFromFireReady = false
 						ns.CastSpell(spell.PROTECTION_FROM_FIRE, wiz.unit, wiz.unit)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Protection From Fire cooldown.
+						ns.NewTimer(ns.Seconds(60), func() {
+							wiz.spells.ProtFromFireReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Protection From Fire cooldown.
-					ns.NewTimer(ns.Seconds(60), func() {
-						wiz.spells.ProtFromFireReady = true
-					})
 				})
 			}
 		})
@@ -633,25 +637,25 @@ func (wiz *Wizard) castProtectionFromFire() {
 
 func (wiz *Wizard) castProtectionFromShock() {
 	// Check if cooldowns are ready.
-	if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && wiz.spells.Ready && wiz.spells.ProtFromShockReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && wiz.spells.Ready && wiz.spells.ProtFromShockReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				castPhonemes(wiz.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ProtFromShockReady = false
 						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, wiz.unit, wiz.unit)
+						// Global cooldown.
+						wiz.spells.Ready = true
+						// Protection From Shock cooldown.
+						ns.NewTimer(ns.Seconds(60), func() {
+							wiz.spells.ProtFromShockReady = true
+						})
 					}
-					// Global cooldown.
-					wiz.spells.Ready = true
-					// Protection From Shock cooldown.
-					ns.NewTimer(ns.Seconds(60), func() {
-						wiz.spells.ProtFromShockReady = true
-					})
 				})
 			}
 		})

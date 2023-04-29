@@ -91,7 +91,7 @@ func (war *Warrior) onCollide() {
 }
 
 func (war *Warrior) onEnemySighted() {
-	war.useWarCry()
+	// war.useWarCry()
 	// war.useBerserkerCharge()
 }
 
@@ -105,7 +105,7 @@ func (war *Warrior) onRetreat() {
 }
 
 func (war *Warrior) onLostEnemy() {
-	war.useEyeOfTheWolf()
+	// war.useEyeOfTheWolf()
 }
 
 func (war *Warrior) onHit() {
@@ -122,6 +122,8 @@ func (war *Warrior) onDeath() {
 		war.unit.Delete()
 		war.items.StreetPants.Delete()
 		war.items.StreetSneakers.Delete()
+		war.items.Longsword.Delete()
+		war.items.WoodenShield.Delete()
 		war.init()
 	})
 }
