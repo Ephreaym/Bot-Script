@@ -122,7 +122,7 @@ func WarBotDetectEnemy() {
 	if (BerserkerChargeCooldown == 0) && (GlobalCooldown == 0) {
 		rnd := Random(0, 2)
 
-		if !rnd || (rnd == 1) {
+		if (rnd == 0) || (rnd == 1) {
 			BerserkerChargeCooldown = 1
 			GlobalCooldown = 1
 			SecondTimer(1, GlobalCooldownReset)
@@ -135,7 +135,7 @@ func WarBotDetectEnemy() {
 		}
 	}
 }
-func CheckUnitFrontSight(unit ObjectID, dtX, dtY float32) int {
+func CheckUnitFrontSight(unit ObjectID, dtX, dtY float32) bool {
 	MoveWaypoint(1, GetObjectX(unit)+dtX, GetObjectY(unit)+dtY)
 	temp := CreateObject("InvisibleLightBlueHigh", 1)
 	res := IsVisibleTo(unit, temp)
@@ -146,7 +146,7 @@ func CheckUnitFrontSight(unit ObjectID, dtX, dtY float32) int {
 func pointedByPlr() {
 }
 func BerserkerInRange(owner, target ObjectID, wait int) {
-	if CurrentHealth(owner) && CurrentHealth(target) {
+	if CurrentHealth(owner) != 0 && CurrentHealth(target) != 0 {
 		if !HasEnchant(owner, "ENCHANT_ETHEREAL") {
 			Enchant(owner, "ENCHANT_ETHEREAL", 0.0)
 			MoveWaypoint(1, GetObjectX(owner), GetObjectY(owner))
@@ -167,8 +167,8 @@ func BerserkerWaitStrike(ptr ObjectID) {
 	target := ToInt(GetObjectZ(ptr + 1))
 
 	for {
-		if IsObjectOn(ptr) && CurrentHealth(owner) && CurrentHealth(target) && IsObjectOn(owner) {
-			if count {
+		if IsObjectOn(ptr) && CurrentHealth(owner) != 0 && CurrentHealth(target) != 0 && IsObjectOn(owner) {
+			if count != 0 {
 				if IsVisibleTo(owner, target) && Distance(GetObjectX(owner), GetObjectY(owner), GetObjectX(target), GetObjectY(target)) < 400.0 {
 					BerserkerCharge(owner, target)
 				} else {
@@ -178,7 +178,7 @@ func BerserkerWaitStrike(ptr ObjectID) {
 				}
 			}
 		}
-		if CurrentHealth(owner) {
+		if CurrentHealth(owner) != 0 {
 			EnchantOff(owner, "ENCHANT_ETHEREAL")
 		}
 		if IsObjectOn(ptr) {
@@ -190,7 +190,7 @@ func BerserkerWaitStrike(ptr ObjectID) {
 }
 
 func BerserkerCharge(owner, target ObjectID) {
-	if CurrentHealth(owner) && CurrentHealth(target) {
+	if CurrentHealth(owner) != 0 && CurrentHealth(target) != 0 {
 		EnchantOff(owner, "ENCHANT_INVULNERABLE")
 		MoveWaypoint(2, GetObjectX(owner), GetObjectY(owner))
 		AudioEvent("BerserkerChargeInvoke", 2)
@@ -213,8 +213,8 @@ func BerserkerLoop(ptr ObjectID) {
 	owner := ToInt(GetObjectZ(ptr + 3))
 	count := GetDirection(ptr)
 
-	if CurrentHealth(owner) && count < 60 && IsObjectOn(ptr) && IsObjectOn(owner) {
-		if CheckUnitFrontSight(owner, GetObjectZ(ptr+1)*1.5, GetObjectZ(ptr+2)*1.5) && !GetDirection(GetLastItem(owner)) {
+	if CurrentHealth(owner) != 0 && count < 60 && IsObjectOn(ptr) && IsObjectOn(owner) {
+		if CheckUnitFrontSight(owner, GetObjectZ(ptr+1)*1.5, GetObjectZ(ptr+2)*1.5) && GetDirection(GetLastItem(owner)) == 0 {
 			MoveObject(owner, GetObjectX(owner)+GetObjectZ(ptr+1), GetObjectY(owner)+GetObjectZ(ptr+2))
 			LookWithAngle(owner, GetDirection(ptr+1))
 			Walk(owner, GetObjectX(owner), GetObjectY(owner))
@@ -235,12 +235,12 @@ func BerserkerTouched() {
 	self, other := GetTrigger(), GetCaller()
 	if IsObjectOn(self) {
 		for {
-			if !GetCaller() || (HasClass(other, "IMMOBILE") && !HasClass(other, "DOOR") && !HasClass(other, "TRIGGER")) && !HasClass(other, "DANGEROUS") {
+			if GetCaller() == 0 || (HasClass(other, "IMMOBILE") && !HasClass(other, "DOOR") && !HasClass(other, "TRIGGER")) && !HasClass(other, "DANGEROUS") {
 				MoveWaypoint(2, GetObjectX(self), GetObjectY(self))
 				AudioEvent("FleshHitStone", 2)
 
 				Enchant(self, "ENCHANT_HELD", 2.0)
-			} else if CurrentHealth(other) {
+			} else if CurrentHealth(other) != 0 {
 				if IsAttackedBy(self, other) {
 					MoveWaypoint(2, GetObjectX(self), GetObjectY(self))
 					AudioEvent("FleshHitFlesh", 2)
