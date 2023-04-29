@@ -1,86 +1,88 @@
 package basicmap_old
 
-import . "github.com/noxworld-dev/noxscript/ns/v3"
+import (
+	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
+)
 
 func MapInitialize() {
-	WarBot = Object("WarBot")
-	WizBot = Object("WizBot")
-	WarBotCorpse = Object("WarBotCorpse")
-	WizBotCorpse = Object("WizBotCorpse")
-	OutOfGameWar = Waypoint("OutOfGameWar")
-	OutOfGameWiz = Waypoint("OutOfGameWiz")
-	WarSound = Waypoint("WarSound")
-	WizSound = Waypoint("WizSound")
+	WarBot = ns3.Object("WarBot")
+	WizBot = ns3.Object("WizBot")
+	WarBotCorpse = ns3.Object("WarBotCorpse")
+	WizBotCorpse = ns3.Object("WizBotCorpse")
+	OutOfGameWar = ns3.Waypoint("OutOfGameWar")
+	OutOfGameWiz = ns3.Waypoint("OutOfGameWiz")
+	WarSound = ns3.Waypoint("WarSound")
+	WizSound = ns3.Waypoint("WizSound")
 	WarCryCooldown = 0
 	EyeOfTheWolfCooldown = 0
 	BerserkerChargeCooldown = 0
 	GlobalCooldown = 0
 	RespawnCooldownDelay = 0
-	SecondTimer(2, Respawn)
-	SecondTimer(2, RespawnWiz)
+	ns3.SecondTimer(2, Respawn)
+	ns3.SecondTimer(2, RespawnWiz)
 }
 func CheckCurrentHealth() {
-	if CurrentHealth(WarBot) < 1001 {
-		ChangeScore(GetCaller(), 1)
+	if ns3.CurrentHealth(WarBot) < 1001 {
+		ns3.ChangeScore(ns3.GetCaller(), 1)
 		DeadBotWar()
 	}
-	if CurrentHealth(WizBot) < 1001 {
-		ChangeScore(GetCaller(), 1)
+	if ns3.CurrentHealth(WizBot) < 1001 {
+		ns3.ChangeScore(ns3.GetCaller(), 1)
 		DeadBotWiz()
 	}
 }
 func DeadBotWar() {
-	MoveWaypoint(WarSound, GetObjectX(WarBot), GetObjectY(WarBot))
-	AudioEvent("NPCDie", WarSound)
-	MoveObject(WarBotCorpse, GetObjectX(WarBot), GetObjectY(WarBot))
-	MoveObject(WarBot, GetWaypointX(OutOfGameWar), GetWaypointY(OutOfGameWar))
-	SecondTimer(2, Respawn)
+	ns3.MoveWaypoint(WarSound, ns3.GetObjectX(WarBot), ns3.GetObjectY(WarBot))
+	ns3.AudioEvent("NPCDie", WarSound)
+	ns3.MoveObject(WarBotCorpse, ns3.GetObjectX(WarBot), ns3.GetObjectY(WarBot))
+	ns3.MoveObject(WarBot, ns3.GetWaypointX(OutOfGameWar), ns3.GetWaypointY(OutOfGameWar))
+	ns3.SecondTimer(2, Respawn)
 }
 func DeadBotWiz() {
-	MoveWaypoint(WizSound, GetObjectX(WizBot), GetObjectY(WizBot))
-	AudioEvent("NPCDie", WizSound)
-	MoveObject(WizBotCorpse, GetObjectX(WizBot), GetObjectY(WizBot))
-	MoveObject(WizBot, GetWaypointX(OutOfGameWiz), GetWaypointY(OutOfGameWiz))
-	SecondTimer(2, RespawnWiz)
+	ns3.MoveWaypoint(WizSound, ns3.GetObjectX(WizBot), ns3.GetObjectY(WizBot))
+	ns3.AudioEvent("NPCDie", WizSound)
+	ns3.MoveObject(WizBotCorpse, ns3.GetObjectX(WizBot), ns3.GetObjectY(WizBot))
+	ns3.MoveObject(WizBot, ns3.GetWaypointX(OutOfGameWiz), ns3.GetWaypointY(OutOfGameWiz))
+	ns3.SecondTimer(2, RespawnWiz)
 }
 func Respawn() {
-	RestoreHealth(WarBot, MaxHealth(WarBot)-CurrentHealth(WarBot))
+	ns3.RestoreHealth(WarBot, ns3.MaxHealth(WarBot)-ns3.CurrentHealth(WarBot))
 	WarCryCooldown = 0
 	EyeOfTheWolfCooldown = 0
 	BerserkerChargeCooldown = 0
-	MoveWaypoint(WarSound, GetObjectX(WarBotCorpse), GetObjectY(WarBotCorpse))
-	AudioEvent("BlinkCast", WarSound)
-	BotSpawn = Object("BotSpawn" + IntToString(Random(1, 14)))
-	MoveObject(WarBot, GetObjectX(BotSpawn), GetObjectY(BotSpawn))
-	MoveObject(WarBotCorpse, GetWaypointX(OutOfGameWar), GetWaypointY(OutOfGameWar))
-	Enchant(WarBot, "ENCHANT_INVULNERABLE", 5.0)
+	ns3.MoveWaypoint(WarSound, ns3.GetObjectX(WarBotCorpse), ns3.GetObjectY(WarBotCorpse))
+	ns3.AudioEvent("BlinkCast", WarSound)
+	BotSpawn = ns3.Object("BotSpawn" + ns3.IntToString(ns3.Random(1, 14)))
+	ns3.MoveObject(WarBot, ns3.GetObjectX(BotSpawn), ns3.GetObjectY(BotSpawn))
+	ns3.MoveObject(WarBotCorpse, ns3.GetWaypointX(OutOfGameWar), ns3.GetWaypointY(OutOfGameWar))
+	ns3.Enchant(WarBot, "ENCHANT_INVULNERABLE", 5.0)
 	RespawnCooldownDelay = 1
-	SecondTimer(10, RespawnCooldownDelayReset)
+	ns3.SecondTimer(10, RespawnCooldownDelayReset)
 }
 func RespawnWiz() {
-	RestoreHealth(WizBot, MaxHealth(WizBot)-CurrentHealth(WizBot))
-	MoveWaypoint(WizSound, GetObjectX(WizBotCorpse), GetObjectY(WizBotCorpse))
-	AudioEvent("BlinkCast", WizSound)
-	BotSpawn = Object("BotSpawn" + IntToString(Random(1, 14)))
-	MoveObject(WizBot, GetObjectX(BotSpawn), GetObjectY(BotSpawn))
-	MoveObject(WizBotCorpse, GetWaypointX(OutOfGameWiz), GetWaypointY(OutOfGameWiz))
-	Enchant(WizBot, "ENCHANT_INVULNERABLE", 5.0)
+	ns3.RestoreHealth(WizBot, ns3.MaxHealth(WizBot)-ns3.CurrentHealth(WizBot))
+	ns3.MoveWaypoint(WizSound, ns3.GetObjectX(WizBotCorpse), ns3.GetObjectY(WizBotCorpse))
+	ns3.AudioEvent("BlinkCast", WizSound)
+	BotSpawn = ns3.Object("BotSpawn" + ns3.IntToString(ns3.Random(1, 14)))
+	ns3.MoveObject(WizBot, ns3.GetObjectX(BotSpawn), ns3.GetObjectY(BotSpawn))
+	ns3.MoveObject(WizBotCorpse, ns3.GetWaypointX(OutOfGameWiz), ns3.GetWaypointY(OutOfGameWiz))
+	ns3.Enchant(WizBot, "ENCHANT_INVULNERABLE", 5.0)
 }
 func WarCry() {
-	self, other := GetTrigger(), GetCaller()
-	if MaxHealth(other) != 150 {
+	self, other := ns3.GetTrigger(), ns3.GetCaller()
+	if ns3.MaxHealth(other) != 150 {
 		if (WarCryCooldown == 0) && (GlobalCooldown == 0) {
-			MoveWaypoint(WarSound, GetObjectX(WarBot), GetObjectY(WarBot))
-			AudioEvent("WarcryInvoke", WarSound)
-			PauseObject(WarBot, 45)
-			Enchant(WarBot, "ENCHANT_HELD", 1.0)
-			Enchant(other, "ENCHANT_ANTI_MAGIC", 3.0)
-			EnchantOff(self, "ENCHANT_SHOCK")
-			EnchantOff(self, "ENCHANT_INVULNERABLE")
+			ns3.MoveWaypoint(WarSound, ns3.GetObjectX(WarBot), ns3.GetObjectY(WarBot))
+			ns3.AudioEvent("WarcryInvoke", WarSound)
+			ns3.PauseObject(WarBot, 45)
+			ns3.Enchant(WarBot, "ENCHANT_HELD", 1.0)
+			ns3.Enchant(other, "ENCHANT_ANTI_MAGIC", 3.0)
+			ns3.EnchantOff(self, "ENCHANT_SHOCK")
+			ns3.EnchantOff(self, "ENCHANT_INVULNERABLE")
 			WarCryCooldown = 1
 			GlobalCooldown = 1
-			SecondTimer(10, WarCryCooldownReset)
-			SecondTimer(1, GlobalCooldownReset)
+			ns3.SecondTimer(10, WarCryCooldownReset)
+			ns3.SecondTimer(1, GlobalCooldownReset)
 		}
 	}
 }
@@ -90,12 +92,12 @@ func WarCryCooldownReset() {
 	}
 }
 func EyeOfTheWolf() {
-	self := GetTrigger()
-	Wander(WarBot)
+	self := ns3.GetTrigger()
+	ns3.Wander(WarBot)
 	if EyeOfTheWolfCooldown == 0 {
-		Enchant(self, "ENCHANT_INFRAVISION", 10.0)
+		ns3.Enchant(self, "ENCHANT_INFRAVISION", 10.0)
 		EyeOfTheWolfCooldown = 1
-		SecondTimer(20, EyeOfTheWolfCooldownReset)
+		ns3.SecondTimer(20, EyeOfTheWolfCooldownReset)
 	}
 }
 func EyeOfTheWolfCooldownReset() {
@@ -106,22 +108,22 @@ func EyeOfTheWolfCooldownReset() {
 
 // ------------------------------------- BERSERKERCHARGE SCRIPT ---------------------------------------------- //
 
-func UnitRatioX(unit, target ObjectID, size float32) float32 {
-	return (GetObjectX(unit) - GetObjectX(target)) * size / Distance(GetObjectX(unit), GetObjectY(unit), GetObjectX(target), GetObjectY(target))
+func UnitRatioX(unit, target ns3.ObjectID, size float32) float32 {
+	return (ns3.GetObjectX(unit) - ns3.GetObjectX(target)) * size / ns3.Distance(ns3.GetObjectX(unit), ns3.GetObjectY(unit), ns3.GetObjectX(target), ns3.GetObjectY(target))
 }
 
-func UnitRatioY(unit, target ObjectID, size float32) float32 {
-	return (GetObjectY(unit) - GetObjectY(target)) * size / Distance(GetObjectX(unit), GetObjectY(unit), GetObjectX(target), GetObjectY(target))
+func UnitRatioY(unit, target ns3.ObjectID, size float32) float32 {
+	return (ns3.GetObjectY(unit) - ns3.GetObjectY(target)) * size / ns3.Distance(ns3.GetObjectX(unit), ns3.GetObjectY(unit), ns3.GetObjectX(target), ns3.GetObjectY(target))
 }
 func WarBotDetectEnemy() {
 	if (BerserkerChargeCooldown == 0) && (GlobalCooldown == 0) {
-		rnd := Random(0, 2)
+		rnd := ns3.Random(0, 2)
 
 		if (rnd == 0) || (rnd == 1) {
 			BerserkerChargeCooldown = 1
 			GlobalCooldown = 1
-			SecondTimer(1, GlobalCooldownReset)
-			BerserkerInRange(GetTrigger(), GetCaller(), 10)
+			ns3.SecondTimer(1, GlobalCooldownReset)
+			BerserkerInRange(ns3.GetTrigger(), ns3.GetCaller(), 10)
 		}
 	} else {
 		if WarCryCooldown == 0 {
@@ -129,127 +131,127 @@ func WarBotDetectEnemy() {
 		}
 	}
 }
-func CheckUnitFrontSight(unit ObjectID, dtX, dtY float32) bool {
-	MoveWaypoint(1, GetObjectX(unit)+dtX, GetObjectY(unit)+dtY)
-	temp := CreateObject("InvisibleLightBlueHigh", 1)
-	res := IsVisibleTo(unit, temp)
-	Delete(temp)
+func CheckUnitFrontSight(unit ns3.ObjectID, dtX, dtY float32) bool {
+	ns3.MoveWaypoint(1, ns3.GetObjectX(unit)+dtX, ns3.GetObjectY(unit)+dtY)
+	temp := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+	res := ns3.IsVisibleTo(unit, temp)
+	ns3.Delete(temp)
 	return res
 }
 func pointedByPlr() {
 }
-func BerserkerInRange(owner, target ObjectID, wait int) {
-	if CurrentHealth(owner) != 0 && CurrentHealth(target) != 0 {
-		if !HasEnchant(owner, "ENCHANT_ETHEREAL") {
-			Enchant(owner, "ENCHANT_ETHEREAL", 0.0)
-			MoveWaypoint(1, GetObjectX(owner), GetObjectY(owner))
-			unit := CreateObject("InvisibleLightBlueHigh", 1)
-			MoveWaypoint(1, GetObjectX(unit), GetObjectY(unit))
-			CreateObject("InvisibleLightBlueHigh", 1)
-			Raise(unit, ToFloat(owner))
-			Raise(unit+1, ToFloat(target))
-			LookWithAngle(unit, wait)
-			FrameTimerWithArg(1, unit, BerserkerWaitStrike)
+func BerserkerInRange(owner, target ns3.ObjectID, wait int) {
+	if ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 {
+		if !ns3.HasEnchant(owner, "ENCHANT_ETHEREAL") {
+			ns3.Enchant(owner, "ENCHANT_ETHEREAL", 0.0)
+			ns3.MoveWaypoint(1, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+			unit := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+			ns3.MoveWaypoint(1, ns3.GetObjectX(unit), ns3.GetObjectY(unit))
+			ns3.CreateObject("InvisibleLightBlueHigh", 1)
+			ns3.Raise(unit, ToFloat(owner))
+			ns3.Raise(unit+1, ToFloat(target))
+			ns3.LookWithAngle(unit, wait)
+			ns3.FrameTimerWithArg(1, unit, BerserkerWaitStrike)
 		}
 	}
 }
 
-func BerserkerWaitStrike(ptr ObjectID) {
-	count := GetDirection(ptr)
-	owner := ToInt(GetObjectZ(ptr))
-	target := ToInt(GetObjectZ(ptr + 1))
+func BerserkerWaitStrike(ptr ns3.ObjectID) {
+	count := ns3.GetDirection(ptr)
+	owner := ToInt(ns3.GetObjectZ(ptr))
+	target := ToInt(ns3.GetObjectZ(ptr + 1))
 
 	for {
-		if IsObjectOn(ptr) && CurrentHealth(owner) != 0 && CurrentHealth(target) != 0 && IsObjectOn(owner) {
+		if ns3.IsObjectOn(ptr) && ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 && ns3.IsObjectOn(owner) {
 			if count != 0 {
-				if IsVisibleTo(owner, target) && Distance(GetObjectX(owner), GetObjectY(owner), GetObjectX(target), GetObjectY(target)) < 400.0 {
+				if ns3.IsVisibleTo(owner, target) && ns3.Distance(ns3.GetObjectX(owner), ns3.GetObjectY(owner), ns3.GetObjectX(target), ns3.GetObjectY(target)) < 400.0 {
 					BerserkerCharge(owner, target)
 				} else {
-					LookWithAngle(ptr, count-1)
-					FrameTimerWithArg(6, ptr, BerserkerWaitStrike)
+					ns3.LookWithAngle(ptr, count-1)
+					ns3.FrameTimerWithArg(6, ptr, BerserkerWaitStrike)
 					break
 				}
 			}
 		}
-		if CurrentHealth(owner) != 0 {
-			EnchantOff(owner, "ENCHANT_ETHEREAL")
+		if ns3.CurrentHealth(owner) != 0 {
+			ns3.EnchantOff(owner, "ENCHANT_ETHEREAL")
 		}
-		if IsObjectOn(ptr) {
-			Delete(ptr)
-			Delete(ptr + 1)
+		if ns3.IsObjectOn(ptr) {
+			ns3.Delete(ptr)
+			ns3.Delete(ptr + 1)
 		}
 		break
 	}
 }
 
-func BerserkerCharge(owner, target ObjectID) {
-	if CurrentHealth(owner) != 0 && CurrentHealth(target) != 0 {
-		EnchantOff(owner, "ENCHANT_INVULNERABLE")
-		MoveWaypoint(2, GetObjectX(owner), GetObjectY(owner))
-		AudioEvent("BerserkerChargeInvoke", 2)
-		MoveWaypoint(1, GetObjectX(owner), GetObjectY(owner))
-		unit := CreateObject("InvisibleLightBlueHigh", 1)
-		MoveWaypoint(1, GetObjectX(unit), GetObjectY(unit))
-		Raise(CreateObject("InvisibleLightBlueHigh", 1), UnitRatioX(target, owner, 23.0))
-		Raise(CreateObject("InvisibleLightBlueHigh", 1), UnitRatioY(target, owner, 23.0))
-		CreateObject("InvisibleLightBlueHigh", 1)
-		Raise(unit+3, ToFloat(owner))
-		LookWithAngle(GetLastItem(owner), 0)
-		SetCallback(owner, 9, BerserkerTouched)
-		Raise(unit, ToFloat(target))
-		LookAtObject(unit+1, target)
-		FrameTimerWithArg(1, unit, BerserkerLoop)
+func BerserkerCharge(owner, target ns3.ObjectID) {
+	if ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 {
+		ns3.EnchantOff(owner, "ENCHANT_INVULNERABLE")
+		ns3.MoveWaypoint(2, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+		ns3.AudioEvent("BerserkerChargeInvoke", 2)
+		ns3.MoveWaypoint(1, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+		unit := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+		ns3.MoveWaypoint(1, ns3.GetObjectX(unit), ns3.GetObjectY(unit))
+		ns3.Raise(ns3.CreateObject("InvisibleLightBlueHigh", 1), UnitRatioX(target, owner, 23.0))
+		ns3.Raise(ns3.CreateObject("InvisibleLightBlueHigh", 1), UnitRatioY(target, owner, 23.0))
+		ns3.CreateObject("InvisibleLightBlueHigh", 1)
+		ns3.Raise(unit+3, ToFloat(owner))
+		ns3.LookWithAngle(ns3.GetLastItem(owner), 0)
+		ns3.SetCallback(owner, 9, BerserkerTouched)
+		ns3.Raise(unit, ToFloat(target))
+		ns3.LookAtObject(unit+1, target)
+		ns3.FrameTimerWithArg(1, unit, BerserkerLoop)
 	}
 }
 
-func BerserkerLoop(ptr ObjectID) {
-	owner := ToInt(GetObjectZ(ptr + 3))
-	count := GetDirection(ptr)
+func BerserkerLoop(ptr ns3.ObjectID) {
+	owner := ToInt(ns3.GetObjectZ(ptr + 3))
+	count := ns3.GetDirection(ptr)
 
-	if CurrentHealth(owner) != 0 && count < 60 && IsObjectOn(ptr) && IsObjectOn(owner) {
-		if CheckUnitFrontSight(owner, GetObjectZ(ptr+1)*1.5, GetObjectZ(ptr+2)*1.5) && GetDirection(GetLastItem(owner)) == 0 {
-			MoveObject(owner, GetObjectX(owner)+GetObjectZ(ptr+1), GetObjectY(owner)+GetObjectZ(ptr+2))
-			LookWithAngle(owner, GetDirection(ptr+1))
-			Walk(owner, GetObjectX(owner), GetObjectY(owner))
+	if ns3.CurrentHealth(owner) != 0 && count < 60 && ns3.IsObjectOn(ptr) && ns3.IsObjectOn(owner) {
+		if CheckUnitFrontSight(owner, ns3.GetObjectZ(ptr+1)*1.5, ns3.GetObjectZ(ptr+2)*1.5) && ns3.GetDirection(ns3.GetLastItem(owner)) == 0 {
+			ns3.MoveObject(owner, ns3.GetObjectX(owner)+ns3.GetObjectZ(ptr+1), ns3.GetObjectY(owner)+ns3.GetObjectZ(ptr+2))
+			ns3.LookWithAngle(owner, ns3.GetDirection(ptr+1))
+			ns3.Walk(owner, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
 		} else {
-			LookWithAngle(ptr, 100)
+			ns3.LookWithAngle(ptr, 100)
 		}
-		FrameTimerWithArg(1, ptr, BerserkerLoop)
+		ns3.FrameTimerWithArg(1, ptr, BerserkerLoop)
 	} else {
-		SetCallback(owner, 9, NullCollide)
-		Delete(ptr)
-		Delete(ptr + 1)
-		Delete(ptr + 2)
-		Delete(ptr + 3)
+		ns3.SetCallback(owner, 9, NullCollide)
+		ns3.Delete(ptr)
+		ns3.Delete(ptr + 1)
+		ns3.Delete(ptr + 2)
+		ns3.Delete(ptr + 3)
 	}
 }
 
 func BerserkerTouched() {
-	self, other := GetTrigger(), GetCaller()
-	if IsObjectOn(self) {
+	self, other := ns3.GetTrigger(), ns3.GetCaller()
+	if ns3.IsObjectOn(self) {
 		for {
-			if GetCaller() == 0 || (HasClass(other, "IMMOBILE") && !HasClass(other, "DOOR") && !HasClass(other, "TRIGGER")) && !HasClass(other, "DANGEROUS") {
-				MoveWaypoint(2, GetObjectX(self), GetObjectY(self))
-				AudioEvent("FleshHitStone", 2)
+			if ns3.GetCaller() == 0 || (ns3.HasClass(other, "IMMOBILE") && !ns3.HasClass(other, "DOOR") && !ns3.HasClass(other, "TRIGGER")) && !ns3.HasClass(other, "DANGEROUS") {
+				ns3.MoveWaypoint(2, ns3.GetObjectX(self), ns3.GetObjectY(self))
+				ns3.AudioEvent("FleshHitStone", 2)
 
-				Enchant(self, "ENCHANT_HELD", 2.0)
-			} else if CurrentHealth(other) != 0 {
-				if IsAttackedBy(self, other) {
-					MoveWaypoint(2, GetObjectX(self), GetObjectY(self))
-					AudioEvent("FleshHitFlesh", 2)
-					Damage(other, self, 100, 2)
+				ns3.Enchant(self, "ENCHANT_HELD", 2.0)
+			} else if ns3.CurrentHealth(other) != 0 {
+				if ns3.IsAttackedBy(self, other) {
+					ns3.MoveWaypoint(2, ns3.GetObjectX(self), ns3.GetObjectY(self))
+					ns3.AudioEvent("FleshHitFlesh", 2)
+					ns3.Damage(other, self, 100, 2)
 				} else {
 					break
 				}
 			} else {
 				break
 			}
-			LookWithAngle(GetLastItem(self), 1)
+			ns3.LookWithAngle(ns3.GetLastItem(self), 1)
 			break
 		}
 	}
-	Wander(WarBot)
-	SecondTimer(10, BerserkerChargeCooldownReset)
+	ns3.Wander(WarBot)
+	ns3.SecondTimer(10, BerserkerChargeCooldownReset)
 }
 func NullCollide() {
 }
@@ -266,15 +268,15 @@ func RespawnCooldownDelayReset() {
 }
 
 var (
-	BotSpawn                ObjectID
-	WarBot                  ObjectID
-	WizBot                  ObjectID
-	WizBotCorpse            ObjectID
-	WarBotCorpse            ObjectID
-	OutOfGameWar            WaypointID
-	OutOfGameWiz            WaypointID
-	WarSound                WaypointID
-	WizSound                WaypointID
+	BotSpawn                ns3.ObjectID
+	WarBot                  ns3.ObjectID
+	WizBot                  ns3.ObjectID
+	WizBotCorpse            ns3.ObjectID
+	WarBotCorpse            ns3.ObjectID
+	OutOfGameWar            ns3.WaypointID
+	OutOfGameWiz            ns3.WaypointID
+	WarSound                ns3.WaypointID
+	WizSound                ns3.WaypointID
 	WarCryCooldown          int
 	EyeOfTheWolfCooldown    int
 	BerserkerChargeCooldown int
