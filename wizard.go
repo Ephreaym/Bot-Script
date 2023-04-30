@@ -19,7 +19,7 @@ func NewWizard() *Wizard {
 // Wizard bot class.
 type Wizard struct {
 	unit         ns.Obj
-	cursor       ns.Obj
+	cursor       ns.Pointf
 	target       ns.Obj
 	taggedPlayer ns.Obj
 	trap         ns.Obj
@@ -78,7 +78,7 @@ func (wiz *Wizard) init() {
 	wiz.spells.isAlive = true
 	// Create WarBot mouse cursor.
 	wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
-	wizCursor.SetPos(wiz.target.Pos())
+	wiz.cursor = wiz.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	wiz.reactionTime = 15
 	// Set WizBot properties.
@@ -369,7 +369,7 @@ func (wiz *Wizard) castDeathRay() {
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
-		wizCursor.SetPos(wiz.target.Pos())
+		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -383,7 +383,7 @@ func (wiz *Wizard) castDeathRay() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.DeathRayReady = false
-						ns.CastSpell(spell.DEATH_RAY, wiz.unit, wizCursor)
+						ns.CastSpell(spell.DEATH_RAY, wiz.unit, wiz.cursor)
 						// Global cooldown.
 						wiz.spells.Ready = true
 						// Death Ray cooldown.
@@ -402,7 +402,7 @@ func (wiz *Wizard) castFireball() {
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
 		wiz.target = ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassPlayer))
-		wizCursor.SetPos(wiz.target.Pos())
+		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -416,7 +416,7 @@ func (wiz *Wizard) castFireball() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.FireballReady = false
-						ns.CastSpell(spell.FIREBALL, wiz.unit, wizCursor)
+						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.cursor)
 						// Global cooldown.
 						wiz.spells.Ready = true
 						// Fireball cooldown.
