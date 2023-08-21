@@ -9,15 +9,16 @@ import (
 	"github.com/noxworld-dev/opennox-lib/script"
 )
 
-// NewWizard creates a new BlueWizard bot.
-func NewBlueWizard() *BlueWizard {
-	wiz := &BlueWizard{}
+// NewWizard creates a new Wizard bot.
+func NewWizard(t *Team) *Wizard {
+	wiz := &Wizard{team: t}
 	wiz.init()
 	return wiz
 }
 
-// BlueWizard bot class.
-type BlueWizard struct {
+// Wizard bot class.
+type Wizard struct {
+	team         *Team
 	unit         ns.Obj
 	cursor       ns.Pointf
 	cursorObject ns.Obj
@@ -50,7 +51,7 @@ type BlueWizard struct {
 	reactionTime int
 }
 
-func (wiz *BlueWizard) init() {
+func (wiz *Wizard) init() {
 	// Reset spells WizBot3.
 	wiz.spells.Ready = true
 	// Debuff spells.
@@ -79,9 +80,9 @@ func (wiz *BlueWizard) init() {
 	wiz.unit.SetBaseSpeed(83)
 	wiz.spells.isAlive = true
 	// Set Team.
-	wiz.unit.SetOwner(TeamBlue)
+	wiz.unit.SetOwner(wiz.team.TeamObj)
 	// Create WizBot3 mouse cursor.
-	wiz.target = TeamRed
+	wiz.target = wiz.team.Enemy.TeamObj
 	wiz.cursor = wiz.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	wiz.reactionTime = 15
@@ -123,50 +124,51 @@ func (wiz *BlueWizard) init() {
 	wiz.unit.OnEvent(ns.EventEndOfWaypoint, wiz.onEndOfWaypoint)
 }
 
-func (wiz *BlueWizard) onEndOfWaypoint() {
-	wiz.BlueTeamCheckAttackOrDefend()
+func (wiz *Wizard) onEndOfWaypoint() {
+	wiz.team.CheckAttackOrDefend(wiz.unit)
 }
 
-func (wiz *BlueWizard) buffInitial() {
+func (wiz *Wizard) buffInitial() {
 	wiz.castForceField()
 }
 
-func (wiz *BlueWizard) onLookingForTarget() {
+func (wiz *Wizard) onLookingForTarget() {
 }
 
-func (wiz *BlueWizard) onEnemyHeard() {
+func (wiz *Wizard) onEnemyHeard() {
 	wiz.castFireballAtHeard()
 	wiz.castInvisibility()
 }
 
-func (wiz *BlueWizard) onEnemySighted() {
+func (wiz *Wizard) onEnemySighted() {
 	wiz.target = ns.GetCaller()
 	wiz.castSlow()
 }
 
-func (wiz *BlueWizard) onCollide() {
+func (wiz *Wizard) onCollide() {
 	wiz.castShock()
 	wiz.castMissilesOfMagic()
 	if wiz.spells.isAlive {
-		wiz.BlueTeamPickUpRedFlag()
-		wiz.BlueTeamCaptureTheRedFlag()
-		wiz.BlueTeamRetrievedBlueFlag()
+		caller := ns.GetCaller()
+		wiz.team.CheckPickUpEnemyFlag(caller, wiz.unit)
+		wiz.team.CheckCaptureEnemyFlag(caller, wiz.unit)
+		wiz.team.CheckRetrievedOwnFlag(caller, wiz.unit)
 	}
 }
 
-func (wiz *BlueWizard) onRetreat() {
+func (wiz *Wizard) onRetreat() {
 	wiz.castBlink()
 }
 
-func (wiz *BlueWizard) onLostEnemy() {
+func (wiz *Wizard) onLostEnemy() {
 	wiz.castTrap()
-	wiz.BlueTeamWalkToBlueFlag()
+	wiz.team.WalkToOwnFlag(wiz.unit)
 }
 
-func (wiz *BlueWizard) onDeath() {
+func (wiz *Wizard) onDeath() {
 	wiz.spells.isAlive = false
 	wiz.spells.Ready = false
-	wiz.BlueTeamDropFlag()
+	wiz.team.DropEnemyFlag(wiz.unit)
 	wiz.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, wiz.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
@@ -181,7 +183,7 @@ func (wiz *BlueWizard) onDeath() {
 	})
 }
 
-func (wiz *BlueWizard) Update() {
+func (wiz *Wizard) Update() {
 	wiz.findLoot()
 	if wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		wiz.spells.Ready = true
@@ -207,7 +209,7 @@ func (wiz *BlueWizard) Update() {
 	}
 }
 
-func (wiz *BlueWizard) findLoot() {
+func (wiz *Wizard) findLoot() {
 	const dist = 75
 	weapons := ns.FindAllObjects(
 		ns.InCirclef{Center: wiz.unit, R: dist},
@@ -244,7 +246,7 @@ func (wiz *BlueWizard) findLoot() {
 	}
 }
 
-func (wiz *BlueWizard) castTrap() {
+func (wiz *Wizard) castTrap() {
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.TrapReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -300,7 +302,7 @@ func (wiz *BlueWizard) castTrap() {
 	}
 }
 
-func (wiz *BlueWizard) castShock() {
+func (wiz *Wizard) castShock() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHOCK) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.ShockReady {
 		// Trigger cooldown.
@@ -327,9 +329,9 @@ func (wiz *BlueWizard) castShock() {
 	}
 }
 
-func (wiz *BlueWizard) castInvisibility() {
+func (wiz *Wizard) castInvisibility() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady && wiz.unit != BlueTeamTank {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady && wiz.unit != wiz.team.TeamTank {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -354,7 +356,7 @@ func (wiz *BlueWizard) castInvisibility() {
 	}
 }
 
-func (wiz *BlueWizard) castEnergyBolt() {
+func (wiz *Wizard) castEnergyBolt() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready {
 		// Select target.
@@ -385,7 +387,7 @@ func (wiz *BlueWizard) castEnergyBolt() {
 	}
 }
 
-func (wiz *BlueWizard) castDeathRay() {
+func (wiz *Wizard) castDeathRay() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
 		// Select target.
@@ -417,7 +419,7 @@ func (wiz *BlueWizard) castDeathRay() {
 	}
 }
 
-func (wiz *BlueWizard) castFireball() {
+func (wiz *Wizard) castFireball() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
@@ -449,7 +451,7 @@ func (wiz *BlueWizard) castFireball() {
 	}
 }
 
-func (wiz *BlueWizard) castFireballAtHeard() {
+func (wiz *Wizard) castFireballAtHeard() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
@@ -480,9 +482,9 @@ func (wiz *BlueWizard) castFireballAtHeard() {
 	}
 }
 
-func (wiz *BlueWizard) castBlink() {
+func (wiz *Wizard) castBlink() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady && wiz.unit != BlueTeamTank {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady && wiz.unit != wiz.team.TeamTank {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -507,7 +509,7 @@ func (wiz *BlueWizard) castBlink() {
 	}
 }
 
-func (wiz *BlueWizard) castMissilesOfMagic() {
+func (wiz *Wizard) castMissilesOfMagic() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
 		// Select target.
@@ -538,7 +540,7 @@ func (wiz *BlueWizard) castMissilesOfMagic() {
 	}
 }
 
-func (wiz *BlueWizard) castSlow() {
+func (wiz *Wizard) castSlow() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready {
 		// Select target.
@@ -569,7 +571,7 @@ func (wiz *BlueWizard) castSlow() {
 	}
 }
 
-func (wiz *BlueWizard) castHaste() {
+func (wiz *Wizard) castHaste() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.HASTED) && wiz.spells.Ready && wiz.spells.HasteReady {
 		// Trigger cooldown.
@@ -596,7 +598,7 @@ func (wiz *BlueWizard) castHaste() {
 	}
 }
 
-func (wiz *BlueWizard) castForceField() {
+func (wiz *Wizard) castForceField() {
 	// if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.SHIELD)
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHIELD) && wiz.spells.Ready && wiz.spells.ForceFieldReady {
@@ -624,7 +626,7 @@ func (wiz *BlueWizard) castForceField() {
 	}
 }
 
-func (wiz *BlueWizard) castProtectionFromFire() {
+func (wiz *Wizard) castProtectionFromFire() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && wiz.spells.Ready && wiz.spells.ProtFromFireReady {
 		// Trigger cooldown.
@@ -651,7 +653,7 @@ func (wiz *BlueWizard) castProtectionFromFire() {
 	}
 }
 
-func (wiz *BlueWizard) castProtectionFromShock() {
+func (wiz *Wizard) castProtectionFromShock() {
 	// Check if cooldowns are ready.
 	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && wiz.spells.Ready && wiz.spells.ProtFromShockReady {
 		// Trigger cooldown.
@@ -675,81 +677,5 @@ func (wiz *BlueWizard) castProtectionFromShock() {
 				})
 			}
 		})
-	}
-}
-
-// ---------------------------------- CTF BOT SCRIPT ------------------------------------//
-// CTF game mechanics.
-// Pick up the enemy flag.
-func (wiz *BlueWizard) BlueTeamPickUpRedFlag() {
-	if ns.GetCaller() == RedFlag {
-		RedFlag.Enable(false)
-		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
-		// Customize code below for individual unit.
-		BlueTeamTank = wiz.unit
-		BlueTeamTank.AggressionLevel(0.16)
-		BlueTeamTank.WalkTo(BlueFlag.Pos())
-		ns.PrintStrToAll("Team Blue has the Red flag!")
-	}
-}
-
-// Capture the flag.
-func (wiz *BlueWizard) BlueTeamCaptureTheRedFlag() {
-	if ns.GetCaller() == BlueFlag && BlueFlagIsAtBase && wiz.unit == BlueTeamTank {
-		ns.AudioEvent(audio.FlagCapture, BlueTeamTank) // <----- replace with all players
-		BlueTeamTank = TeamBlue
-		var1 := ns.Players()
-		if len(var1) > 1 {
-			var1[1].ChangeScore(+1)
-		}
-		FlagReset()
-		wiz.unit.AggressionLevel(0.83)
-		wiz.unit.WalkTo(RedFlag.Pos())
-		ns.PrintStrToAll("Team Blue has captured the Red flag!")
-	}
-}
-
-// Retrieve own flag.
-func (wiz *BlueWizard) BlueTeamRetrievedBlueFlag() {
-	if ns.GetCaller() == BlueFlag && !BlueFlagIsAtBase {
-		BlueFlagIsAtBase = true
-		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
-		BlueFlag.SetPos(ns.Waypoint("BlueFlagStart").Pos())
-		wiz.unit.WalkTo(BlueBase.Pos())
-		ns.PrintStrToAll("Team Blue has retrieved the flag!")
-		BlueTeamTank.WalkTo(BlueFlag.Pos())
-	}
-}
-
-// Drop flag.
-func (wiz *BlueWizard) BlueTeamDropFlag() {
-	if wiz.unit == BlueTeamTank {
-		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
-		RedFlag.Enable(true)
-		BlueTeamTank = TeamBlue
-		ns.PrintStrToAll("Team Blue has dropped the Red flag!")
-	}
-}
-
-// CTF behaviour.
-// Attack enemy tank without
-
-func (wiz *BlueWizard) BlueTeamWalkToBlueFlag() {
-	if !BlueFlagIsAtBase && BlueFlag.IsEnabled() {
-		wiz.unit.AggressionLevel(0.16)
-		wiz.unit.WalkTo(BlueFlag.Pos())
-	} else {
-		wiz.BlueTeamCheckAttackOrDefend()
-	}
-
-}
-
-func (wiz *BlueWizard) BlueTeamCheckAttackOrDefend() {
-	if wiz.unit == BlueTeamTank {
-		wiz.unit.AggressionLevel(0.16)
-		wiz.unit.Guard(BlueBase.Pos(), BlueBase.Pos(), 20)
-	} else {
-		wiz.unit.AggressionLevel(0.83)
-		wiz.unit.WalkTo(RedFlag.Pos())
 	}
 }

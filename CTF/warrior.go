@@ -9,15 +9,16 @@ import (
 	"github.com/noxworld-dev/opennox-lib/script"
 )
 
-// NewWarrior creates a new BlueWarrior bot.
-func NewBlueWarrior() *BlueWarrior {
-	war := &BlueWarrior{}
+// NewWarrior creates a new Warrior bot.
+func NewWarrior(t *Team) *Warrior {
+	war := &Warrior{team: t}
 	war.init()
 	return war
 }
 
-// BlueWarrior bot class.
-type BlueWarrior struct {
+// Warrior bot class.
+type Warrior struct {
+	team         *Team
 	unit         ns.Obj
 	target       ns.Obj
 	cursor       ns.Pointf
@@ -50,7 +51,7 @@ type BlueWarrior struct {
 	reactionTime int
 }
 
-func (war *BlueWarrior) init() {
+func (war *Warrior) init() {
 	// Reset Behaviour
 	war.behaviour.listening = true
 	war.behaviour.attacking = false
@@ -75,9 +76,9 @@ func (war *BlueWarrior) init() {
 	war.unit.SetStrength(125)
 	war.unit.SetBaseSpeed(100)
 	// Set Team.
-	war.unit.SetOwner(TeamBlue)
+	war.unit.SetOwner(war.team.TeamObj)
 	// Create WarBot mouse cursor.
-	war.target = TeamRed
+	war.target = war.team.Enemy.TeamObj
 	war.cursor = war.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	war.reactionTime = 15
@@ -121,20 +122,20 @@ func (war *BlueWarrior) init() {
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 }
 
-func (war *BlueWarrior) onChangeFocus() {
+func (war *Warrior) onChangeFocus() {
 	if !war.behaviour.lookingForHealing {
 		//war.unit.Chat("onChangeFocus")
 	}
 }
 
-func (war *BlueWarrior) onLookingForEnemy() {
+func (war *Warrior) onLookingForEnemy() {
 
 	if !war.behaviour.lookingForHealing {
 		//war.unit.Chat("onLookingForEnemy")
 	}
 }
 
-func (war *BlueWarrior) onEnemyHeard() {
+func (war *Warrior) onEnemyHeard() {
 	if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
 		//war.unit.Chat("onEnemyHeard")
 		war.behaviour.attacking = true
@@ -150,12 +151,13 @@ func (war *BlueWarrior) onEnemyHeard() {
 	}
 }
 
-func (war *BlueWarrior) onCollide() {
+func (war *Warrior) onCollide() {
 	if war.abilities.isAlive {
+		caller := ns.GetCaller()
 		// CTF Logic.
-		war.BlueTeamPickUpRedFlag()
-		war.BlueTeamCaptureTheRedFlag()
-		war.BlueTeamRetrievedBlueFlag()
+		war.team.CheckPickUpEnemyFlag(caller, war.unit)
+		war.team.CheckCaptureEnemyFlag(caller, war.unit)
+		war.team.CheckRetrievedOwnFlag(caller, war.unit)
 		if !war.behaviour.lookingForHealing {
 			//war.unit.Chat("onCollide")
 			// TODO: determine tactic.
@@ -171,7 +173,7 @@ func (war *BlueWarrior) onCollide() {
 	}
 }
 
-func (war *BlueWarrior) onEnemySighted() {
+func (war *Warrior) onEnemySighted() {
 	// SCRIPT FOR WEAPON SWITCHING. On HOLD FOR NOW
 	//if war.unit.HasItem(ns.Object("FanChakram")) {
 	//	war.unit.Chat("HELLLLOOOOOO")
@@ -186,7 +188,7 @@ func (war *BlueWarrior) onEnemySighted() {
 	}
 }
 
-func (war *BlueWarrior) onRetreat() {
+func (war *Warrior) onRetreat() {
 	//war.unit.Chat("onRetreat")
 	// TODO: FIX IT!
 	//if war.behaviour.lookForHealth {
@@ -204,7 +206,7 @@ func (war *BlueWarrior) onRetreat() {
 	//}
 }
 
-func (war *BlueWarrior) onLostEnemy() {
+func (war *Warrior) onLostEnemy() {
 	if !war.behaviour.lookingForHealing {
 		war.useEyeOfTheWolf()
 		//war.unit.Chat("onLostEnemy")
@@ -212,10 +214,10 @@ func (war *BlueWarrior) onLostEnemy() {
 		war.behaviour.attacking = false
 		war.unit.Hunt()
 	}
-	war.BlueTeamWalkToBlueFlag()
+	war.team.WalkToOwnFlag(war.unit)
 }
 
-func (war *BlueWarrior) onHit() {
+func (war *Warrior) onHit() {
 	//if war.unit.CurrentHealth() <= 100 && war.target.CurrentHealth() >= 50 && !war.behaviour.lookingForHealing && war.inventory.redPotionInInventory <= 0 {
 	//	//war.unit.Chat("onHit")
 	//	war.lookForRedPotion()
@@ -231,7 +233,7 @@ func (war *BlueWarrior) onHit() {
 	//	}
 }
 
-func (war *BlueWarrior) onEndOfWaypoint() {
+func (war *Warrior) onEndOfWaypoint() {
 	if war.behaviour.lookingForHealing {
 		if war.unit.CurrentHealth() >= 140 {
 			//war.unit.Chat("onEndOfWaypoint")
@@ -250,10 +252,10 @@ func (war *BlueWarrior) onEndOfWaypoint() {
 			war.behaviour.lookingForTarget = true
 		}
 	}
-	war.BlueTeamCheckAttackOrDefend()
+	war.team.CheckAttackOrDefend(war.unit)
 }
 
-func (war *BlueWarrior) lookForRedPotion() {
+func (war *Warrior) lookForRedPotion() {
 	//if war.inventory.redPotionInInventory >= 1 {
 	//	war.onEndOfWaypoint()
 	//} else {
@@ -264,10 +266,10 @@ func (war *BlueWarrior) lookForRedPotion() {
 
 }
 
-func (war *BlueWarrior) onDeath() {
+func (war *Warrior) onDeath() {
 	war.abilities.isAlive = false
 	war.unit.DestroyChat()
-	war.BlueTeamDropFlag()
+	war.team.DropEnemyFlag(war.unit)
 	ns.AudioEvent(audio.NPCDie, war.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
@@ -280,7 +282,7 @@ func (war *BlueWarrior) onDeath() {
 	})
 }
 
-func (war *BlueWarrior) Update() {
+func (war *Warrior) Update() {
 	if InitLoadComplete {
 		if war.unit.HasEnchant(enchant.HELD) {
 			ns.CastSpell(spell.SLOW, war.unit, war.unit)
@@ -292,7 +294,7 @@ func (war *BlueWarrior) Update() {
 	}
 }
 
-func (war *BlueWarrior) findLoot() {
+func (war *Warrior) findLoot() {
 	const dist = 75
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
@@ -363,7 +365,7 @@ func (war *BlueWarrior) findLoot() {
 	}
 }
 
-func (war *BlueWarrior) useWarCry() {
+func (war *Warrior) useWarCry() {
 	// Check if cooldown is ready.
 	if war.abilities.WarCryReady && !war.behaviour.charging {
 		// Select target.
@@ -391,7 +393,7 @@ func (war *BlueWarrior) useWarCry() {
 	}
 }
 
-func (war *BlueWarrior) useEyeOfTheWolf() {
+func (war *Warrior) useEyeOfTheWolf() {
 	// Check if cooldown is ready.
 	if war.abilities.EyeOfTheWolfReady {
 		// Trigger cooldown.
@@ -405,81 +407,5 @@ func (war *BlueWarrior) useEyeOfTheWolf() {
 		ns.NewTimer(ns.Seconds(20), func() {
 			war.abilities.EyeOfTheWolfReady = true
 		})
-	}
-}
-
-// ---------------------------------- CTF BOT SCRIPT ------------------------------------//
-// CTF game mechanics.
-// Pick up the enemy flag.
-func (war *BlueWarrior) BlueTeamPickUpRedFlag() {
-	if ns.GetCaller() == RedFlag {
-		RedFlag.Enable(false)
-		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
-		// Customize code below for individual unit.
-		BlueTeamTank = war.unit
-		BlueTeamTank.AggressionLevel(0.16)
-		BlueTeamTank.WalkTo(BlueFlag.Pos())
-		ns.PrintStrToAll("Team Blue has the Red flag!")
-	}
-}
-
-// Capture the flag.
-func (war *BlueWarrior) BlueTeamCaptureTheRedFlag() {
-	if ns.GetCaller() == BlueFlag && BlueFlagIsAtBase && war.unit == BlueTeamTank {
-		ns.AudioEvent(audio.FlagCapture, BlueTeamTank) // <----- replace with all players
-		BlueTeamTank = TeamBlue
-		var1 := ns.Players()
-		if len(var1) > 1 {
-			var1[1].ChangeScore(+1)
-		}
-		FlagReset()
-		war.unit.AggressionLevel(0.83)
-		war.unit.WalkTo(RedFlag.Pos())
-		ns.PrintStrToAll("Team Blue has captured the Red flag!")
-	}
-}
-
-// Retrieve own flag.
-func (war *BlueWarrior) BlueTeamRetrievedBlueFlag() {
-	if ns.GetCaller() == BlueFlag && !BlueFlagIsAtBase {
-		BlueFlagIsAtBase = true
-		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
-		BlueFlag.SetPos(ns.Waypoint("BlueFlagStart").Pos())
-		war.unit.WalkTo(BlueBase.Pos())
-		ns.PrintStrToAll("Team Blue has retrieved the flag!")
-		BlueTeamTank.WalkTo(BlueFlag.Pos())
-	}
-}
-
-// Drop flag.
-func (war *BlueWarrior) BlueTeamDropFlag() {
-	if war.unit == BlueTeamTank {
-		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
-		RedFlag.Enable(true)
-		BlueTeamTank = TeamBlue
-		ns.PrintStrToAll("Team Blue has dropped the Red flag!")
-	}
-}
-
-// CTF behaviour.
-// Attack enemy tank without
-
-func (war *BlueWarrior) BlueTeamWalkToBlueFlag() {
-	if !BlueFlagIsAtBase && BlueFlag.IsEnabled() {
-		war.unit.AggressionLevel(0.16)
-		war.unit.WalkTo(BlueFlag.Pos())
-	} else {
-		war.BlueTeamCheckAttackOrDefend()
-	}
-
-}
-
-func (war *BlueWarrior) BlueTeamCheckAttackOrDefend() {
-	if war.unit == BlueTeamTank {
-		war.unit.AggressionLevel(0.16)
-		war.unit.Guard(BlueBase.Pos(), BlueBase.Pos(), 20)
-	} else {
-		war.unit.AggressionLevel(0.83)
-		war.unit.WalkTo(RedFlag.Pos())
 	}
 }

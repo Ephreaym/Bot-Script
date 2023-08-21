@@ -9,15 +9,16 @@ import (
 	"github.com/noxworld-dev/opennox-lib/script"
 )
 
-// NewConjurer creates a new RedConjurer bot.
-func NewRedConjurer() *RedConjurer {
-	con := &RedConjurer{}
+// NewConjurer creates a new Conjurer bot.
+func NewConjurer(t *Team) *Conjurer {
+	con := &Conjurer{team: t}
 	con.init()
 	return con
 }
 
-// RedConjurer bot class.
-type RedConjurer struct {
+// Conjurer bot class.
+type Conjurer struct {
+	team    *Team
 	unit    ns.Obj
 	cursor  ns.Pointf
 	target  ns.Obj
@@ -51,7 +52,7 @@ type RedConjurer struct {
 	reactionTime int
 }
 
-func (con *RedConjurer) init() {
+func (con *Conjurer) init() {
 	// Reset spells ConBot.
 	con.spells.Ready = true
 	// Debuff spells.
@@ -77,16 +78,16 @@ func (con *RedConjurer) init() {
 	con.spells.ProtFromShockReady = true
 
 	// Create ConBot.
-	con.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointRed"))
+	con.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
 	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	con.unit.SetMaxHealth(100)
 	con.unit.SetStrength(55)
 	con.unit.SetBaseSpeed(88)
 	con.spells.isAlive = true
 	// Set Team.
-	con.unit.SetOwner(TeamRed)
+	con.unit.SetOwner(con.team.TeamObj)
 	// Create ConBot mouse cursor.
-	con.target = TeamBlue
+	con.target = con.team.Enemy.TeamObj
 	con.cursor = con.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	con.reactionTime = 15
@@ -128,48 +129,49 @@ func (con *RedConjurer) init() {
 	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
 }
 
-func (con *RedConjurer) onEndOfWaypoint() {
-	con.RedTeamCheckAttackOrDefend()
+func (con *Conjurer) onEndOfWaypoint() {
+	con.team.CheckAttackOrDefend(con.unit)
 }
 
-func (con *RedConjurer) buffInitial() {
+func (con *Conjurer) buffInitial() {
 	con.castVampirism()
 }
 
-func (con *RedConjurer) onLookingForTarget() {
+func (con *Conjurer) onLookingForTarget() {
 	con.castInfravision()
 }
 
-func (con *RedConjurer) onEnemyHeard() {
+func (con *Conjurer) onEnemyHeard() {
 	con.castForceOfNature()
 }
 
-func (con *RedConjurer) onEnemySighted() {
+func (con *Conjurer) onEnemySighted() {
 	con.target = ns.GetCaller()
 	con.castForceOfNature()
 }
 
-func (con *RedConjurer) onCollide() {
+func (con *Conjurer) onCollide() {
 	if con.spells.isAlive {
-		con.RedTeamPickUpBlueFlag()
-		con.RedTeamCaptureTheBlueFlag()
-		con.RedTeamRetrievedRedFlag()
+		caller := ns.GetCaller()
+		con.team.CheckPickUpEnemyFlag(caller, con.unit)
+		con.team.CheckCaptureEnemyFlag(caller, con.unit)
+		con.team.CheckRetrievedOwnFlag(caller, con.unit)
 	}
 }
 
-func (con *RedConjurer) onRetreat() {
+func (con *Conjurer) onRetreat() {
 	con.castBlink()
 }
 
-func (con *RedConjurer) onLostEnemy() {
+func (con *Conjurer) onLostEnemy() {
 	con.castInfravision()
-	con.RedTeamWalkToRedFlag()
+	con.team.WalkToOwnFlag(con.unit)
 }
 
-func (con *RedConjurer) onDeath() {
+func (con *Conjurer) onDeath() {
 	con.spells.isAlive = false
 	con.spells.Ready = false
-	con.RedTeamDropFlag()
+	con.team.DropEnemyFlag(con.unit)
 	con.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, con.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
@@ -184,7 +186,7 @@ func (con *RedConjurer) onDeath() {
 	})
 }
 
-func (con *RedConjurer) Update() {
+func (con *Conjurer) Update() {
 	con.findLoot()
 	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		con.spells.Ready = true
@@ -215,7 +217,7 @@ func (con *RedConjurer) Update() {
 	}
 }
 
-func (con *RedConjurer) findLoot() {
+func (con *Conjurer) findLoot() {
 	const dist = 75
 	// Weapons.
 	weapons := ns.FindAllObjects(
@@ -255,7 +257,7 @@ func (con *RedConjurer) findLoot() {
 	armor := ns.FindAllObjects(
 		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
-			// RedConjurer Helm.
+			// BlueConjurer Helm.
 			"ConjurerHelm",
 
 			// Leather armor.
@@ -272,7 +274,7 @@ func (con *RedConjurer) findLoot() {
 	}
 }
 
-func (con *RedConjurer) castVampirism() {
+func (con *Conjurer) castVampirism() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.VampirismReady {
 		// Trigger cooldown.
@@ -299,7 +301,7 @@ func (con *RedConjurer) castVampirism() {
 	}
 }
 
-func (con *RedConjurer) castProtectionFromFire() {
+func (con *Conjurer) castProtectionFromFire() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromFireReady {
 		// Trigger cooldown.
@@ -326,7 +328,7 @@ func (con *RedConjurer) castProtectionFromFire() {
 	}
 }
 
-func (con *RedConjurer) castProtectionFromPoison() {
+func (con *Conjurer) castProtectionFromPoison() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromPoisonReady {
 		// Trigger cooldown.
@@ -353,7 +355,7 @@ func (con *RedConjurer) castProtectionFromPoison() {
 	}
 }
 
-func (con *RedConjurer) castProtectionFromShock() {
+func (con *Conjurer) castProtectionFromShock() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromShockReady {
 		// Trigger cooldown.
@@ -380,7 +382,7 @@ func (con *RedConjurer) castProtectionFromShock() {
 	}
 }
 
-func (con *RedConjurer) castPixieSwarm() {
+func (con *Conjurer) castPixieSwarm() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.PixieSwarmReady {
 		// Trigger cooldown.
@@ -407,7 +409,7 @@ func (con *RedConjurer) castPixieSwarm() {
 	}
 }
 
-func (con *RedConjurer) castFistOfVengeance() {
+func (con *Conjurer) castFistOfVengeance() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
 		// Select target.
@@ -439,7 +441,7 @@ func (con *RedConjurer) castFistOfVengeance() {
 	}
 }
 
-func (con *RedConjurer) castForceOfNature() {
+func (con *Conjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
 		// Select target.
@@ -470,9 +472,9 @@ func (con *RedConjurer) castForceOfNature() {
 	}
 }
 
-func (con *RedConjurer) castBlink() {
+func (con *Conjurer) castBlink() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != RedTeamTank {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != con.team.TeamTank {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -497,7 +499,7 @@ func (con *RedConjurer) castBlink() {
 	}
 }
 
-func (con *RedConjurer) castStun() {
+func (con *Conjurer) castStun() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready {
 		// Select target.
@@ -528,7 +530,7 @@ func (con *RedConjurer) castStun() {
 	}
 }
 
-func (con *RedConjurer) castToxicCloud() {
+func (con *Conjurer) castToxicCloud() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
 		// Select target.
@@ -560,7 +562,7 @@ func (con *RedConjurer) castToxicCloud() {
 	}
 }
 
-func (con *RedConjurer) castSlow() {
+func (con *Conjurer) castSlow() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready {
 		// Select target.
@@ -591,7 +593,7 @@ func (con *RedConjurer) castSlow() {
 	}
 }
 
-func (con *RedConjurer) castMeteor() {
+func (con *Conjurer) castMeteor() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
 		// Select target.
@@ -623,7 +625,7 @@ func (con *RedConjurer) castMeteor() {
 	}
 }
 
-func (con *RedConjurer) castInfravision() {
+func (con *Conjurer) castInfravision() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InfravisionReady {
 		// Trigger cooldown.
@@ -650,7 +652,7 @@ func (con *RedConjurer) castInfravision() {
 	}
 }
 
-func (con *RedConjurer) summonGhost() {
+func (con *Conjurer) summonGhost() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonGhostReady {
 		// Trigger cooldown.
@@ -677,7 +679,7 @@ func (con *RedConjurer) summonGhost() {
 	}
 }
 
-func (con *RedConjurer) summonBomber1() {
+func (con *Conjurer) summonBomber1() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber1Ready {
 		// Trigger cooldown.
@@ -744,7 +746,7 @@ func (con *RedConjurer) summonBomber1() {
 	}
 }
 
-func (con *RedConjurer) summonBomber2() {
+func (con *Conjurer) summonBomber2() {
 	// Check if cooldowns are ready.
 	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
 		// Trigger cooldown.
@@ -808,82 +810,5 @@ func (con *RedConjurer) summonBomber2() {
 				})
 			}
 		})
-	}
-}
-
-// ---------------------------------- CTF BOT SCRIPT ------------------------------------//
-// CTF game mechanics.
-// Pick up the enemy flag.
-func (con *RedConjurer) RedTeamPickUpBlueFlag() {
-	if ns.GetCaller() == BlueFlag {
-		BlueFlag.Enable(false)
-		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
-		// Customize code below for individual unit.
-		RedTeamTank = con.unit
-		RedTeamTank.AggressionLevel(0.16)
-		RedTeamTank.WalkTo(RedBase.Pos())
-		ns.PrintStrToAll("Team Red has the Blue flag!")
-	}
-}
-
-// Capture the flag.
-func (con *RedConjurer) RedTeamCaptureTheBlueFlag() {
-	if ns.GetCaller() == RedFlag && RedFlagIsAtBase && con.unit == RedTeamTank {
-		ns.AudioEvent(audio.FlagCapture, RedTeamTank) // <----- replace with all players
-
-		RedTeamTank = TeamRed
-		var1 := ns.Players()
-		if len(var1) > 1 {
-			var1[0].ChangeScore(+1)
-		}
-		FlagReset()
-		con.unit.AggressionLevel(0.83)
-		con.unit.WalkTo(BlueFlag.Pos())
-		ns.PrintStrToAll("Team Red has captured the Blue flag!")
-	}
-}
-
-// Retrieve own flag.
-func (con *RedConjurer) RedTeamRetrievedRedFlag() {
-	if ns.GetCaller() == RedFlag && !RedFlagIsAtBase {
-		RedFlagIsAtBase = true
-		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
-		RedFlag.SetPos(ns.Waypoint("RedFlagStart").Pos())
-		con.unit.WalkTo(BlueFlag.Pos())
-		ns.PrintStrToAll("Team Red has retrieved the flag!")
-		RedTeamTank.WalkTo(RedFlag.Pos())
-	}
-}
-
-// Drop flag.
-func (con *RedConjurer) RedTeamDropFlag() {
-	if con.unit == RedTeamTank {
-		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
-		BlueFlag.Enable(true)
-		RedTeamTank = TeamRed
-		ns.PrintStrToAll("Team Red has dropped the Blue flag!")
-	}
-}
-
-// CTF behaviour.
-
-// When enemy is killed check to see if the flag is dropped, if so get it.
-func (con *RedConjurer) RedTeamWalkToRedFlag() {
-	if !RedFlagIsAtBase && RedFlag.IsEnabled() {
-		con.unit.AggressionLevel(0.16)
-		con.unit.WalkTo(BlueFlag.Pos())
-	} else {
-		con.RedTeamCheckAttackOrDefend()
-	}
-}
-
-// At the end of waypoint see defend if tank, attack if not.
-func (con *RedConjurer) RedTeamCheckAttackOrDefend() {
-	if con.unit == RedTeamTank {
-		con.unit.AggressionLevel(0.16)
-		con.unit.Guard(RedBase.Pos(), RedBase.Pos(), 20)
-	} else {
-		con.unit.AggressionLevel(0.83)
-		con.unit.WalkTo(BlueFlag.Pos())
 	}
 }
