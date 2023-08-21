@@ -11,9 +11,9 @@ import (
 
 // NewWizard creates a new BlueWizard bot.
 func NewBlueWizard() *BlueWizard {
-	bluewiz := &BlueWizard{}
-	bluewiz.init()
-	return bluewiz
+	wiz := &BlueWizard{}
+	wiz.init()
+	return wiz
 }
 
 // BlueWizard bot class.
@@ -50,167 +50,167 @@ type BlueWizard struct {
 	reactionTime int
 }
 
-func (bluewiz *BlueWizard) init() {
+func (wiz *BlueWizard) init() {
 	// Reset spells WizBot3.
-	bluewiz.spells.Ready = true
+	wiz.spells.Ready = true
 	// Debuff spells.
-	bluewiz.spells.SlowReady = true
+	wiz.spells.SlowReady = true
 	// Offensive spells.
-	bluewiz.spells.MagicMissilesReady = true
-	bluewiz.spells.TrapReady = true
-	bluewiz.spells.DeathRayReady = true
-	bluewiz.spells.EnergyBoltReady = true
-	bluewiz.spells.FireballReady = true
+	wiz.spells.MagicMissilesReady = true
+	wiz.spells.TrapReady = true
+	wiz.spells.DeathRayReady = true
+	wiz.spells.EnergyBoltReady = true
+	wiz.spells.FireballReady = true
 	// Defensive spells.
-	bluewiz.spells.BlinkReady = true
+	wiz.spells.BlinkReady = true
 	// Buff spells
-	bluewiz.spells.ShockReady = true
-	bluewiz.spells.ProtFromFireReady = true
-	bluewiz.spells.ProtFromPoisonReady = true
-	bluewiz.spells.ProtFromShockReady = true
-	bluewiz.spells.HasteReady = true
-	bluewiz.spells.ForceFieldReady = true
-	bluewiz.spells.InvisibilityReady = true
+	wiz.spells.ShockReady = true
+	wiz.spells.ProtFromFireReady = true
+	wiz.spells.ProtFromPoisonReady = true
+	wiz.spells.ProtFromShockReady = true
+	wiz.spells.HasteReady = true
+	wiz.spells.ForceFieldReady = true
+	wiz.spells.InvisibilityReady = true
 	// Create WizBot3.
-	bluewiz.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
-	bluewiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
-	bluewiz.unit.SetMaxHealth(75)
-	bluewiz.unit.SetStrength(35)
-	bluewiz.unit.SetBaseSpeed(83)
-	bluewiz.spells.isAlive = true
+	wiz.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
+	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	wiz.unit.SetMaxHealth(75)
+	wiz.unit.SetStrength(35)
+	wiz.unit.SetBaseSpeed(83)
+	wiz.spells.isAlive = true
 	// Set Team.
-	bluewiz.unit.SetOwner(TeamBlue)
+	wiz.unit.SetOwner(TeamBlue)
 	// Create WizBot3 mouse cursor.
-	bluewiz.target = TeamRed
-	bluewiz.cursor = bluewiz.target.Pos()
+	wiz.target = TeamRed
+	wiz.cursor = wiz.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
-	bluewiz.reactionTime = 15
+	wiz.reactionTime = 15
 	// Set WizBot3 properties.
-	bluewiz.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
-	bluewiz.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	bluewiz.unit.MonsterStatusEnable(object.MonStatusAlert)
-	bluewiz.unit.AggressionLevel(0.16)
+	wiz.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+	wiz.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	wiz.unit.MonsterStatusEnable(object.MonStatusAlert)
+	wiz.unit.AggressionLevel(0.16)
 	ns.NewTimer(ns.Seconds(3), func() {
-		bluewiz.unit.AggressionLevel(0.83)
+		wiz.unit.AggressionLevel(0.83)
 	})
-	bluewiz.unit.Hunt()
-	bluewiz.unit.ResumeLevel(0.8)
-	bluewiz.unit.RetreatLevel(0.2)
+	wiz.unit.Hunt()
+	wiz.unit.ResumeLevel(0.8)
+	wiz.unit.RetreatLevel(0.2)
 	// Create and equip WizBot3 starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	bluewiz.items.StreetSneakers = ns.CreateObject("StreetSneakers", bluewiz.unit)
-	bluewiz.items.StreetPants = ns.CreateObject("StreetPants", bluewiz.unit)
-	bluewiz.items.StreetShirt = ns.CreateObject("StreetShirt", bluewiz.unit)
-	bluewiz.items.WizardRobe = ns.CreateObject("WizardRobe", bluewiz.unit)
-	bluewiz.unit.Equip(bluewiz.items.StreetSneakers)
-	bluewiz.unit.Equip(bluewiz.items.StreetPants)
-	bluewiz.unit.Equip(bluewiz.items.StreetShirt)
-	bluewiz.unit.Equip(bluewiz.items.WizardRobe)
+	wiz.items.StreetSneakers = ns.CreateObject("StreetSneakers", wiz.unit)
+	wiz.items.StreetPants = ns.CreateObject("StreetPants", wiz.unit)
+	wiz.items.StreetShirt = ns.CreateObject("StreetShirt", wiz.unit)
+	wiz.items.WizardRobe = ns.CreateObject("WizardRobe", wiz.unit)
+	wiz.unit.Equip(wiz.items.StreetSneakers)
+	wiz.unit.Equip(wiz.items.StreetPants)
+	wiz.unit.Equip(wiz.items.StreetShirt)
+	wiz.unit.Equip(wiz.items.WizardRobe)
 	// Buff on respawn.
-	bluewiz.buffInitial()
+	wiz.buffInitial()
 	// On retreat.
-	bluewiz.unit.OnEvent(ns.EventRetreat, bluewiz.onRetreat)
+	wiz.unit.OnEvent(ns.EventRetreat, wiz.onRetreat)
 	// Enemy sighted.
-	bluewiz.unit.OnEvent(ns.EventEnemySighted, bluewiz.onEnemySighted)
+	wiz.unit.OnEvent(ns.EventEnemySighted, wiz.onEnemySighted)
 	// On heard.
-	bluewiz.unit.OnEvent(ns.EventEnemyHeard, bluewiz.onEnemyHeard)
+	wiz.unit.OnEvent(ns.EventEnemyHeard, wiz.onEnemyHeard)
 	// On collision.
-	bluewiz.unit.OnEvent(ns.EventCollision, bluewiz.onCollide)
+	wiz.unit.OnEvent(ns.EventCollision, wiz.onCollide)
 	// Trap. TODO: define when to, ns.EventLosEnemy is placeholder. IDEA: When no enemy is in sight.
-	bluewiz.unit.OnEvent(ns.EventLostEnemy, bluewiz.onLostEnemy)
+	wiz.unit.OnEvent(ns.EventLostEnemy, wiz.onLostEnemy)
 	// On Death.
-	bluewiz.unit.OnEvent(ns.EventDeath, bluewiz.onDeath)
-	bluewiz.unit.OnEvent(ns.EventLookingForEnemy, bluewiz.onLookingForTarget)
-	bluewiz.unit.OnEvent(ns.EventEndOfWaypoint, bluewiz.onEndOfWaypoint)
+	wiz.unit.OnEvent(ns.EventDeath, wiz.onDeath)
+	wiz.unit.OnEvent(ns.EventLookingForEnemy, wiz.onLookingForTarget)
+	wiz.unit.OnEvent(ns.EventEndOfWaypoint, wiz.onEndOfWaypoint)
 }
 
-func (bluewiz *BlueWizard) onEndOfWaypoint() {
-	bluewiz.BlueTeamCheckAttackOrDefend()
+func (wiz *BlueWizard) onEndOfWaypoint() {
+	wiz.BlueTeamCheckAttackOrDefend()
 }
 
-func (bluewiz *BlueWizard) buffInitial() {
-	bluewiz.castForceField()
+func (wiz *BlueWizard) buffInitial() {
+	wiz.castForceField()
 }
 
-func (bluewiz *BlueWizard) onLookingForTarget() {
+func (wiz *BlueWizard) onLookingForTarget() {
 }
 
-func (bluewiz *BlueWizard) onEnemyHeard() {
-	bluewiz.castFireballAtHeard()
-	bluewiz.castInvisibility()
+func (wiz *BlueWizard) onEnemyHeard() {
+	wiz.castFireballAtHeard()
+	wiz.castInvisibility()
 }
 
-func (bluewiz *BlueWizard) onEnemySighted() {
-	bluewiz.target = ns.GetCaller()
-	bluewiz.castSlow()
+func (wiz *BlueWizard) onEnemySighted() {
+	wiz.target = ns.GetCaller()
+	wiz.castSlow()
 }
 
-func (bluewiz *BlueWizard) onCollide() {
-	bluewiz.castShock()
-	bluewiz.castMissilesOfMagic()
-	if bluewiz.spells.isAlive {
-		bluewiz.BlueTeamPickUpRedFlag()
-		bluewiz.BlueTeamCaptureTheRedFlag()
-		bluewiz.BlueTeamRetrievedBlueFlag()
+func (wiz *BlueWizard) onCollide() {
+	wiz.castShock()
+	wiz.castMissilesOfMagic()
+	if wiz.spells.isAlive {
+		wiz.BlueTeamPickUpRedFlag()
+		wiz.BlueTeamCaptureTheRedFlag()
+		wiz.BlueTeamRetrievedBlueFlag()
 	}
 }
 
-func (bluewiz *BlueWizard) onRetreat() {
-	bluewiz.castBlink()
+func (wiz *BlueWizard) onRetreat() {
+	wiz.castBlink()
 }
 
-func (bluewiz *BlueWizard) onLostEnemy() {
-	bluewiz.castTrap()
-	bluewiz.BlueTeamWalkToBlueFlag()
+func (wiz *BlueWizard) onLostEnemy() {
+	wiz.castTrap()
+	wiz.BlueTeamWalkToBlueFlag()
 }
 
-func (bluewiz *BlueWizard) onDeath() {
-	bluewiz.spells.isAlive = false
-	bluewiz.spells.Ready = false
-	bluewiz.BlueTeamDropFlag()
-	bluewiz.unit.DestroyChat()
-	ns.AudioEvent(audio.NPCDie, bluewiz.unit)
+func (wiz *BlueWizard) onDeath() {
+	wiz.spells.isAlive = false
+	wiz.spells.Ready = false
+	wiz.BlueTeamDropFlag()
+	wiz.unit.DestroyChat()
+	ns.AudioEvent(audio.NPCDie, wiz.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
 	ns.NewTimer(ns.Frames(60), func() {
-		ns.AudioEvent(audio.BlinkCast, bluewiz.unit)
-		bluewiz.unit.Delete()
-		bluewiz.items.StreetPants.Delete()
-		bluewiz.items.StreetSneakers.Delete()
-		bluewiz.items.StreetShirt.Delete()
-		bluewiz.init()
+		ns.AudioEvent(audio.BlinkCast, wiz.unit)
+		wiz.unit.Delete()
+		wiz.items.StreetPants.Delete()
+		wiz.items.StreetSneakers.Delete()
+		wiz.items.StreetShirt.Delete()
+		wiz.init()
 	})
 }
 
-func (bluewiz *BlueWizard) Update() {
-	bluewiz.findLoot()
-	if bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-		bluewiz.spells.Ready = true
+func (wiz *BlueWizard) Update() {
+	wiz.findLoot()
+	if wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+		wiz.spells.Ready = true
 	}
-	if bluewiz.target.HasEnchant(enchant.HELD) || bluewiz.target.HasEnchant(enchant.SLOWED) {
-		if bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.Ready {
-			bluewiz.castDeathRay()
+	if wiz.target.HasEnchant(enchant.HELD) || wiz.target.HasEnchant(enchant.SLOWED) {
+		if wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
+			wiz.castDeathRay()
 		}
 	}
-	if bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.Ready {
-		bluewiz.castFireball()
-		bluewiz.castSlow()
-		bluewiz.castEnergyBolt()
-		bluewiz.castMissilesOfMagic()
-		bluewiz.castForceField()
-		bluewiz.castShock()
+	if wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
+		wiz.castFireball()
+		wiz.castSlow()
+		wiz.castEnergyBolt()
+		wiz.castMissilesOfMagic()
+		wiz.castForceField()
+		wiz.castShock()
 	}
-	if !bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.Ready {
-		bluewiz.castHaste()
-		bluewiz.castProtectionFromShock()
-		bluewiz.castProtectionFromFire()
-		bluewiz.castInvisibility()
+	if !wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
+		wiz.castHaste()
+		wiz.castProtectionFromShock()
+		wiz.castProtectionFromFire()
+		wiz.castInvisibility()
 	}
 }
 
-func (bluewiz *BlueWizard) findLoot() {
+func (wiz *BlueWizard) findLoot() {
 	const dist = 75
 	weapons := ns.FindAllObjects(
-		ns.InCirclef{Center: bluewiz.unit, R: dist},
+		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
 			// Wands.
 			//"DeathRayWand",
@@ -223,13 +223,13 @@ func (bluewiz *BlueWizard) findLoot() {
 		},
 	)
 	for _, item := range weapons {
-		if bluewiz.unit.CanSee(item) {
-			bluewiz.unit.Equip(item)
+		if wiz.unit.CanSee(item) {
+			wiz.unit.Equip(item)
 		}
 	}
 
 	armor := ns.FindAllObjects(
-		ns.InCirclef{Center: bluewiz.unit, R: dist},
+		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
 			// BlueWizard armor.
 			"WizardHelm", "WizardRobe",
@@ -238,51 +238,51 @@ func (bluewiz *BlueWizard) findLoot() {
 		},
 	)
 	for _, item := range armor {
-		if bluewiz.unit.CanSee(item) {
-			bluewiz.unit.Equip(item)
+		if wiz.unit.CanSee(item) {
+			wiz.unit.Equip(item)
 		}
 	}
 }
 
-func (bluewiz *BlueWizard) castTrap() {
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.spells.Ready && bluewiz.spells.TrapReady {
+func (wiz *BlueWizard) castTrap() {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.TrapReady {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				// Ring of Fire chant.
-				castPhonemes(bluewiz.unit, []audio.Name{PhDownRight, PhDown, PhDownLeft, PhUp}, func() {
+				castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDown, PhDownLeft, PhUp}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
-						if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 							// Magic Missiles chant.
-							castPhonemes(bluewiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
+							castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
 								// Pause for concentration.
 								ns.NewTimer(ns.Frames(3), func() {
 									// Check for War Cry before chant.
-									if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 										// Shock chant.
-										castPhonemes(bluewiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
+										castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
 											// Pause for concentration.
 											ns.NewTimer(ns.Frames(3), func() {
 												// Check for War Cry before chant.
-												if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+												if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 													// Glyph chant.
-													castPhonemes(bluewiz.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+													castPhonemes(wiz.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
-														if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															bluewiz.spells.TrapReady = false
-															ns.AudioEvent(audio.TrapDrop, bluewiz.unit)
-															bluewiz.trap = ns.NewTrap(bluewiz.unit, spell.CLEANSING_FLAME, spell.MAGIC_MISSILE, spell.SHOCK)
-															bluewiz.trap.SetOwner(bluewiz.unit)
+														if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															wiz.spells.TrapReady = false
+															ns.AudioEvent(audio.TrapDrop, wiz.unit)
+															wiz.trap = ns.NewTrap(wiz.unit, spell.CLEANSING_FLAME, spell.MAGIC_MISSILE, spell.SHOCK)
+															wiz.trap.SetOwner(wiz.unit)
 															// Global cooldown.
-															bluewiz.spells.Ready = true
+															wiz.spells.Ready = true
 															// Trap cooldown.
 															ns.NewTimer(ns.Seconds(5), func() {
-																bluewiz.spells.TrapReady = true
+																wiz.spells.TrapReady = true
 															})
 														}
 													})
@@ -300,25 +300,25 @@ func (bluewiz *BlueWizard) castTrap() {
 	}
 }
 
-func (bluewiz *BlueWizard) castShock() {
+func (wiz *BlueWizard) castShock() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !bluewiz.unit.HasEnchant(enchant.SHOCK) && !bluewiz.unit.HasEnchant(enchant.INVISIBLE) && bluewiz.spells.Ready && bluewiz.spells.ShockReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHOCK) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.ShockReady {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.ShockReady = false
-						ns.CastSpell(spell.SHOCK, bluewiz.unit, bluewiz.unit)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.ShockReady = false
+						ns.CastSpell(spell.SHOCK, wiz.unit, wiz.unit)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Shock cooldown.
 						ns.NewTimer(ns.Seconds(20), func() {
-							bluewiz.spells.ShockReady = true
+							wiz.spells.ShockReady = true
 						})
 					}
 				})
@@ -327,25 +327,25 @@ func (bluewiz *BlueWizard) castShock() {
 	}
 }
 
-func (bluewiz *BlueWizard) castInvisibility() {
+func (wiz *BlueWizard) castInvisibility() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !bluewiz.unit.HasEnchant(enchant.INVISIBLE) && bluewiz.spells.Ready && bluewiz.spells.InvisibilityReady && bluewiz.unit != BlueTeamTank {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady && wiz.unit != BlueTeamTank {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhLeft, PhRight, PhLeft, PhRight}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhLeft, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.InvisibilityReady = false
-						ns.CastSpell(spell.INVISIBILITY, bluewiz.unit, bluewiz.unit)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.InvisibilityReady = false
+						ns.CastSpell(spell.INVISIBILITY, wiz.unit, wiz.unit)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Invisibility cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluewiz.spells.InvisibilityReady = true
+							wiz.spells.InvisibilityReady = true
 						})
 					}
 				})
@@ -354,29 +354,29 @@ func (bluewiz *BlueWizard) castInvisibility() {
 	}
 }
 
-func (bluewiz *BlueWizard) castEnergyBolt() {
+func (wiz *BlueWizard) castEnergyBolt() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.EnergyBoltReady && bluewiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhUp}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhRight, PhLeft, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluewiz.unit.LookAtObject(bluewiz.target)
-						bluewiz.unit.Pause(ns.Frames(bluewiz.reactionTime))
-						bluewiz.spells.EnergyBoltReady = false
-						ns.CastSpell(spell.LIGHTNING, bluewiz.unit, bluewiz.target)
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.EnergyBoltReady = false
+						ns.CastSpell(spell.LIGHTNING, wiz.unit, wiz.target)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Energy Bolt cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							bluewiz.spells.EnergyBoltReady = true
+							wiz.spells.EnergyBoltReady = true
 						})
 					}
 				})
@@ -385,30 +385,30 @@ func (bluewiz *BlueWizard) castEnergyBolt() {
 	}
 }
 
-func (bluewiz *BlueWizard) castDeathRay() {
+func (wiz *BlueWizard) castDeathRay() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.spells.DeathRayReady && bluewiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
 		// Select target.
-		bluewiz.cursor = bluewiz.target.Pos()
+		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhDownRight, PhDownRight}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDownRight, PhDownRight}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluewiz.unit.LookAtObject(bluewiz.target)
-						bluewiz.unit.Pause(ns.Frames(bluewiz.reactionTime))
-						bluewiz.spells.DeathRayReady = false
-						ns.CastSpell(spell.DEATH_RAY, bluewiz.unit, bluewiz.cursor)
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.DeathRayReady = false
+						ns.CastSpell(spell.DEATH_RAY, wiz.unit, wiz.cursor)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Death Ray cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							bluewiz.spells.DeathRayReady = true
+							wiz.spells.DeathRayReady = true
 						})
 					}
 				})
@@ -417,30 +417,30 @@ func (bluewiz *BlueWizard) castDeathRay() {
 	}
 }
 
-func (bluewiz *BlueWizard) castFireball() {
+func (wiz *BlueWizard) castFireball() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.FireballReady && bluewiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
-		bluewiz.cursor = bluewiz.target.Pos()
+		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluewiz.unit.LookAtObject(bluewiz.target)
-						bluewiz.unit.Pause(ns.Frames(bluewiz.reactionTime))
-						bluewiz.spells.FireballReady = false
-						ns.CastSpell(spell.FIREBALL, bluewiz.unit, bluewiz.cursor)
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.FireballReady = false
+						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.cursor)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Fireball cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							bluewiz.spells.FireballReady = true
+							wiz.spells.FireballReady = true
 						})
 					}
 				})
@@ -449,29 +449,29 @@ func (bluewiz *BlueWizard) castFireball() {
 	}
 }
 
-func (bluewiz *BlueWizard) castFireballAtHeard() {
+func (wiz *BlueWizard) castFireballAtHeard() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.FireballReady && bluewiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluewiz.unit.LookAtObject(bluewiz.target)
-						bluewiz.unit.Pause(ns.Frames(bluewiz.reactionTime))
-						bluewiz.spells.FireballReady = false
-						ns.CastSpell(spell.FIREBALL, bluewiz.unit, bluewiz.target)
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.FireballReady = false
+						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.target)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Fireball cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							bluewiz.spells.FireballReady = true
+							wiz.spells.FireballReady = true
 						})
 					}
 				})
@@ -480,25 +480,25 @@ func (bluewiz *BlueWizard) castFireballAtHeard() {
 	}
 }
 
-func (bluewiz *BlueWizard) castBlink() {
+func (wiz *BlueWizard) castBlink() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.spells.Ready && bluewiz.spells.BlinkReady && bluewiz.unit != BlueTeamTank {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady && wiz.unit != BlueTeamTank {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.BlinkReady = false
-						ns.NewTrap(bluewiz.unit, spell.BLINK)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.BlinkReady = false
+						ns.NewTrap(wiz.unit, spell.BLINK)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Blink cooldown.
 						ns.NewTimer(ns.Seconds(1), func() {
-							bluewiz.spells.BlinkReady = true
+							wiz.spells.BlinkReady = true
 						})
 					}
 				})
@@ -507,29 +507,29 @@ func (bluewiz *BlueWizard) castBlink() {
 	}
 }
 
-func (bluewiz *BlueWizard) castMissilesOfMagic() {
+func (wiz *BlueWizard) castMissilesOfMagic() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.MagicMissilesReady && bluewiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluewiz.unit.LookAtObject(bluewiz.target)
-						bluewiz.unit.Pause(ns.Frames(bluewiz.reactionTime))
-						bluewiz.spells.MagicMissilesReady = false
-						ns.CastSpell(spell.MAGIC_MISSILE, bluewiz.unit, bluewiz.target)
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.MagicMissilesReady = false
+						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Missiles Of Magic cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							bluewiz.spells.MagicMissilesReady = true
+							wiz.spells.MagicMissilesReady = true
 						})
 					}
 				})
@@ -538,29 +538,29 @@ func (bluewiz *BlueWizard) castMissilesOfMagic() {
 	}
 }
 
-func (bluewiz *BlueWizard) castSlow() {
+func (wiz *BlueWizard) castSlow() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && bluewiz.unit.CanSee(bluewiz.target) && bluewiz.spells.SlowReady && bluewiz.spells.Ready {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluewiz.unit.LookAtObject(bluewiz.target)
-						bluewiz.unit.Pause(ns.Frames(bluewiz.reactionTime))
-						bluewiz.spells.SlowReady = false
-						ns.CastSpell(spell.SLOW, bluewiz.unit, bluewiz.target)
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.SlowReady = false
+						ns.CastSpell(spell.SLOW, wiz.unit, wiz.target)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Slow cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							bluewiz.spells.SlowReady = true
+							wiz.spells.SlowReady = true
 						})
 					}
 				})
@@ -569,25 +569,25 @@ func (bluewiz *BlueWizard) castSlow() {
 	}
 }
 
-func (bluewiz *BlueWizard) castHaste() {
+func (wiz *BlueWizard) castHaste() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !bluewiz.unit.HasEnchant(enchant.HASTED) && bluewiz.spells.Ready && bluewiz.spells.HasteReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.HASTED) && wiz.spells.Ready && wiz.spells.HasteReady {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhLeft, PhRight, PhRight}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.HasteReady = false
-						ns.CastSpell(spell.HASTE, bluewiz.unit, bluewiz.unit)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.HasteReady = false
+						ns.CastSpell(spell.HASTE, wiz.unit, wiz.unit)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Haste cooldown.
 						ns.NewTimer(ns.Seconds(20), func() {
-							bluewiz.spells.HasteReady = true
+							wiz.spells.HasteReady = true
 						})
 					}
 				})
@@ -596,26 +596,26 @@ func (bluewiz *BlueWizard) castHaste() {
 	}
 }
 
-func (bluewiz *BlueWizard) castForceField() {
-	// if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.SHIELD)
+func (wiz *BlueWizard) castForceField() {
+	// if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.SHIELD)
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !bluewiz.unit.HasEnchant(enchant.SHIELD) && bluewiz.spells.Ready && bluewiz.spells.ForceFieldReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHIELD) && wiz.spells.Ready && wiz.spells.ForceFieldReady {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhUp, PhLeft, PhDown, PhRight, PhUp, PhLeft, PhDown, PhRight}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhUp, PhLeft, PhDown, PhRight, PhUp, PhLeft, PhDown, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.ForceFieldReady = false
-						ns.CastSpell(spell.SHIELD, bluewiz.unit, bluewiz.unit)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.ForceFieldReady = false
+						ns.CastSpell(spell.SHIELD, wiz.unit, wiz.unit)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Force Field cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluewiz.spells.ForceFieldReady = true
+							wiz.spells.ForceFieldReady = true
 						})
 					}
 				})
@@ -624,25 +624,25 @@ func (bluewiz *BlueWizard) castForceField() {
 	}
 }
 
-func (bluewiz *BlueWizard) castProtectionFromFire() {
+func (wiz *BlueWizard) castProtectionFromFire() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !bluewiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && bluewiz.spells.Ready && bluewiz.spells.ProtFromFireReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && wiz.spells.Ready && wiz.spells.ProtFromFireReady {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.ProtFromFireReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_FIRE, bluewiz.unit, bluewiz.unit)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.ProtFromFireReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_FIRE, wiz.unit, wiz.unit)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Protection From Fire cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluewiz.spells.ProtFromFireReady = true
+							wiz.spells.ProtFromFireReady = true
 						})
 					}
 				})
@@ -651,25 +651,25 @@ func (bluewiz *BlueWizard) castProtectionFromFire() {
 	}
 }
 
-func (bluewiz *BlueWizard) castProtectionFromShock() {
+func (wiz *BlueWizard) castProtectionFromShock() {
 	// Check if cooldowns are ready.
-	if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !bluewiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && bluewiz.spells.Ready && bluewiz.spells.ProtFromShockReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && wiz.spells.Ready && wiz.spells.ProtFromShockReady {
 		// Trigger cooldown.
-		bluewiz.spells.Ready = false
+		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluewiz.reactionTime), func() {
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluewiz.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluewiz.spells.isAlive && !bluewiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluewiz.spells.ProtFromShockReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, bluewiz.unit, bluewiz.unit)
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.ProtFromShockReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, wiz.unit, wiz.unit)
 						// Global cooldown.
-						bluewiz.spells.Ready = true
+						wiz.spells.Ready = true
 						// Protection From Shock cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluewiz.spells.ProtFromShockReady = true
+							wiz.spells.ProtFromShockReady = true
 						})
 					}
 				})
@@ -681,12 +681,12 @@ func (bluewiz *BlueWizard) castProtectionFromShock() {
 // ---------------------------------- CTF BOT SCRIPT ------------------------------------//
 // CTF game mechanics.
 // Pick up the enemy flag.
-func (bluewiz *BlueWizard) BlueTeamPickUpRedFlag() {
+func (wiz *BlueWizard) BlueTeamPickUpRedFlag() {
 	if ns.GetCaller() == RedFlag {
 		RedFlag.Enable(false)
 		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
 		// Customize code below for individual unit.
-		BlueTeamTank = bluewiz.unit
+		BlueTeamTank = wiz.unit
 		BlueTeamTank.AggressionLevel(0.16)
 		BlueTeamTank.WalkTo(BlueFlag.Pos())
 		ns.PrintStrToAll("Team Blue has the Red flag!")
@@ -694,8 +694,8 @@ func (bluewiz *BlueWizard) BlueTeamPickUpRedFlag() {
 }
 
 // Capture the flag.
-func (bluewiz *BlueWizard) BlueTeamCaptureTheRedFlag() {
-	if ns.GetCaller() == BlueFlag && BlueFlagIsAtBase && bluewiz.unit == BlueTeamTank {
+func (wiz *BlueWizard) BlueTeamCaptureTheRedFlag() {
+	if ns.GetCaller() == BlueFlag && BlueFlagIsAtBase && wiz.unit == BlueTeamTank {
 		ns.AudioEvent(audio.FlagCapture, BlueTeamTank) // <----- replace with all players
 		BlueTeamTank = TeamBlue
 		var1 := ns.Players()
@@ -703,27 +703,27 @@ func (bluewiz *BlueWizard) BlueTeamCaptureTheRedFlag() {
 			var1[1].ChangeScore(+1)
 		}
 		FlagReset()
-		bluewiz.unit.AggressionLevel(0.83)
-		bluewiz.unit.WalkTo(RedFlag.Pos())
+		wiz.unit.AggressionLevel(0.83)
+		wiz.unit.WalkTo(RedFlag.Pos())
 		ns.PrintStrToAll("Team Blue has captured the Red flag!")
 	}
 }
 
 // Retrieve own flag.
-func (bluewiz *BlueWizard) BlueTeamRetrievedBlueFlag() {
+func (wiz *BlueWizard) BlueTeamRetrievedBlueFlag() {
 	if ns.GetCaller() == BlueFlag && !BlueFlagIsAtBase {
 		BlueFlagIsAtBase = true
 		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
 		BlueFlag.SetPos(ns.Waypoint("BlueFlagStart").Pos())
-		bluewiz.unit.WalkTo(BlueBase.Pos())
+		wiz.unit.WalkTo(BlueBase.Pos())
 		ns.PrintStrToAll("Team Blue has retrieved the flag!")
 		BlueTeamTank.WalkTo(BlueFlag.Pos())
 	}
 }
 
 // Drop flag.
-func (bluewiz *BlueWizard) BlueTeamDropFlag() {
-	if bluewiz.unit == BlueTeamTank {
+func (wiz *BlueWizard) BlueTeamDropFlag() {
+	if wiz.unit == BlueTeamTank {
 		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
 		RedFlag.Enable(true)
 		BlueTeamTank = TeamBlue
@@ -734,22 +734,22 @@ func (bluewiz *BlueWizard) BlueTeamDropFlag() {
 // CTF behaviour.
 // Attack enemy tank without
 
-func (bluewiz *BlueWizard) BlueTeamWalkToBlueFlag() {
+func (wiz *BlueWizard) BlueTeamWalkToBlueFlag() {
 	if !BlueFlagIsAtBase && BlueFlag.IsEnabled() {
-		bluewiz.unit.AggressionLevel(0.16)
-		bluewiz.unit.WalkTo(BlueFlag.Pos())
+		wiz.unit.AggressionLevel(0.16)
+		wiz.unit.WalkTo(BlueFlag.Pos())
 	} else {
-		bluewiz.BlueTeamCheckAttackOrDefend()
+		wiz.BlueTeamCheckAttackOrDefend()
 	}
 
 }
 
-func (bluewiz *BlueWizard) BlueTeamCheckAttackOrDefend() {
-	if bluewiz.unit == BlueTeamTank {
-		bluewiz.unit.AggressionLevel(0.16)
-		bluewiz.unit.Guard(BlueBase.Pos(), BlueBase.Pos(), 20)
+func (wiz *BlueWizard) BlueTeamCheckAttackOrDefend() {
+	if wiz.unit == BlueTeamTank {
+		wiz.unit.AggressionLevel(0.16)
+		wiz.unit.Guard(BlueBase.Pos(), BlueBase.Pos(), 20)
 	} else {
-		bluewiz.unit.AggressionLevel(0.83)
-		bluewiz.unit.WalkTo(RedFlag.Pos())
+		wiz.unit.AggressionLevel(0.83)
+		wiz.unit.WalkTo(RedFlag.Pos())
 	}
 }

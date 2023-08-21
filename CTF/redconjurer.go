@@ -11,9 +11,9 @@ import (
 
 // NewConjurer creates a new RedConjurer bot.
 func NewRedConjurer() *RedConjurer {
-	redcon := &RedConjurer{}
-	redcon.init()
-	return redcon
+	con := &RedConjurer{}
+	con.init()
+	return con
 }
 
 // RedConjurer bot class.
@@ -51,175 +51,175 @@ type RedConjurer struct {
 	reactionTime int
 }
 
-func (redcon *RedConjurer) init() {
+func (con *RedConjurer) init() {
 	// Reset spells ConBot.
-	redcon.spells.Ready = true
+	con.spells.Ready = true
 	// Debuff spells.
-	redcon.spells.SlowReady = true
-	redcon.spells.StunReady = true
+	con.spells.SlowReady = true
+	con.spells.StunReady = true
 	// Offensive spells.
-	redcon.spells.MeteorReady = true
-	redcon.spells.FistOfVengeanceReady = true
-	redcon.spells.PixieSwarmReady = true
-	redcon.spells.ForceOfNatureReady = true
-	redcon.spells.ToxicCloudReady = true
+	con.spells.MeteorReady = true
+	con.spells.FistOfVengeanceReady = true
+	con.spells.PixieSwarmReady = true
+	con.spells.ForceOfNatureReady = true
+	con.spells.ToxicCloudReady = true
 	// Defensive spells.
-	redcon.spells.BlinkReady = true
+	con.spells.BlinkReady = true
 	// Summons.
-	redcon.spells.SummonGhostReady = true
-	redcon.spells.SummonBomber1Ready = true
-	redcon.spells.SummonBomber2Ready = true
+	con.spells.SummonGhostReady = true
+	con.spells.SummonBomber1Ready = true
+	con.spells.SummonBomber2Ready = true
 	// Buff spells.
-	redcon.spells.InfravisionReady = true
-	redcon.spells.VampirismReady = true
-	redcon.spells.ProtFromFireReady = true
-	redcon.spells.ProtFromPoisonReady = true
-	redcon.spells.ProtFromShockReady = true
+	con.spells.InfravisionReady = true
+	con.spells.VampirismReady = true
+	con.spells.ProtFromFireReady = true
+	con.spells.ProtFromPoisonReady = true
+	con.spells.ProtFromShockReady = true
 
 	// Create ConBot.
-	redcon.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointRed"))
-	redcon.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
-	redcon.unit.SetMaxHealth(100)
-	redcon.unit.SetStrength(55)
-	redcon.unit.SetBaseSpeed(88)
-	redcon.spells.isAlive = true
+	con.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointRed"))
+	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	con.unit.SetMaxHealth(100)
+	con.unit.SetStrength(55)
+	con.unit.SetBaseSpeed(88)
+	con.spells.isAlive = true
 	// Set Team.
-	redcon.unit.SetOwner(TeamRed)
+	con.unit.SetOwner(TeamRed)
 	// Create ConBot mouse cursor.
-	redcon.target = TeamBlue
-	redcon.cursor = redcon.target.Pos()
+	con.target = TeamBlue
+	con.cursor = con.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
-	redcon.reactionTime = 15
+	con.reactionTime = 15
 	// Set ConBot properties.
-	redcon.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	redcon.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
-	redcon.unit.MonsterStatusEnable(object.MonStatusAlert)
-	redcon.unit.AggressionLevel(0.16)
+	con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+	con.unit.MonsterStatusEnable(object.MonStatusAlert)
+	con.unit.AggressionLevel(0.16)
 	ns.NewTimer(ns.Seconds(4), func() {
-		redcon.unit.AggressionLevel(0.83)
+		con.unit.AggressionLevel(0.83)
 	})
-	redcon.unit.Hunt()
-	redcon.unit.ResumeLevel(0.8)
-	redcon.unit.RetreatLevel(0.4)
+	con.unit.Hunt()
+	con.unit.ResumeLevel(0.8)
+	con.unit.RetreatLevel(0.4)
 	// Create and equip ConBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	redcon.items.StreetSneakers = ns.CreateObject("StreetSneakers", redcon.unit)
-	redcon.items.StreetPants = ns.CreateObject("StreetPants", redcon.unit)
-	redcon.items.StreetShirt = ns.CreateObject("StreetShirt", redcon.unit)
-	redcon.unit.Equip(redcon.items.StreetPants)
-	redcon.unit.Equip(redcon.items.StreetShirt)
-	redcon.unit.Equip(redcon.items.StreetSneakers)
+	con.items.StreetSneakers = ns.CreateObject("StreetSneakers", con.unit)
+	con.items.StreetPants = ns.CreateObject("StreetPants", con.unit)
+	con.items.StreetShirt = ns.CreateObject("StreetShirt", con.unit)
+	con.unit.Equip(con.items.StreetPants)
+	con.unit.Equip(con.items.StreetShirt)
+	con.unit.Equip(con.items.StreetSneakers)
 	// Buff on respawn.
-	redcon.buffInitial()
+	con.buffInitial()
 	// Enemy sighted.
-	redcon.unit.OnEvent(ns.EventEnemySighted, redcon.onEnemySighted)
+	con.unit.OnEvent(ns.EventEnemySighted, con.onEnemySighted)
 	// On Collision.
-	redcon.unit.OnEvent(ns.EventCollision, redcon.onCollide)
+	con.unit.OnEvent(ns.EventCollision, con.onCollide)
 	// Retreat.
-	redcon.unit.OnEvent(ns.EventRetreat, redcon.onRetreat)
+	con.unit.OnEvent(ns.EventRetreat, con.onRetreat)
 	// Enemy lost.
-	redcon.unit.OnEvent(ns.EventLostEnemy, redcon.onLostEnemy)
+	con.unit.OnEvent(ns.EventLostEnemy, con.onLostEnemy)
 	// On death.
-	redcon.unit.OnEvent(ns.EventDeath, redcon.onDeath)
+	con.unit.OnEvent(ns.EventDeath, con.onDeath)
 	// On heard.
-	redcon.unit.OnEvent(ns.EventEnemyHeard, redcon.onEnemyHeard)
+	con.unit.OnEvent(ns.EventEnemyHeard, con.onEnemyHeard)
 	// Looking for enemies.
-	redcon.unit.OnEvent(ns.EventLookingForEnemy, redcon.onLookingForTarget)
-	//redcon.unit.OnEvent(ns.EventChangeFocus, redcon.onChangeFocus)
-	redcon.unit.OnEvent(ns.EventEndOfWaypoint, redcon.onEndOfWaypoint)
+	con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
+	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
+	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
 }
 
-func (redcon *RedConjurer) onEndOfWaypoint() {
-	redcon.RedTeamCheckAttackOrDefend()
+func (con *RedConjurer) onEndOfWaypoint() {
+	con.RedTeamCheckAttackOrDefend()
 }
 
-func (redcon *RedConjurer) buffInitial() {
-	redcon.castVampirism()
+func (con *RedConjurer) buffInitial() {
+	con.castVampirism()
 }
 
-func (redcon *RedConjurer) onLookingForTarget() {
-	redcon.castInfravision()
+func (con *RedConjurer) onLookingForTarget() {
+	con.castInfravision()
 }
 
-func (redcon *RedConjurer) onEnemyHeard() {
-	redcon.castForceOfNature()
+func (con *RedConjurer) onEnemyHeard() {
+	con.castForceOfNature()
 }
 
-func (redcon *RedConjurer) onEnemySighted() {
-	redcon.target = ns.GetCaller()
-	redcon.castForceOfNature()
+func (con *RedConjurer) onEnemySighted() {
+	con.target = ns.GetCaller()
+	con.castForceOfNature()
 }
 
-func (redcon *RedConjurer) onCollide() {
-	if redcon.spells.isAlive {
-		redcon.RedTeamPickUpBlueFlag()
-		redcon.RedTeamCaptureTheBlueFlag()
-		redcon.RedTeamRetrievedRedFlag()
+func (con *RedConjurer) onCollide() {
+	if con.spells.isAlive {
+		con.RedTeamPickUpBlueFlag()
+		con.RedTeamCaptureTheBlueFlag()
+		con.RedTeamRetrievedRedFlag()
 	}
 }
 
-func (redcon *RedConjurer) onRetreat() {
-	redcon.castBlink()
+func (con *RedConjurer) onRetreat() {
+	con.castBlink()
 }
 
-func (redcon *RedConjurer) onLostEnemy() {
-	redcon.castInfravision()
-	redcon.RedTeamWalkToRedFlag()
+func (con *RedConjurer) onLostEnemy() {
+	con.castInfravision()
+	con.RedTeamWalkToRedFlag()
 }
 
-func (redcon *RedConjurer) onDeath() {
-	redcon.spells.isAlive = false
-	redcon.spells.Ready = false
-	redcon.RedTeamDropFlag()
-	redcon.unit.DestroyChat()
-	ns.AudioEvent(audio.NPCDie, redcon.unit)
+func (con *RedConjurer) onDeath() {
+	con.spells.isAlive = false
+	con.spells.Ready = false
+	con.RedTeamDropFlag()
+	con.unit.DestroyChat()
+	ns.AudioEvent(audio.NPCDie, con.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
 	ns.NewTimer(ns.Frames(60), func() {
-		ns.AudioEvent(audio.BlinkCast, redcon.unit)
-		redcon.unit.Delete()
-		redcon.items.StreetPants.Delete()
-		redcon.items.StreetShirt.Delete()
-		redcon.items.StreetSneakers.Delete()
-		redcon.init()
+		ns.AudioEvent(audio.BlinkCast, con.unit)
+		con.unit.Delete()
+		con.items.StreetPants.Delete()
+		con.items.StreetShirt.Delete()
+		con.items.StreetSneakers.Delete()
+		con.init()
 	})
 }
 
-func (redcon *RedConjurer) Update() {
-	redcon.findLoot()
-	if redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-		redcon.spells.Ready = true
+func (con *RedConjurer) Update() {
+	con.findLoot()
+	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+		con.spells.Ready = true
 	}
-	if redcon.unit.HasEnchant(enchant.HELD) || redcon.unit.HasEnchant(enchant.SLOWED) {
-		redcon.castBlink()
+	if con.unit.HasEnchant(enchant.HELD) || con.unit.HasEnchant(enchant.SLOWED) {
+		con.castBlink()
 	}
-	if redcon.target.HasEnchant(enchant.HELD) || redcon.target.HasEnchant(enchant.SLOWED) {
-		if redcon.unit.CanSee(redcon.target) {
-			redcon.castFistOfVengeance()
+	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
+		if con.unit.CanSee(con.target) {
+			con.castFistOfVengeance()
 		}
 	}
-	if redcon.spells.Ready && redcon.unit.CanSee(redcon.target) {
-		redcon.castStun()
-		redcon.castPixieSwarm()
-		redcon.castToxicCloud()
-		redcon.castSlow()
-		redcon.castMeteor()
+	if con.spells.Ready && con.unit.CanSee(con.target) {
+		con.castStun()
+		con.castPixieSwarm()
+		con.castToxicCloud()
+		con.castSlow()
+		con.castMeteor()
 
 	}
-	if !redcon.unit.CanSee(redcon.target) && redcon.spells.Ready {
-		redcon.castVampirism()
-		redcon.castProtectionFromShock()
-		redcon.castProtectionFromFire()
-		redcon.castProtectionFromPoison()
-		redcon.summonBomber1()
-		redcon.summonBomber2()
+	if !con.unit.CanSee(con.target) && con.spells.Ready {
+		con.castVampirism()
+		con.castProtectionFromShock()
+		con.castProtectionFromFire()
+		con.castProtectionFromPoison()
+		con.summonBomber1()
+		con.summonBomber2()
 	}
 }
 
-func (redcon *RedConjurer) findLoot() {
+func (con *RedConjurer) findLoot() {
 	const dist = 75
 	// Weapons.
 	weapons := ns.FindAllObjects(
-		ns.InCirclef{Center: redcon.unit, R: dist},
+		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// Wands.
 			"InfinitePainWand", "LesserFireballWand",
@@ -234,26 +234,26 @@ func (redcon *RedConjurer) findLoot() {
 		},
 	)
 	for _, item := range weapons {
-		if redcon.unit.CanSee(item) {
-			redcon.unit.Equip(item)
+		if con.unit.CanSee(item) {
+			con.unit.Equip(item)
 		}
 	}
 	// Quiver.
 	quiver := ns.FindAllObjects(
-		ns.InCirclef{Center: redcon.unit, R: dist},
+		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// Quiver.
 			"Quiver",
 		},
 	)
 	for _, item := range quiver {
-		if redcon.unit.CanSee(item) {
-			redcon.unit.Pickup(item)
+		if con.unit.CanSee(item) {
+			con.unit.Pickup(item)
 		}
 	}
 	// Armor.
 	armor := ns.FindAllObjects(
-		ns.InCirclef{Center: redcon.unit, R: dist},
+		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// RedConjurer Helm.
 			"ConjurerHelm",
@@ -266,31 +266,31 @@ func (redcon *RedConjurer) findLoot() {
 		},
 	)
 	for _, item := range armor {
-		if redcon.unit.CanSee(item) {
-			redcon.unit.Equip(item)
+		if con.unit.CanSee(item) {
+			con.unit.Equip(item)
 		}
 	}
 }
 
-func (redcon *RedConjurer) castVampirism() {
+func (con *RedConjurer) castVampirism() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.VampirismReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.VampirismReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.VampirismReady = false
-						ns.CastSpell(spell.VAMPIRISM, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.VampirismReady = false
+						ns.CastSpell(spell.VAMPIRISM, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Vampirism cooldown.
 						ns.NewTimer(ns.Seconds(30), func() {
-							redcon.spells.VampirismReady = true
+							con.spells.VampirismReady = true
 						})
 					}
 				})
@@ -299,25 +299,25 @@ func (redcon *RedConjurer) castVampirism() {
 	}
 }
 
-func (redcon *RedConjurer) castProtectionFromFire() {
+func (con *RedConjurer) castProtectionFromFire() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.ProtFromFireReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromFireReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.ProtFromFireReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_FIRE, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.ProtFromFireReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_FIRE, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Protection From Fire cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							redcon.spells.ProtFromFireReady = true
+							con.spells.ProtFromFireReady = true
 						})
 					}
 				})
@@ -326,25 +326,25 @@ func (redcon *RedConjurer) castProtectionFromFire() {
 	}
 }
 
-func (redcon *RedConjurer) castProtectionFromPoison() {
+func (con *RedConjurer) castProtectionFromPoison() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.ProtFromPoisonReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromPoisonReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhLeft, PhRight, PhDownLeft, PhUpRight}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhLeft, PhRight, PhDownLeft, PhUpRight}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.ProtFromPoisonReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_POISON, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.ProtFromPoisonReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_POISON, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Protection From Poison cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							redcon.spells.ProtFromPoisonReady = true
+							con.spells.ProtFromPoisonReady = true
 						})
 					}
 				})
@@ -353,25 +353,25 @@ func (redcon *RedConjurer) castProtectionFromPoison() {
 	}
 }
 
-func (redcon *RedConjurer) castProtectionFromShock() {
+func (con *RedConjurer) castProtectionFromShock() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.ProtFromShockReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromShockReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.ProtFromShockReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.ProtFromShockReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Protection From Shock cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							redcon.spells.ProtFromShockReady = true
+							con.spells.ProtFromShockReady = true
 						})
 					}
 				})
@@ -380,25 +380,25 @@ func (redcon *RedConjurer) castProtectionFromShock() {
 	}
 }
 
-func (redcon *RedConjurer) castPixieSwarm() {
+func (con *RedConjurer) castPixieSwarm() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.PixieSwarmReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.PixieSwarmReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhLeft, PhDown, PhRight, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhLeft, PhDown, PhRight, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.PixieSwarmReady = false
-						ns.CastSpell(spell.PIXIE_SWARM, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.PixieSwarmReady = false
+						ns.CastSpell(spell.PIXIE_SWARM, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Pixie Swarm cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							redcon.spells.PixieSwarmReady = true
+							con.spells.PixieSwarmReady = true
 						})
 					}
 				})
@@ -407,30 +407,30 @@ func (redcon *RedConjurer) castPixieSwarm() {
 	}
 }
 
-func (redcon *RedConjurer) castFistOfVengeance() {
+func (con *RedConjurer) castFistOfVengeance() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.unit.CanSee(redcon.target) && redcon.spells.FistOfVengeanceReady && redcon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
 		// Select target.
-		redcon.cursor = redcon.target.Pos()
+		con.cursor = con.target.Pos()
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						redcon.unit.LookAtObject(redcon.target)
-						redcon.unit.Pause(ns.Frames(redcon.reactionTime))
-						redcon.spells.FistOfVengeanceReady = false
-						ns.CastSpell(spell.FIST, redcon.unit, redcon.cursor)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.FistOfVengeanceReady = false
+						ns.CastSpell(spell.FIST, con.unit, con.cursor)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
 							// Fist Of Vengeance cooldown.
-							redcon.spells.FistOfVengeanceReady = true
+							con.spells.FistOfVengeanceReady = true
 						})
 					}
 				})
@@ -439,29 +439,29 @@ func (redcon *RedConjurer) castFistOfVengeance() {
 	}
 }
 
-func (redcon *RedConjurer) castForceOfNature() {
+func (con *RedConjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.ForceOfNatureReady && redcon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhDownRight, PhDownLeft, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDownRight, PhDownLeft, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						redcon.spells.ForceOfNatureReady = false
-						redcon.unit.LookAtObject(redcon.target)
-						redcon.unit.Pause(ns.Frames(30))
-						ns.CastSpell(spell.FORCE_OF_NATURE, redcon.unit, redcon.target)
+						con.spells.ForceOfNatureReady = false
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(30))
+						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Force of Nature cooldown.
 						ns.NewTimer(ns.Seconds(20), func() {
-							redcon.spells.ForceOfNatureReady = true
+							con.spells.ForceOfNatureReady = true
 						})
 					}
 				})
@@ -470,25 +470,25 @@ func (redcon *RedConjurer) castForceOfNature() {
 	}
 }
 
-func (redcon *RedConjurer) castBlink() {
+func (con *RedConjurer) castBlink() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.BlinkReady && redcon.unit != RedTeamTank {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != RedTeamTank {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.BlinkReady = false
-						ns.NewTrap(redcon.unit, spell.BLINK)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.BlinkReady = false
+						ns.NewTrap(con.unit, spell.BLINK)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Blink cooldown.
 						ns.NewTimer(ns.Seconds(1), func() {
-							redcon.spells.BlinkReady = true
+							con.spells.BlinkReady = true
 						})
 					}
 				})
@@ -497,29 +497,29 @@ func (redcon *RedConjurer) castBlink() {
 	}
 }
 
-func (redcon *RedConjurer) castStun() {
+func (con *RedConjurer) castStun() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.unit.CanSee(redcon.target) && redcon.spells.StunReady && redcon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						redcon.unit.LookAtObject(redcon.target)
-						redcon.unit.Pause(ns.Frames(redcon.reactionTime))
-						redcon.spells.StunReady = false
-						ns.CastSpell(spell.STUN, redcon.unit, redcon.target)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.StunReady = false
+						ns.CastSpell(spell.STUN, con.unit, con.target)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(5), func() {
 							// Stun cooldown.
-							redcon.spells.StunReady = true
+							con.spells.StunReady = true
 						})
 					}
 				})
@@ -528,30 +528,30 @@ func (redcon *RedConjurer) castStun() {
 	}
 }
 
-func (redcon *RedConjurer) castToxicCloud() {
+func (con *RedConjurer) castToxicCloud() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.unit.CanSee(redcon.target) && redcon.spells.ToxicCloudReady && redcon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
 		// Select target.
-		redcon.cursor = redcon.target.Pos()
+		con.cursor = con.target.Pos()
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhUpRight, PhDownLeft, PhUpLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						redcon.unit.LookAtObject(redcon.target)
-						redcon.unit.Pause(ns.Frames(redcon.reactionTime))
-						redcon.spells.ToxicCloudReady = false
-						ns.CastSpell(spell.TOXIC_CLOUD, redcon.unit, redcon.cursor)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.ToxicCloudReady = false
+						ns.CastSpell(spell.TOXIC_CLOUD, con.unit, con.cursor)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Toxic Cloud cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							redcon.spells.ToxicCloudReady = true
+							con.spells.ToxicCloudReady = true
 						})
 					}
 				})
@@ -560,29 +560,29 @@ func (redcon *RedConjurer) castToxicCloud() {
 	}
 }
 
-func (redcon *RedConjurer) castSlow() {
+func (con *RedConjurer) castSlow() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.unit.CanSee(redcon.target) && redcon.spells.SlowReady && redcon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						redcon.unit.LookAtObject(redcon.target)
-						redcon.unit.Pause(ns.Frames(redcon.reactionTime))
-						redcon.spells.SlowReady = false
-						ns.CastSpell(spell.SLOW, redcon.unit, redcon.target)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.SlowReady = false
+						ns.CastSpell(spell.SLOW, con.unit, con.target)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Slow cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							redcon.spells.SlowReady = true
+							con.spells.SlowReady = true
 						})
 					}
 				})
@@ -591,30 +591,30 @@ func (redcon *RedConjurer) castSlow() {
 	}
 }
 
-func (redcon *RedConjurer) castMeteor() {
+func (con *RedConjurer) castMeteor() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.unit.CanSee(redcon.target) && redcon.spells.MeteorReady && redcon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
 		// Select target.
-		redcon.cursor = redcon.target.Pos()
+		con.cursor = con.target.Pos()
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhDownLeft, PhDownLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDownLeft, PhDownLeft}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						redcon.unit.LookAtObject(redcon.target)
-						redcon.unit.Pause(ns.Frames(redcon.reactionTime))
-						redcon.spells.MeteorReady = false
-						ns.CastSpell(spell.METEOR, redcon.unit, redcon.cursor)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.MeteorReady = false
+						ns.CastSpell(spell.METEOR, con.unit, con.cursor)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
 							// Meteor cooldown.
-							redcon.spells.MeteorReady = true
+							con.spells.MeteorReady = true
 						})
 					}
 				})
@@ -623,25 +623,25 @@ func (redcon *RedConjurer) castMeteor() {
 	}
 }
 
-func (redcon *RedConjurer) castInfravision() {
+func (con *RedConjurer) castInfravision() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.InfravisionReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InfravisionReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhRight, PhLeft, PhRight, PhLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhRight, PhLeft}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.InfravisionReady = false
-						ns.CastSpell(spell.INFRAVISION, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.InfravisionReady = false
+						ns.CastSpell(spell.INFRAVISION, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Invravision cooldown.
 						ns.NewTimer(ns.Seconds(30), func() {
-							redcon.spells.InfravisionReady = true
+							con.spells.InfravisionReady = true
 						})
 					}
 				})
@@ -650,25 +650,25 @@ func (redcon *RedConjurer) castInfravision() {
 	}
 }
 
-func (redcon *RedConjurer) summonGhost() {
+func (con *RedConjurer) summonGhost() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.SummonGhostReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonGhostReady {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(redcon.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						redcon.spells.SummonGhostReady = false
-						ns.CastSpell(spell.SUMMON_GHOST, redcon.unit, redcon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.SummonGhostReady = false
+						ns.CastSpell(spell.SUMMON_GHOST, con.unit, con.unit)
 						// Global cooldown.
-						redcon.spells.Ready = true
+						con.spells.Ready = true
 						// Summon Ghost cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							redcon.spells.SummonGhostReady = true
+							con.spells.SummonGhostReady = true
 						})
 					}
 				})
@@ -677,57 +677,57 @@ func (redcon *RedConjurer) summonGhost() {
 	}
 }
 
-func (redcon *RedConjurer) summonBomber1() {
+func (con *RedConjurer) summonBomber1() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.SummonBomber1Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber1Ready {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				// Stun chant.
-				castPhonemes(redcon.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
-						if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 							// Poison chant.
-							castPhonemes(redcon.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
+							castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
 								// Pause for concentration.
 								ns.NewTimer(ns.Frames(3), func() {
 									// Check for War Cry before chant.
-									if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 										// Fist Of Vengeance chant.
-										castPhonemes(redcon.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+										castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
 											// Pause for concentration.
 											ns.NewTimer(ns.Frames(3), func() {
 												// Check for War Cry before chant.
-												if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+												if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 													// Glyph chant.
-													castPhonemes(redcon.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
-														if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															redcon.spells.SummonBomber1Ready = false
-															redcon.bomber1 = ns.CreateObject("Bomber", redcon.unit)
-															ns.AudioEvent("BomberSummon", redcon.bomber1)
-															redcon.bomber1.SetOwner(redcon.unit)
-															redcon.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
+														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.spells.SummonBomber1Ready = false
+															con.bomber1 = ns.CreateObject("Bomber", con.unit)
+															ns.AudioEvent("BomberSummon", con.bomber1)
+															con.bomber1.SetOwner(con.unit)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	redcon.spells.SummonBomber1Ready = true
+																	con.spells.SummonBomber1Ready = true
 																})
 															})
-															redcon.bomber1.Follow(redcon.unit)
-															redcon.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
-															redcon.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
-																redcon.bomber1.Attack(redcon.target)
+															con.bomber1.Follow(con.unit)
+															con.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber1.Attack(con.target)
 															})
-															redcon.bomber1.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
-																redcon.bomber1.Follow(redcon.unit)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
+																con.bomber1.Follow(con.unit)
 															})
 															// Global cooldown.
-															redcon.spells.Ready = true
+															con.spells.Ready = true
 														}
 													})
 												}
@@ -744,57 +744,57 @@ func (redcon *RedConjurer) summonBomber1() {
 	}
 }
 
-func (redcon *RedConjurer) summonBomber2() {
+func (con *RedConjurer) summonBomber2() {
 	// Check if cooldowns are ready.
-	if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) && redcon.spells.Ready && redcon.spells.SummonBomber2Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
 		// Trigger cooldown.
-		redcon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redcon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				// Stun chant.
-				castPhonemes(redcon.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
-						if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 							// Poison chant.
-							castPhonemes(redcon.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
+							castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
 								// Pause for concentration.
 								ns.NewTimer(ns.Frames(3), func() {
 									// Check for War Cry before chant.
-									if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 										// Fist Of Vengeance chant.
-										castPhonemes(redcon.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+										castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
 											// Pause for concentration.
 											ns.NewTimer(ns.Frames(3), func() {
 												// Check for War Cry before chant.
-												if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+												if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 													// Glyph chant.
-													castPhonemes(redcon.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
-														if redcon.spells.isAlive && !redcon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															redcon.spells.SummonBomber2Ready = false
-															redcon.bomber2 = ns.CreateObject("Bomber", redcon.unit)
-															ns.AudioEvent("BomberSummon", redcon.bomber2)
-															redcon.bomber2.SetOwner(redcon.unit)
-															redcon.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
+														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.spells.SummonBomber2Ready = false
+															con.bomber2 = ns.CreateObject("Bomber", con.unit)
+															ns.AudioEvent("BomberSummon", con.bomber2)
+															con.bomber2.SetOwner(con.unit)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	redcon.spells.SummonBomber2Ready = true
+																	con.spells.SummonBomber2Ready = true
 																})
 															})
-															redcon.bomber2.Follow(redcon.unit)
-															redcon.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
-															redcon.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
-																redcon.bomber2.Attack(redcon.target)
+															con.bomber2.Follow(con.unit)
+															con.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber2.Attack(con.target)
 															})
-															redcon.bomber2.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
-																redcon.bomber2.Follow(redcon.unit)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
+																con.bomber2.Follow(con.unit)
 															})
 															// Global cooldown.
-															redcon.spells.Ready = true
+															con.spells.Ready = true
 														}
 													})
 												}
@@ -814,12 +814,12 @@ func (redcon *RedConjurer) summonBomber2() {
 // ---------------------------------- CTF BOT SCRIPT ------------------------------------//
 // CTF game mechanics.
 // Pick up the enemy flag.
-func (redcon *RedConjurer) RedTeamPickUpBlueFlag() {
+func (con *RedConjurer) RedTeamPickUpBlueFlag() {
 	if ns.GetCaller() == BlueFlag {
 		BlueFlag.Enable(false)
 		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
 		// Customize code below for individual unit.
-		RedTeamTank = redcon.unit
+		RedTeamTank = con.unit
 		RedTeamTank.AggressionLevel(0.16)
 		RedTeamTank.WalkTo(RedBase.Pos())
 		ns.PrintStrToAll("Team Red has the Blue flag!")
@@ -827,8 +827,8 @@ func (redcon *RedConjurer) RedTeamPickUpBlueFlag() {
 }
 
 // Capture the flag.
-func (redcon *RedConjurer) RedTeamCaptureTheBlueFlag() {
-	if ns.GetCaller() == RedFlag && RedFlagIsAtBase && redcon.unit == RedTeamTank {
+func (con *RedConjurer) RedTeamCaptureTheBlueFlag() {
+	if ns.GetCaller() == RedFlag && RedFlagIsAtBase && con.unit == RedTeamTank {
 		ns.AudioEvent(audio.FlagCapture, RedTeamTank) // <----- replace with all players
 
 		RedTeamTank = TeamRed
@@ -837,27 +837,27 @@ func (redcon *RedConjurer) RedTeamCaptureTheBlueFlag() {
 			var1[0].ChangeScore(+1)
 		}
 		FlagReset()
-		redcon.unit.AggressionLevel(0.83)
-		redcon.unit.WalkTo(BlueFlag.Pos())
+		con.unit.AggressionLevel(0.83)
+		con.unit.WalkTo(BlueFlag.Pos())
 		ns.PrintStrToAll("Team Red has captured the Blue flag!")
 	}
 }
 
 // Retrieve own flag.
-func (redcon *RedConjurer) RedTeamRetrievedRedFlag() {
+func (con *RedConjurer) RedTeamRetrievedRedFlag() {
 	if ns.GetCaller() == RedFlag && !RedFlagIsAtBase {
 		RedFlagIsAtBase = true
 		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
 		RedFlag.SetPos(ns.Waypoint("RedFlagStart").Pos())
-		redcon.unit.WalkTo(BlueFlag.Pos())
+		con.unit.WalkTo(BlueFlag.Pos())
 		ns.PrintStrToAll("Team Red has retrieved the flag!")
 		RedTeamTank.WalkTo(RedFlag.Pos())
 	}
 }
 
 // Drop flag.
-func (redcon *RedConjurer) RedTeamDropFlag() {
-	if redcon.unit == RedTeamTank {
+func (con *RedConjurer) RedTeamDropFlag() {
+	if con.unit == RedTeamTank {
 		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
 		BlueFlag.Enable(true)
 		RedTeamTank = TeamRed
@@ -868,22 +868,22 @@ func (redcon *RedConjurer) RedTeamDropFlag() {
 // CTF behaviour.
 
 // When enemy is killed check to see if the flag is dropped, if so get it.
-func (redcon *RedConjurer) RedTeamWalkToRedFlag() {
+func (con *RedConjurer) RedTeamWalkToRedFlag() {
 	if !RedFlagIsAtBase && RedFlag.IsEnabled() {
-		redcon.unit.AggressionLevel(0.16)
-		redcon.unit.WalkTo(BlueFlag.Pos())
+		con.unit.AggressionLevel(0.16)
+		con.unit.WalkTo(BlueFlag.Pos())
 	} else {
-		redcon.RedTeamCheckAttackOrDefend()
+		con.RedTeamCheckAttackOrDefend()
 	}
 }
 
 // At the end of waypoint see defend if tank, attack if not.
-func (redcon *RedConjurer) RedTeamCheckAttackOrDefend() {
-	if redcon.unit == RedTeamTank {
-		redcon.unit.AggressionLevel(0.16)
-		redcon.unit.Guard(RedBase.Pos(), RedBase.Pos(), 20)
+func (con *RedConjurer) RedTeamCheckAttackOrDefend() {
+	if con.unit == RedTeamTank {
+		con.unit.AggressionLevel(0.16)
+		con.unit.Guard(RedBase.Pos(), RedBase.Pos(), 20)
 	} else {
-		redcon.unit.AggressionLevel(0.83)
-		redcon.unit.WalkTo(BlueFlag.Pos())
+		con.unit.AggressionLevel(0.83)
+		con.unit.WalkTo(BlueFlag.Pos())
 	}
 }

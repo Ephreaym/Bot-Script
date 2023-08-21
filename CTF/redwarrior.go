@@ -11,9 +11,9 @@ import (
 
 // NewWarrior creates a new RedWarrior bot.
 func NewRedWarrior() *RedWarrior {
-	redwar := &RedWarrior{}
-	redwar.init()
-	return redwar
+	war := &RedWarrior{}
+	war.init()
+	return war
 }
 
 // RedWarrior bot class.
@@ -50,114 +50,114 @@ type RedWarrior struct {
 	reactionTime int
 }
 
-func (redwar *RedWarrior) init() {
+func (war *RedWarrior) init() {
 	// Reset Behaviour
-	redwar.behaviour.listening = true
-	redwar.behaviour.attacking = false
-	redwar.behaviour.lookingForHealing = false
-	redwar.behaviour.charging = false
-	redwar.behaviour.lookingForTarget = true
+	war.behaviour.listening = true
+	war.behaviour.attacking = false
+	war.behaviour.lookingForHealing = false
+	war.behaviour.charging = false
+	war.behaviour.lookingForTarget = true
 	// Inventory
-	redwar.inventory.RedPotionInInventory = 0
+	war.inventory.RedPotionInInventory = 0
 	// Reset abilities WarBot.
-	redwar.abilities.isAlive = true
-	redwar.abilities.Ready = true
-	redwar.abilities.BerserkerChargeReady = true
-	redwar.abilities.WarCryReady = true
-	redwar.abilities.HarpoonReady = true
-	redwar.abilities.EyeOfTheWolfReady = true
-	redwar.abilities.TreadLightlyReady = true
+	war.abilities.isAlive = true
+	war.abilities.Ready = true
+	war.abilities.BerserkerChargeReady = true
+	war.abilities.WarCryReady = true
+	war.abilities.HarpoonReady = true
+	war.abilities.EyeOfTheWolfReady = true
+	war.abilities.TreadLightlyReady = true
 	// Select spawnpoint.
 	// Create WarBot.
-	redwar.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointRed"))
-	redwar.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
-	redwar.unit.SetMaxHealth(150)
-	redwar.unit.SetStrength(125)
-	redwar.unit.SetBaseSpeed(100)
+	war.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointRed"))
+	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	war.unit.SetMaxHealth(150)
+	war.unit.SetStrength(125)
+	war.unit.SetBaseSpeed(100)
 	// Set Team.
-	redwar.unit.SetOwner(TeamRed)
+	war.unit.SetOwner(TeamRed)
 	// Create WarBot mouse cursor.
-	redwar.target = TeamBlue
-	redwar.cursor = redwar.target.Pos()
+	war.target = TeamBlue
+	war.cursor = war.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
-	redwar.reactionTime = 15
+	war.reactionTime = 15
 	// Set WarBot properties.
-	redwar.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	redwar.unit.MonsterStatusEnable(object.MonStatusCanDodge)
-	//redwar.unit.MonsterStatusEnable(object.MonStatusAlert)
-	redwar.unit.AggressionLevel(0.83)
-	redwar.unit.Hunt()
-	redwar.unit.ResumeLevel(1)
-	redwar.unit.RetreatLevel(0.0)
+	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
+	//war.unit.MonsterStatusEnable(object.MonStatusAlert)
+	war.unit.AggressionLevel(0.83)
+	war.unit.Hunt()
+	war.unit.ResumeLevel(1)
+	war.unit.RetreatLevel(0.0)
 	// Create and equip WarBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	redwar.items.Longsword = ns.CreateObject("Longsword", redwar.unit)
-	redwar.items.WoodenShield = ns.CreateObject("WoodenShield", redwar.unit)
-	redwar.items.StreetSneakers = ns.CreateObject("StreetSneakers", redwar.unit)
-	redwar.items.StreetPants = ns.CreateObject("StreetPants", redwar.unit)
-	redwar.unit.Equip(redwar.items.Longsword)
-	redwar.unit.Equip(redwar.items.WoodenShield)
-	redwar.unit.Equip(redwar.items.StreetSneakers)
-	redwar.unit.Equip(redwar.items.StreetPants)
+	war.items.Longsword = ns.CreateObject("Longsword", war.unit)
+	war.items.WoodenShield = ns.CreateObject("WoodenShield", war.unit)
+	war.items.StreetSneakers = ns.CreateObject("StreetSneakers", war.unit)
+	war.items.StreetPants = ns.CreateObject("StreetPants", war.unit)
+	war.unit.Equip(war.items.Longsword)
+	war.unit.Equip(war.items.WoodenShield)
+	war.unit.Equip(war.items.StreetSneakers)
+	war.unit.Equip(war.items.StreetPants)
 	// Select a WarBot loadout (tactical preference, dialog). TODO: Give different audio and chat for each set so they feel like different characters.
 	// On looking for enemy.
-	redwar.unit.OnEvent(ns.EventLookingForEnemy, redwar.onLookingForEnemy)
+	war.unit.OnEvent(ns.EventLookingForEnemy, war.onLookingForEnemy)
 	// On heard.
-	redwar.unit.OnEvent(ns.EventEnemyHeard, redwar.onEnemyHeard)
+	war.unit.OnEvent(ns.EventEnemyHeard, war.onEnemyHeard)
 	// Enemy sighted.
-	redwar.unit.OnEvent(ns.EventEnemySighted, redwar.onEnemySighted)
+	war.unit.OnEvent(ns.EventEnemySighted, war.onEnemySighted)
 	// Enemy lost.
-	redwar.unit.OnEvent(ns.EventLostEnemy, redwar.onLostEnemy)
+	war.unit.OnEvent(ns.EventLostEnemy, war.onLostEnemy)
 	// On end of waypoint.
-	redwar.unit.OnEvent(ns.EventEndOfWaypoint, redwar.onEndOfWaypoint)
+	war.unit.OnEvent(ns.EventEndOfWaypoint, war.onEndOfWaypoint)
 	// On change focus.
-	redwar.unit.OnEvent(ns.EventChangeFocus, redwar.onChangeFocus)
+	war.unit.OnEvent(ns.EventChangeFocus, war.onChangeFocus)
 	// On collision.
-	redwar.unit.OnEvent(ns.EventCollision, redwar.onCollide)
+	war.unit.OnEvent(ns.EventCollision, war.onCollide)
 	// On hit.
-	redwar.unit.OnEvent(ns.EventIsHit, redwar.onHit)
+	war.unit.OnEvent(ns.EventIsHit, war.onHit)
 	// Retreat.
-	redwar.unit.OnEvent(ns.EventRetreat, redwar.onRetreat)
+	war.unit.OnEvent(ns.EventRetreat, war.onRetreat)
 	// On death.
-	redwar.unit.OnEvent(ns.EventDeath, redwar.onDeath)
+	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 }
 
-func (redwar *RedWarrior) onChangeFocus() {
-	if !redwar.behaviour.lookingForHealing {
-		//redwar.unit.Chat("onChangeFocus")
+func (war *RedWarrior) onChangeFocus() {
+	if !war.behaviour.lookingForHealing {
+		//war.unit.Chat("onChangeFocus")
 	}
 }
 
-func (redwar *RedWarrior) onLookingForEnemy() {
+func (war *RedWarrior) onLookingForEnemy() {
 
-	if !redwar.behaviour.lookingForHealing {
-		//redwar.unit.Chat("onLookingForEnemy")
+	if !war.behaviour.lookingForHealing {
+		//war.unit.Chat("onLookingForEnemy")
 	}
 }
 
-func (redwar *RedWarrior) onEnemyHeard() {
-	if !redwar.behaviour.lookingForHealing && !redwar.behaviour.attacking {
-		//redwar.unit.Chat("onEnemyHeard")
-		redwar.behaviour.attacking = true
-		//redwar.WarBotDetectEnemy() TEMP DISABLE
-		//if redwar.behaviour.listening {
-		//	redwar.behaviour.listening = false
-		//	redwar.unit.Chat("Wiz06a:Guard2Listen")
-		//	redwar.unit.Guard(redwar.target.Pos(), redwar.target.Pos(), 300)
+func (war *RedWarrior) onEnemyHeard() {
+	if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
+		//war.unit.Chat("onEnemyHeard")
+		war.behaviour.attacking = true
+		//war.WarBotDetectEnemy() TEMP DISABLE
+		//if war.behaviour.listening {
+		//	war.behaviour.listening = false
+		//	war.unit.Chat("Wiz06a:Guard2Listen")
+		//	war.unit.Guard(war.target.Pos(), war.target.Pos(), 300)
 		//	ns.NewTimer(ns.Seconds(10), func() {
-		//		redwar.behaviour.listening = true
+		//		war.behaviour.listening = true
 		//	})
 		//}
 	}
 }
 
-func (redwar *RedWarrior) onCollide() {
-	if redwar.abilities.isAlive {
+func (war *RedWarrior) onCollide() {
+	if war.abilities.isAlive {
 		// CTF Logic.
-		redwar.RedTeamPickUpBlueFlag()
-		redwar.RedTeamCaptureTheBlueFlag()
-		redwar.RedTeamRetrievedRedFlag()
-		if !redwar.behaviour.lookingForHealing {
-			//redwar.unit.Chat("onCollide")
+		war.RedTeamPickUpBlueFlag()
+		war.RedTeamCaptureTheBlueFlag()
+		war.RedTeamRetrievedRedFlag()
+		if !war.behaviour.lookingForHealing {
+			//war.unit.Chat("onCollide")
 			// TODO: determine tactic.
 		}
 		//if ns.GetCaller() == RedFlag {
@@ -171,132 +171,132 @@ func (redwar *RedWarrior) onCollide() {
 	}
 }
 
-func (redwar *RedWarrior) onEnemySighted() {
+func (war *RedWarrior) onEnemySighted() {
 	// SCRIPT FOR WEAPON SWITCHING. On HOLD FOR NOW
-	//if redwar.unit.HasItem(ns.Object("FanChakram")) {
-	//	redwar.unit.Chat("HELLLLOOOOOO")
-	//redwar.unit.Equip(ns.Object("FanChakram"))
-	//redwar.unit.HitRanged(redwar.target.Pos())
+	//if war.unit.HasItem(ns.Object("FanChakram")) {
+	//	war.unit.Chat("HELLLLOOOOOO")
+	//war.unit.Equip(ns.Object("FanChakram"))
+	//war.unit.HitRanged(war.target.Pos())
 	//}
 
-	if !redwar.behaviour.lookingForHealing {
-		//redwar.unit.Chat("onEnemySighted")
-		//redwar.WarBotDetectEnemy() TEMP DISALBE
-		//redwar.useWarCry()
+	if !war.behaviour.lookingForHealing {
+		//war.unit.Chat("onEnemySighted")
+		//war.WarBotDetectEnemy() TEMP DISALBE
+		//war.useWarCry()
 	}
 }
 
-func (redwar *RedWarrior) onRetreat() {
-	//redwar.unit.Chat("onRetreat")
+func (war *RedWarrior) onRetreat() {
+	//war.unit.Chat("onRetreat")
 	// TODO: FIX IT!
-	//if redwar.behaviour.lookForHealth {
-	//	redwar.behaviour.listening = false
-	//	redwar.behaviour.lookForHealth = false
-	//	redwar.unit.Chat("Con02A:NecroTalk02")
+	//if war.behaviour.lookForHealth {
+	//	war.behaviour.listening = false
+	//	war.behaviour.lookForHealth = false
+	//	war.unit.Chat("Con02A:NecroTalk02")
 	//	// Walk to nearest RedPotion.
-	//	redwar.targetPotion = ns.FindClosestObject(redwar.unit, ns.HasTypeName{"RedPotion"})
-	//	redwar.unit.AggressionLevel(0.16)
-	//	redwar.unit.Guard(redwar.targetPotion.Pos().Pos(), redwar.targetPotion.Pos(), 50)
+	//	war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
+	//	war.unit.AggressionLevel(0.16)
+	//	war.unit.Guard(war.targetPotion.Pos().Pos(), war.targetPotion.Pos(), 50)
 	//	ns.NewTimer(ns.Seconds(10), func() {
-	//		redwar.behaviour.lookForHealth = true
-	//		redwar.behaviour.listening = true
+	//		war.behaviour.lookForHealth = true
+	//		war.behaviour.listening = true
 	//	})
 	//}
 }
 
-func (redwar *RedWarrior) onLostEnemy() {
-	if !redwar.behaviour.lookingForHealing {
-		redwar.useEyeOfTheWolf()
-		//redwar.unit.Chat("onLostEnemy")
-		//redwar.unit.Chat("Multi:General10")
-		redwar.behaviour.attacking = false
-		redwar.unit.Hunt()
+func (war *RedWarrior) onLostEnemy() {
+	if !war.behaviour.lookingForHealing {
+		war.useEyeOfTheWolf()
+		//war.unit.Chat("onLostEnemy")
+		//war.unit.Chat("Multi:General10")
+		war.behaviour.attacking = false
+		war.unit.Hunt()
 	}
-	redwar.RedTeamWalkToRedFlag()
+	war.RedTeamWalkToRedFlag()
 }
 
-func (redwar *RedWarrior) onHit() {
-	//if redwar.unit.CurrentHealth() <= 100 && redwar.target.CurrentHealth() >= 50 && !redwar.behaviour.lookingForHealing && redwar.inventory.RedPotionInInventory <= 0 {
-	//	//redwar.unit.Chat("onHit")
-	//	redwar.lookForRedPotion()
-	//	//redwar.unit.Guard(redwar.targetPotion.Pos().Pos(), redwar.targetPotion.Pos(), 50)
+func (war *RedWarrior) onHit() {
+	//if war.unit.CurrentHealth() <= 100 && war.target.CurrentHealth() >= 50 && !war.behaviour.lookingForHealing && war.inventory.RedPotionInInventory <= 0 {
+	//	//war.unit.Chat("onHit")
+	//	war.lookForRedPotion()
+	//	//war.unit.Guard(war.targetPotion.Pos().Pos(), war.targetPotion.Pos(), 50)
 	//}
-	//if redwar.unit.CurrentHealth() <= 100 && redwar.inventory.RedPotionInInventory >= 1 {
-	//		for _, it := range redwar.unit.Items() {
+	//if war.unit.CurrentHealth() <= 100 && war.inventory.RedPotionInInventory >= 1 {
+	//		for _, it := range war.unit.Items() {
 	//			if it.Type().Name() == "RedPotion" {
-	//				redwar.unit.Drop(it)
-	//				redwar.inventory.RedPotionInInventory = redwar.inventory.RedPotionInInventory - 2
+	//				war.unit.Drop(it)
+	//				war.inventory.RedPotionInInventory = war.inventory.RedPotionInInventory - 2
 	//			}
 	//		}
 	//	}
 }
 
-func (redwar *RedWarrior) onEndOfWaypoint() {
-	if redwar.behaviour.lookingForHealing {
-		if redwar.unit.CurrentHealth() >= 140 {
-			//redwar.unit.Chat("onEndOfWaypoint")
-			redwar.unit.AggressionLevel(0.83)
-			redwar.unit.Hunt()
-			redwar.behaviour.lookingForHealing = false
+func (war *RedWarrior) onEndOfWaypoint() {
+	if war.behaviour.lookingForHealing {
+		if war.unit.CurrentHealth() >= 140 {
+			//war.unit.Chat("onEndOfWaypoint")
+			war.unit.AggressionLevel(0.83)
+			war.unit.Hunt()
+			war.behaviour.lookingForHealing = false
 		} else {
-			if redwar.inventory.RedPotionInInventory <= 1 {
-				redwar.lookForRedPotion()
+			if war.inventory.RedPotionInInventory <= 1 {
+				war.lookForRedPotion()
 			}
 		}
 	} else {
-		if !redwar.behaviour.lookingForTarget {
-			redwar.unit.Hunt()
-			redwar.unit.AggressionLevel(0.83)
-			redwar.behaviour.lookingForTarget = true
+		if !war.behaviour.lookingForTarget {
+			war.unit.Hunt()
+			war.unit.AggressionLevel(0.83)
+			war.behaviour.lookingForTarget = true
 		}
 	}
-	redwar.RedTeamCheckAttackOrDefend()
+	war.RedTeamCheckAttackOrDefend()
 }
 
-func (redwar *RedWarrior) lookForRedPotion() {
-	//if redwar.inventory.RedPotionInInventory >= 1 {
-	//	redwar.onEndOfWaypoint()
+func (war *RedWarrior) lookForRedPotion() {
+	//if war.inventory.RedPotionInInventory >= 1 {
+	//	war.onEndOfWaypoint()
 	//} else {
-	//	redwar.behaviour.lookingForHealing = true
-	//	redwar.unit.AggressionLevel(0.16)
-	//	redwar.unit.WalkTo(redwar.targetPotion.Pos())
+	//	war.behaviour.lookingForHealing = true
+	//	war.unit.AggressionLevel(0.16)
+	//	war.unit.WalkTo(war.targetPotion.Pos())
 	//}
 
 }
 
-func (redwar *RedWarrior) onDeath() {
-	redwar.abilities.isAlive = false
-	redwar.unit.DestroyChat()
-	redwar.RedTeamDropFlag()
-	ns.AudioEvent(audio.NPCDie, redwar.unit)
+func (war *RedWarrior) onDeath() {
+	war.abilities.isAlive = false
+	war.unit.DestroyChat()
+	war.RedTeamDropFlag()
+	ns.AudioEvent(audio.NPCDie, war.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
 	ns.NewTimer(ns.Frames(60), func() {
-		ns.AudioEvent(audio.BlinkCast, redwar.unit)
-		redwar.unit.Delete()
-		redwar.items.StreetPants.Delete()
-		redwar.items.StreetSneakers.Delete()
-		redwar.init()
+		ns.AudioEvent(audio.BlinkCast, war.unit)
+		war.unit.Delete()
+		war.items.StreetPants.Delete()
+		war.items.StreetSneakers.Delete()
+		war.init()
 	})
 }
 
-func (redwar *RedWarrior) Update() {
+func (war *RedWarrior) Update() {
 	if InitLoadComplete {
-		if redwar.unit.HasEnchant(enchant.HELD) {
-			ns.CastSpell(spell.SLOW, redwar.unit, redwar.unit)
-			redwar.unit.EnchantOff(enchant.HELD)
+		if war.unit.HasEnchant(enchant.HELD) {
+			ns.CastSpell(spell.SLOW, war.unit, war.unit)
+			war.unit.EnchantOff(enchant.HELD)
 		}
-		redwar.findLoot()
-		redwar.target = ns.FindClosestObject(redwar.unit, ns.HasClass(object.ClassPlayer))
-		redwar.targetPotion = ns.FindClosestObject(redwar.unit, ns.HasTypeName{"RedPotion"})
+		war.findLoot()
+		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+		war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
 	}
 }
 
-func (redwar *RedWarrior) findLoot() {
+func (war *RedWarrior) findLoot() {
 	const dist = 75
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
-		ns.InCirclef{Center: redwar.unit, R: dist},
+		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
 
 			"GreatSword", "WarHammer", "MorningStar", "BattleAxe", "Sword", "OgreAxe",
@@ -305,43 +305,43 @@ func (redwar *RedWarrior) findLoot() {
 		},
 	)
 	for _, item := range meleeweapons {
-		if redwar.unit.CanSee(item) {
-			redwar.unit.Equip(item)
+		if war.unit.CanSee(item) {
+			war.unit.Equip(item)
 		}
 	}
 
 	// Throwing weapons.
 	throwingweapons := ns.FindAllObjects(
-		ns.InCirclef{Center: redwar.unit, R: dist},
+		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
 			"RoundChakram", "FanChakram",
 		},
 	)
 	for _, item := range throwingweapons {
-		if redwar.unit.CanSee(item) {
-			redwar.unit.Pickup(item)
+		if war.unit.CanSee(item) {
+			war.unit.Pickup(item)
 		}
 	}
 
 	// Potions.
 	potions := ns.FindAllObjects(
-		ns.InCirclef{Center: redwar.unit, R: dist},
+		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
 			"RedPotion", "CurePoisonPotion",
 		},
 	)
 	for _, item := range potions {
-		if redwar.unit.CanSee(item) {
-			redwar.unit.Pickup(item)
+		if war.unit.CanSee(item) {
+			war.unit.Pickup(item)
 		}
-		if redwar.inventory.RedPotionInInventory < 3 {
-			redwar.inventory.RedPotionInInventory = redwar.inventory.RedPotionInInventory + 1
+		if war.inventory.RedPotionInInventory < 3 {
+			war.inventory.RedPotionInInventory = war.inventory.RedPotionInInventory + 1
 		}
 	}
 
 	// Armor.
 	armor := ns.FindAllObjects(
-		ns.InCirclef{Center: redwar.unit, R: dist},
+		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
 			// Plate armor.
 			"OrnateHelm", "SteelHelm", "Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
@@ -357,53 +357,53 @@ func (redwar *RedWarrior) findLoot() {
 		},
 	)
 	for _, item := range armor {
-		if redwar.unit.CanSee(item) {
-			redwar.unit.Equip(item)
+		if war.unit.CanSee(item) {
+			war.unit.Equip(item)
 		}
 	}
 }
 
-func (redwar *RedWarrior) useWarCry() {
+func (war *RedWarrior) useWarCry() {
 	// Check if cooldown is ready.
-	if redwar.abilities.WarCryReady && !redwar.behaviour.charging {
+	if war.abilities.WarCryReady && !war.behaviour.charging {
 		// Select target.
-		redwar.target = ns.FindClosestObject(redwar.unit, ns.HasClass(object.ClassPlayer))
+		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
 		// Trigger global cooldown.
-		redwar.abilities.Ready = false
-		if redwar.target.MaxHealth() == 150 {
+		war.abilities.Ready = false
+		if war.target.MaxHealth() == 150 {
 		} else {
-			redwar.abilities.WarCryReady = false
+			war.abilities.WarCryReady = false
 			// Check reaction time based on difficulty setting.
-			ns.NewTimer(ns.Frames(redwar.reactionTime), func() {
-				redwar.unit.Pause(ns.Seconds(1))
-				ns.AudioEvent("WarcryInvoke", redwar.unit)
-				ns.CastSpell(spell.COUNTERSPELL, redwar.unit, redwar.target)
-				redwar.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
-				redwar.unit.EnchantOff(enchant.INVULNERABLE)
+			ns.NewTimer(ns.Frames(war.reactionTime), func() {
+				war.unit.Pause(ns.Seconds(1))
+				ns.AudioEvent("WarcryInvoke", war.unit)
+				ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
+				war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+				war.unit.EnchantOff(enchant.INVULNERABLE)
 				ns.NewTimer(ns.Seconds(10), func() {
-					redwar.abilities.WarCryReady = true
+					war.abilities.WarCryReady = true
 				})
 				ns.NewTimer(ns.Seconds(1), func() {
-					redwar.abilities.Ready = true
+					war.abilities.Ready = true
 				})
 			})
 		}
 	}
 }
 
-func (redwar *RedWarrior) useEyeOfTheWolf() {
+func (war *RedWarrior) useEyeOfTheWolf() {
 	// Check if cooldown is ready.
-	if redwar.abilities.EyeOfTheWolfReady {
+	if war.abilities.EyeOfTheWolfReady {
 		// Trigger cooldown.
-		redwar.abilities.EyeOfTheWolfReady = false
+		war.abilities.EyeOfTheWolfReady = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(redwar.reactionTime), func() {
+		ns.NewTimer(ns.Frames(war.reactionTime), func() {
 			// Use ability.
-			redwar.unit.Enchant(enchant.INFRAVISION, ns.Seconds(10))
+			war.unit.Enchant(enchant.INFRAVISION, ns.Seconds(10))
 		})
 		// Eye Of The Wolf cooldown.
 		ns.NewTimer(ns.Seconds(20), func() {
-			redwar.abilities.EyeOfTheWolfReady = true
+			war.abilities.EyeOfTheWolfReady = true
 		})
 	}
 }
@@ -411,12 +411,12 @@ func (redwar *RedWarrior) useEyeOfTheWolf() {
 // ---------------------------------- CTF BOT SCRIPT ------------------------------------//
 // CTF game mechanics.
 // Pick up the enemy flag.
-func (redwar *RedWarrior) RedTeamPickUpBlueFlag() {
+func (war *RedWarrior) RedTeamPickUpBlueFlag() {
 	if ns.GetCaller() == BlueFlag {
 		BlueFlag.Enable(false)
 		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
 		// Customize code below for individual unit.
-		RedTeamTank = redwar.unit
+		RedTeamTank = war.unit
 		RedTeamTank.AggressionLevel(0.16)
 		RedTeamTank.WalkTo(RedBase.Pos())
 		ns.PrintStrToAll("Team Red has the Blue flag!")
@@ -424,8 +424,8 @@ func (redwar *RedWarrior) RedTeamPickUpBlueFlag() {
 }
 
 // Capture the flag.
-func (redwar *RedWarrior) RedTeamCaptureTheBlueFlag() {
-	if ns.GetCaller() == RedFlag && RedFlagIsAtBase && redwar.unit == RedTeamTank {
+func (war *RedWarrior) RedTeamCaptureTheBlueFlag() {
+	if ns.GetCaller() == RedFlag && RedFlagIsAtBase && war.unit == RedTeamTank {
 		ns.AudioEvent(audio.FlagCapture, RedTeamTank) // <----- replace with all players
 
 		RedTeamTank = TeamRed
@@ -434,27 +434,27 @@ func (redwar *RedWarrior) RedTeamCaptureTheBlueFlag() {
 			var1[0].ChangeScore(+1)
 		}
 		FlagReset()
-		redwar.unit.AggressionLevel(0.83)
-		redwar.unit.WalkTo(BlueFlag.Pos())
+		war.unit.AggressionLevel(0.83)
+		war.unit.WalkTo(BlueFlag.Pos())
 		ns.PrintStrToAll("Team Red has captured the Blue flag!")
 	}
 }
 
 // Retrieve own flag.
-func (redwar *RedWarrior) RedTeamRetrievedRedFlag() {
+func (war *RedWarrior) RedTeamRetrievedRedFlag() {
 	if ns.GetCaller() == RedFlag && !RedFlagIsAtBase {
 		RedFlagIsAtBase = true
 		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
 		RedFlag.SetPos(ns.Waypoint("RedFlagStart").Pos())
-		redwar.unit.WalkTo(BlueFlag.Pos())
+		war.unit.WalkTo(BlueFlag.Pos())
 		ns.PrintStrToAll("Team Red has retrieved the flag!")
 		RedTeamTank.WalkTo(RedFlag.Pos())
 	}
 }
 
 // Drop flag.
-func (redwar *RedWarrior) RedTeamDropFlag() {
-	if redwar.unit == RedTeamTank {
+func (war *RedWarrior) RedTeamDropFlag() {
+	if war.unit == RedTeamTank {
 		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
 		BlueFlag.Enable(true)
 		RedTeamTank = TeamRed
@@ -465,22 +465,22 @@ func (redwar *RedWarrior) RedTeamDropFlag() {
 // CTF behaviour.
 
 // When enemy is killed check to see if the flag is dropped, if so get it.
-func (redwar *RedWarrior) RedTeamWalkToRedFlag() {
+func (war *RedWarrior) RedTeamWalkToRedFlag() {
 	if !RedFlagIsAtBase && RedFlag.IsEnabled() {
-		redwar.unit.AggressionLevel(0.16)
-		redwar.unit.WalkTo(BlueFlag.Pos())
+		war.unit.AggressionLevel(0.16)
+		war.unit.WalkTo(BlueFlag.Pos())
 	} else {
-		redwar.RedTeamCheckAttackOrDefend()
+		war.RedTeamCheckAttackOrDefend()
 	}
 }
 
 // At the end of waypoint see defend if tank, attack if not.
-func (redwar *RedWarrior) RedTeamCheckAttackOrDefend() {
-	if redwar.unit == RedTeamTank {
-		redwar.unit.AggressionLevel(0.16)
-		redwar.unit.Guard(RedBase.Pos(), RedBase.Pos(), 20)
+func (war *RedWarrior) RedTeamCheckAttackOrDefend() {
+	if war.unit == RedTeamTank {
+		war.unit.AggressionLevel(0.16)
+		war.unit.Guard(RedBase.Pos(), RedBase.Pos(), 20)
 	} else {
-		redwar.unit.AggressionLevel(0.83)
-		redwar.unit.WalkTo(BlueFlag.Pos())
+		war.unit.AggressionLevel(0.83)
+		war.unit.WalkTo(BlueFlag.Pos())
 	}
 }

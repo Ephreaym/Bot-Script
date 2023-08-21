@@ -11,9 +11,9 @@ import (
 
 // NewConjurer creates a new BlueConjurer bot.
 func NewBlueConjurer() *BlueConjurer {
-	bluecon := &BlueConjurer{}
-	bluecon.init()
-	return bluecon
+	con := &BlueConjurer{}
+	con.init()
+	return con
 }
 
 // BlueConjurer bot class.
@@ -51,175 +51,175 @@ type BlueConjurer struct {
 	reactionTime int
 }
 
-func (bluecon *BlueConjurer) init() {
+func (con *BlueConjurer) init() {
 	// Reset spells ConBot.
-	bluecon.spells.Ready = true
+	con.spells.Ready = true
 	// Debuff spells.
-	bluecon.spells.SlowReady = true
-	bluecon.spells.StunReady = true
+	con.spells.SlowReady = true
+	con.spells.StunReady = true
 	// Offensive spells.
-	bluecon.spells.MeteorReady = true
-	bluecon.spells.FistOfVengeanceReady = true
-	bluecon.spells.PixieSwarmReady = true
-	bluecon.spells.ForceOfNatureReady = true
-	bluecon.spells.ToxicCloudReady = true
+	con.spells.MeteorReady = true
+	con.spells.FistOfVengeanceReady = true
+	con.spells.PixieSwarmReady = true
+	con.spells.ForceOfNatureReady = true
+	con.spells.ToxicCloudReady = true
 	// Defensive spells.
-	bluecon.spells.BlinkReady = true
+	con.spells.BlinkReady = true
 	// Summons.
-	bluecon.spells.SummonGhostReady = true
-	bluecon.spells.SummonBomber1Ready = true
-	bluecon.spells.SummonBomber2Ready = true
+	con.spells.SummonGhostReady = true
+	con.spells.SummonBomber1Ready = true
+	con.spells.SummonBomber2Ready = true
 	// Buff spells.
-	bluecon.spells.InfravisionReady = true
-	bluecon.spells.VampirismReady = true
-	bluecon.spells.ProtFromFireReady = true
-	bluecon.spells.ProtFromPoisonReady = true
-	bluecon.spells.ProtFromShockReady = true
+	con.spells.InfravisionReady = true
+	con.spells.VampirismReady = true
+	con.spells.ProtFromFireReady = true
+	con.spells.ProtFromPoisonReady = true
+	con.spells.ProtFromShockReady = true
 
 	// Create ConBot.
-	bluecon.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
-	bluecon.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
-	bluecon.unit.SetMaxHealth(100)
-	bluecon.unit.SetStrength(55)
-	bluecon.unit.SetBaseSpeed(88)
-	bluecon.spells.isAlive = true
+	con.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
+	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	con.unit.SetMaxHealth(100)
+	con.unit.SetStrength(55)
+	con.unit.SetBaseSpeed(88)
+	con.spells.isAlive = true
 	// Set Team.
-	bluecon.unit.SetOwner(TeamBlue)
+	con.unit.SetOwner(TeamBlue)
 	// Create ConBot mouse cursor.
-	bluecon.target = TeamRed
-	bluecon.cursor = bluecon.target.Pos()
+	con.target = TeamRed
+	con.cursor = con.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
-	bluecon.reactionTime = 15
+	con.reactionTime = 15
 	// Set ConBot properties.
-	bluecon.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	bluecon.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
-	bluecon.unit.MonsterStatusEnable(object.MonStatusAlert)
-	bluecon.unit.AggressionLevel(0.16)
+	con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+	con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+	con.unit.MonsterStatusEnable(object.MonStatusAlert)
+	con.unit.AggressionLevel(0.16)
 	ns.NewTimer(ns.Seconds(4), func() {
-		bluecon.unit.AggressionLevel(0.83)
+		con.unit.AggressionLevel(0.83)
 	})
-	bluecon.unit.Hunt()
-	bluecon.unit.ResumeLevel(0.8)
-	bluecon.unit.RetreatLevel(0.4)
+	con.unit.Hunt()
+	con.unit.ResumeLevel(0.8)
+	con.unit.RetreatLevel(0.4)
 	// Create and equip ConBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	bluecon.items.StreetSneakers = ns.CreateObject("StreetSneakers", bluecon.unit)
-	bluecon.items.StreetPants = ns.CreateObject("StreetPants", bluecon.unit)
-	bluecon.items.StreetShirt = ns.CreateObject("StreetShirt", bluecon.unit)
-	bluecon.unit.Equip(bluecon.items.StreetPants)
-	bluecon.unit.Equip(bluecon.items.StreetShirt)
-	bluecon.unit.Equip(bluecon.items.StreetSneakers)
+	con.items.StreetSneakers = ns.CreateObject("StreetSneakers", con.unit)
+	con.items.StreetPants = ns.CreateObject("StreetPants", con.unit)
+	con.items.StreetShirt = ns.CreateObject("StreetShirt", con.unit)
+	con.unit.Equip(con.items.StreetPants)
+	con.unit.Equip(con.items.StreetShirt)
+	con.unit.Equip(con.items.StreetSneakers)
 	// Buff on respawn.
-	bluecon.buffInitial()
+	con.buffInitial()
 	// Enemy sighted.
-	bluecon.unit.OnEvent(ns.EventEnemySighted, bluecon.onEnemySighted)
+	con.unit.OnEvent(ns.EventEnemySighted, con.onEnemySighted)
 	// On Collision.
-	bluecon.unit.OnEvent(ns.EventCollision, bluecon.onCollide)
+	con.unit.OnEvent(ns.EventCollision, con.onCollide)
 	// Retreat.
-	bluecon.unit.OnEvent(ns.EventRetreat, bluecon.onRetreat)
+	con.unit.OnEvent(ns.EventRetreat, con.onRetreat)
 	// Enemy lost.
-	bluecon.unit.OnEvent(ns.EventLostEnemy, bluecon.onLostEnemy)
+	con.unit.OnEvent(ns.EventLostEnemy, con.onLostEnemy)
 	// On death.
-	bluecon.unit.OnEvent(ns.EventDeath, bluecon.onDeath)
+	con.unit.OnEvent(ns.EventDeath, con.onDeath)
 	// On heard.
-	bluecon.unit.OnEvent(ns.EventEnemyHeard, bluecon.onEnemyHeard)
+	con.unit.OnEvent(ns.EventEnemyHeard, con.onEnemyHeard)
 	// Looking for enemies.
-	bluecon.unit.OnEvent(ns.EventLookingForEnemy, bluecon.onLookingForTarget)
-	//bluecon.unit.OnEvent(ns.EventChangeFocus, bluecon.onChangeFocus)
-	bluecon.unit.OnEvent(ns.EventEndOfWaypoint, bluecon.onEndOfWaypoint)
+	con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
+	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
+	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
 }
 
-func (bluecon *BlueConjurer) onEndOfWaypoint() {
-	bluecon.BlueTeamCheckAttackOrDefend()
+func (con *BlueConjurer) onEndOfWaypoint() {
+	con.BlueTeamCheckAttackOrDefend()
 }
 
-func (bluecon *BlueConjurer) buffInitial() {
-	bluecon.castVampirism()
+func (con *BlueConjurer) buffInitial() {
+	con.castVampirism()
 }
 
-func (bluecon *BlueConjurer) onLookingForTarget() {
-	bluecon.castInfravision()
+func (con *BlueConjurer) onLookingForTarget() {
+	con.castInfravision()
 }
 
-func (bluecon *BlueConjurer) onEnemyHeard() {
-	bluecon.castForceOfNature()
+func (con *BlueConjurer) onEnemyHeard() {
+	con.castForceOfNature()
 }
 
-func (bluecon *BlueConjurer) onEnemySighted() {
-	bluecon.target = ns.GetCaller()
-	bluecon.castForceOfNature()
+func (con *BlueConjurer) onEnemySighted() {
+	con.target = ns.GetCaller()
+	con.castForceOfNature()
 }
 
-func (bluecon *BlueConjurer) onCollide() {
-	if bluecon.spells.isAlive {
-		bluecon.BlueTeamPickUpRedFlag()
-		bluecon.BlueTeamCaptureTheRedFlag()
-		bluecon.BlueTeamRetrievedBlueFlag()
+func (con *BlueConjurer) onCollide() {
+	if con.spells.isAlive {
+		con.BlueTeamPickUpRedFlag()
+		con.BlueTeamCaptureTheRedFlag()
+		con.BlueTeamRetrievedBlueFlag()
 	}
 }
 
-func (bluecon *BlueConjurer) onRetreat() {
-	bluecon.castBlink()
+func (con *BlueConjurer) onRetreat() {
+	con.castBlink()
 }
 
-func (bluecon *BlueConjurer) onLostEnemy() {
-	bluecon.castInfravision()
-	bluecon.BlueTeamWalkToBlueFlag()
+func (con *BlueConjurer) onLostEnemy() {
+	con.castInfravision()
+	con.BlueTeamWalkToBlueFlag()
 }
 
-func (bluecon *BlueConjurer) onDeath() {
-	bluecon.spells.isAlive = false
-	bluecon.spells.Ready = false
-	bluecon.BlueTeamDropFlag()
-	bluecon.unit.DestroyChat()
-	ns.AudioEvent(audio.NPCDie, bluecon.unit)
+func (con *BlueConjurer) onDeath() {
+	con.spells.isAlive = false
+	con.spells.Ready = false
+	con.BlueTeamDropFlag()
+	con.unit.DestroyChat()
+	ns.AudioEvent(audio.NPCDie, con.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
 	ns.NewTimer(ns.Frames(60), func() {
-		ns.AudioEvent(audio.BlinkCast, bluecon.unit)
-		bluecon.unit.Delete()
-		bluecon.items.StreetPants.Delete()
-		bluecon.items.StreetShirt.Delete()
-		bluecon.items.StreetSneakers.Delete()
-		bluecon.init()
+		ns.AudioEvent(audio.BlinkCast, con.unit)
+		con.unit.Delete()
+		con.items.StreetPants.Delete()
+		con.items.StreetShirt.Delete()
+		con.items.StreetSneakers.Delete()
+		con.init()
 	})
 }
 
-func (bluecon *BlueConjurer) Update() {
-	bluecon.findLoot()
-	if bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-		bluecon.spells.Ready = true
+func (con *BlueConjurer) Update() {
+	con.findLoot()
+	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+		con.spells.Ready = true
 	}
-	if bluecon.unit.HasEnchant(enchant.HELD) || bluecon.unit.HasEnchant(enchant.SLOWED) {
-		bluecon.castBlink()
+	if con.unit.HasEnchant(enchant.HELD) || con.unit.HasEnchant(enchant.SLOWED) {
+		con.castBlink()
 	}
-	if bluecon.target.HasEnchant(enchant.HELD) || bluecon.target.HasEnchant(enchant.SLOWED) {
-		if bluecon.unit.CanSee(bluecon.target) {
-			bluecon.castFistOfVengeance()
+	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
+		if con.unit.CanSee(con.target) {
+			con.castFistOfVengeance()
 		}
 	}
-	if bluecon.spells.Ready && bluecon.unit.CanSee(bluecon.target) {
-		bluecon.castStun()
-		bluecon.castPixieSwarm()
-		bluecon.castToxicCloud()
-		bluecon.castSlow()
-		bluecon.castMeteor()
+	if con.spells.Ready && con.unit.CanSee(con.target) {
+		con.castStun()
+		con.castPixieSwarm()
+		con.castToxicCloud()
+		con.castSlow()
+		con.castMeteor()
 
 	}
-	if !bluecon.unit.CanSee(bluecon.target) && bluecon.spells.Ready {
-		bluecon.castVampirism()
-		bluecon.castProtectionFromShock()
-		bluecon.castProtectionFromFire()
-		bluecon.castProtectionFromPoison()
-		bluecon.summonBomber1()
-		bluecon.summonBomber2()
+	if !con.unit.CanSee(con.target) && con.spells.Ready {
+		con.castVampirism()
+		con.castProtectionFromShock()
+		con.castProtectionFromFire()
+		con.castProtectionFromPoison()
+		con.summonBomber1()
+		con.summonBomber2()
 	}
 }
 
-func (bluecon *BlueConjurer) findLoot() {
+func (con *BlueConjurer) findLoot() {
 	const dist = 75
 	// Weapons.
 	weapons := ns.FindAllObjects(
-		ns.InCirclef{Center: bluecon.unit, R: dist},
+		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// Wands.
 			"InfinitePainWand", "LesserFireballWand",
@@ -234,26 +234,26 @@ func (bluecon *BlueConjurer) findLoot() {
 		},
 	)
 	for _, item := range weapons {
-		if bluecon.unit.CanSee(item) {
-			bluecon.unit.Equip(item)
+		if con.unit.CanSee(item) {
+			con.unit.Equip(item)
 		}
 	}
 	// Quiver.
 	quiver := ns.FindAllObjects(
-		ns.InCirclef{Center: bluecon.unit, R: dist},
+		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// Quiver.
 			"Quiver",
 		},
 	)
 	for _, item := range quiver {
-		if bluecon.unit.CanSee(item) {
-			bluecon.unit.Pickup(item)
+		if con.unit.CanSee(item) {
+			con.unit.Pickup(item)
 		}
 	}
 	// Armor.
 	armor := ns.FindAllObjects(
-		ns.InCirclef{Center: bluecon.unit, R: dist},
+		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// BlueConjurer Helm.
 			"ConjurerHelm",
@@ -266,31 +266,31 @@ func (bluecon *BlueConjurer) findLoot() {
 		},
 	)
 	for _, item := range armor {
-		if bluecon.unit.CanSee(item) {
-			bluecon.unit.Equip(item)
+		if con.unit.CanSee(item) {
+			con.unit.Equip(item)
 		}
 	}
 }
 
-func (bluecon *BlueConjurer) castVampirism() {
+func (con *BlueConjurer) castVampirism() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.VampirismReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.VampirismReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.VampirismReady = false
-						ns.CastSpell(spell.VAMPIRISM, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.VampirismReady = false
+						ns.CastSpell(spell.VAMPIRISM, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Vampirism cooldown.
 						ns.NewTimer(ns.Seconds(30), func() {
-							bluecon.spells.VampirismReady = true
+							con.spells.VampirismReady = true
 						})
 					}
 				})
@@ -299,25 +299,25 @@ func (bluecon *BlueConjurer) castVampirism() {
 	}
 }
 
-func (bluecon *BlueConjurer) castProtectionFromFire() {
+func (con *BlueConjurer) castProtectionFromFire() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.ProtFromFireReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromFireReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhLeft, PhRight, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.ProtFromFireReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_FIRE, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.ProtFromFireReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_FIRE, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Protection From Fire cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluecon.spells.ProtFromFireReady = true
+							con.spells.ProtFromFireReady = true
 						})
 					}
 				})
@@ -326,25 +326,25 @@ func (bluecon *BlueConjurer) castProtectionFromFire() {
 	}
 }
 
-func (bluecon *BlueConjurer) castProtectionFromPoison() {
+func (con *BlueConjurer) castProtectionFromPoison() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.ProtFromPoisonReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromPoisonReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhLeft, PhRight, PhDownLeft, PhUpRight}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhLeft, PhRight, PhDownLeft, PhUpRight}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.ProtFromPoisonReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_POISON, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.ProtFromPoisonReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_POISON, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Protection From Poison cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluecon.spells.ProtFromPoisonReady = true
+							con.spells.ProtFromPoisonReady = true
 						})
 					}
 				})
@@ -353,25 +353,25 @@ func (bluecon *BlueConjurer) castProtectionFromPoison() {
 	}
 }
 
-func (bluecon *BlueConjurer) castProtectionFromShock() {
+func (con *BlueConjurer) castProtectionFromShock() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.ProtFromShockReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromShockReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhDownRight, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.ProtFromShockReady = false
-						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.ProtFromShockReady = false
+						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Protection From Shock cooldown.
 						ns.NewTimer(ns.Seconds(60), func() {
-							bluecon.spells.ProtFromShockReady = true
+							con.spells.ProtFromShockReady = true
 						})
 					}
 				})
@@ -380,25 +380,25 @@ func (bluecon *BlueConjurer) castProtectionFromShock() {
 	}
 }
 
-func (bluecon *BlueConjurer) castPixieSwarm() {
+func (con *BlueConjurer) castPixieSwarm() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.PixieSwarmReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.PixieSwarmReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhLeft, PhDown, PhRight, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhLeft, PhDown, PhRight, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.PixieSwarmReady = false
-						ns.CastSpell(spell.PIXIE_SWARM, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.PixieSwarmReady = false
+						ns.CastSpell(spell.PIXIE_SWARM, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Pixie Swarm cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							bluecon.spells.PixieSwarmReady = true
+							con.spells.PixieSwarmReady = true
 						})
 					}
 				})
@@ -407,30 +407,30 @@ func (bluecon *BlueConjurer) castPixieSwarm() {
 	}
 }
 
-func (bluecon *BlueConjurer) castFistOfVengeance() {
+func (con *BlueConjurer) castFistOfVengeance() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.unit.CanSee(bluecon.target) && bluecon.spells.FistOfVengeanceReady && bluecon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
 		// Select target.
-		bluecon.cursor = bluecon.target.Pos()
+		con.cursor = con.target.Pos()
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluecon.unit.LookAtObject(bluecon.target)
-						bluecon.unit.Pause(ns.Frames(bluecon.reactionTime))
-						bluecon.spells.FistOfVengeanceReady = false
-						ns.CastSpell(spell.FIST, bluecon.unit, bluecon.cursor)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.FistOfVengeanceReady = false
+						ns.CastSpell(spell.FIST, con.unit, con.cursor)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
 							// Fist Of Vengeance cooldown.
-							bluecon.spells.FistOfVengeanceReady = true
+							con.spells.FistOfVengeanceReady = true
 						})
 					}
 				})
@@ -439,29 +439,29 @@ func (bluecon *BlueConjurer) castFistOfVengeance() {
 	}
 }
 
-func (bluecon *BlueConjurer) castForceOfNature() {
+func (con *BlueConjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.ForceOfNatureReady && bluecon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhDownRight, PhDownLeft, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDownRight, PhDownLeft, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluecon.spells.ForceOfNatureReady = false
-						bluecon.unit.LookAtObject(bluecon.target)
-						bluecon.unit.Pause(ns.Frames(30))
-						ns.CastSpell(spell.FORCE_OF_NATURE, bluecon.unit, bluecon.target)
+						con.spells.ForceOfNatureReady = false
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(30))
+						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Force of Nature cooldown.
 						ns.NewTimer(ns.Seconds(20), func() {
-							bluecon.spells.ForceOfNatureReady = true
+							con.spells.ForceOfNatureReady = true
 						})
 					}
 				})
@@ -470,25 +470,25 @@ func (bluecon *BlueConjurer) castForceOfNature() {
 	}
 }
 
-func (bluecon *BlueConjurer) castBlink() {
+func (con *BlueConjurer) castBlink() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.BlinkReady && bluecon.unit != BlueTeamTank {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != BlueTeamTank {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhUp}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.BlinkReady = false
-						ns.NewTrap(bluecon.unit, spell.BLINK)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.BlinkReady = false
+						ns.NewTrap(con.unit, spell.BLINK)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Blink cooldown.
 						ns.NewTimer(ns.Seconds(1), func() {
-							bluecon.spells.BlinkReady = true
+							con.spells.BlinkReady = true
 						})
 					}
 				})
@@ -497,29 +497,29 @@ func (bluecon *BlueConjurer) castBlink() {
 	}
 }
 
-func (bluecon *BlueConjurer) castStun() {
+func (con *BlueConjurer) castStun() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.unit.CanSee(bluecon.target) && bluecon.spells.StunReady && bluecon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluecon.unit.LookAtObject(bluecon.target)
-						bluecon.unit.Pause(ns.Frames(bluecon.reactionTime))
-						bluecon.spells.StunReady = false
-						ns.CastSpell(spell.STUN, bluecon.unit, bluecon.target)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.StunReady = false
+						ns.CastSpell(spell.STUN, con.unit, con.target)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(5), func() {
 							// Stun cooldown.
-							bluecon.spells.StunReady = true
+							con.spells.StunReady = true
 						})
 					}
 				})
@@ -528,30 +528,30 @@ func (bluecon *BlueConjurer) castStun() {
 	}
 }
 
-func (bluecon *BlueConjurer) castToxicCloud() {
+func (con *BlueConjurer) castToxicCloud() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.unit.CanSee(bluecon.target) && bluecon.spells.ToxicCloudReady && bluecon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
 		// Select target.
-		bluecon.cursor = bluecon.target.Pos()
+		con.cursor = con.target.Pos()
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhUpRight, PhDownLeft, PhUpLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft, PhUpLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluecon.unit.LookAtObject(bluecon.target)
-						bluecon.unit.Pause(ns.Frames(bluecon.reactionTime))
-						bluecon.spells.ToxicCloudReady = false
-						ns.CastSpell(spell.TOXIC_CLOUD, bluecon.unit, bluecon.cursor)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.ToxicCloudReady = false
+						ns.CastSpell(spell.TOXIC_CLOUD, con.unit, con.cursor)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Toxic Cloud cooldown.
 						ns.NewTimer(ns.Seconds(10), func() {
-							bluecon.spells.ToxicCloudReady = true
+							con.spells.ToxicCloudReady = true
 						})
 					}
 				})
@@ -560,29 +560,29 @@ func (bluecon *BlueConjurer) castToxicCloud() {
 	}
 }
 
-func (bluecon *BlueConjurer) castSlow() {
+func (con *BlueConjurer) castSlow() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.unit.CanSee(bluecon.target) && bluecon.spells.SlowReady && bluecon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluecon.unit.LookAtObject(bluecon.target)
-						bluecon.unit.Pause(ns.Frames(bluecon.reactionTime))
-						bluecon.spells.SlowReady = false
-						ns.CastSpell(spell.SLOW, bluecon.unit, bluecon.target)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.SlowReady = false
+						ns.CastSpell(spell.SLOW, con.unit, con.target)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Slow cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							bluecon.spells.SlowReady = true
+							con.spells.SlowReady = true
 						})
 					}
 				})
@@ -591,30 +591,30 @@ func (bluecon *BlueConjurer) castSlow() {
 	}
 }
 
-func (bluecon *BlueConjurer) castMeteor() {
+func (con *BlueConjurer) castMeteor() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.unit.CanSee(bluecon.target) && bluecon.spells.MeteorReady && bluecon.spells.Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
 		// Select target.
-		bluecon.cursor = bluecon.target.Pos()
+		con.cursor = con.target.Pos()
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhDownLeft, PhDownLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDownLeft, PhDownLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
-						bluecon.unit.LookAtObject(bluecon.target)
-						bluecon.unit.Pause(ns.Frames(bluecon.reactionTime))
-						bluecon.spells.MeteorReady = false
-						ns.CastSpell(spell.METEOR, bluecon.unit, bluecon.cursor)
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.MeteorReady = false
+						ns.CastSpell(spell.METEOR, con.unit, con.cursor)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
 							// Meteor cooldown.
-							bluecon.spells.MeteorReady = true
+							con.spells.MeteorReady = true
 						})
 					}
 				})
@@ -623,25 +623,25 @@ func (bluecon *BlueConjurer) castMeteor() {
 	}
 }
 
-func (bluecon *BlueConjurer) castInfravision() {
+func (con *BlueConjurer) castInfravision() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.InfravisionReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InfravisionReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhRight, PhLeft, PhRight, PhLeft}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhRight, PhLeft, PhRight, PhLeft}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.InfravisionReady = false
-						ns.CastSpell(spell.INFRAVISION, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.InfravisionReady = false
+						ns.CastSpell(spell.INFRAVISION, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Invravision cooldown.
 						ns.NewTimer(ns.Seconds(30), func() {
-							bluecon.spells.InfravisionReady = true
+							con.spells.InfravisionReady = true
 						})
 					}
 				})
@@ -650,25 +650,25 @@ func (bluecon *BlueConjurer) castInfravision() {
 	}
 }
 
-func (bluecon *BlueConjurer) summonGhost() {
+func (con *BlueConjurer) summonGhost() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.SummonGhostReady {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonGhostReady {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(bluecon.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
 					// Check for War Cry before spell release.
-					if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						bluecon.spells.SummonGhostReady = false
-						ns.CastSpell(spell.SUMMON_GHOST, bluecon.unit, bluecon.unit)
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.SummonGhostReady = false
+						ns.CastSpell(spell.SUMMON_GHOST, con.unit, con.unit)
 						// Global cooldown.
-						bluecon.spells.Ready = true
+						con.spells.Ready = true
 						// Summon Ghost cooldown.
 						ns.NewTimer(ns.Seconds(5), func() {
-							bluecon.spells.SummonGhostReady = true
+							con.spells.SummonGhostReady = true
 						})
 					}
 				})
@@ -677,57 +677,57 @@ func (bluecon *BlueConjurer) summonGhost() {
 	}
 }
 
-func (bluecon *BlueConjurer) summonBomber1() {
+func (con *BlueConjurer) summonBomber1() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.SummonBomber1Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber1Ready {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				// Stun chant.
-				castPhonemes(bluecon.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
-						if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 							// Poison chant.
-							castPhonemes(bluecon.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
+							castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
 								// Pause for concentration.
 								ns.NewTimer(ns.Frames(3), func() {
 									// Check for War Cry before chant.
-									if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 										// Fist Of Vengeance chant.
-										castPhonemes(bluecon.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+										castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
 											// Pause for concentration.
 											ns.NewTimer(ns.Frames(3), func() {
 												// Check for War Cry before chant.
-												if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+												if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 													// Glyph chant.
-													castPhonemes(bluecon.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
-														if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															bluecon.spells.SummonBomber1Ready = false
-															bluecon.bomber1 = ns.CreateObject("Bomber", bluecon.unit)
-															ns.AudioEvent("BomberSummon", bluecon.bomber1)
-															bluecon.bomber1.SetOwner(bluecon.unit)
-															bluecon.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
+														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.spells.SummonBomber1Ready = false
+															con.bomber1 = ns.CreateObject("Bomber", con.unit)
+															ns.AudioEvent("BomberSummon", con.bomber1)
+															con.bomber1.SetOwner(con.unit)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	bluecon.spells.SummonBomber1Ready = true
+																	con.spells.SummonBomber1Ready = true
 																})
 															})
-															bluecon.bomber1.Follow(bluecon.unit)
-															bluecon.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
-															bluecon.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
-																bluecon.bomber1.Attack(bluecon.target)
+															con.bomber1.Follow(con.unit)
+															con.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber1.Attack(con.target)
 															})
-															bluecon.bomber1.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
-																bluecon.bomber1.Follow(bluecon.unit)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
+																con.bomber1.Follow(con.unit)
 															})
 															// Global cooldown.
-															bluecon.spells.Ready = true
+															con.spells.Ready = true
 														}
 													})
 												}
@@ -744,57 +744,57 @@ func (bluecon *BlueConjurer) summonBomber1() {
 	}
 }
 
-func (bluecon *BlueConjurer) summonBomber2() {
+func (con *BlueConjurer) summonBomber2() {
 	// Check if cooldowns are ready.
-	if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) && bluecon.spells.Ready && bluecon.spells.SummonBomber2Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
 		// Trigger cooldown.
-		bluecon.spells.Ready = false
+		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(bluecon.reactionTime), func() {
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 				// Stun chant.
-				castPhonemes(bluecon.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
-						if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 							// Poison chant.
-							castPhonemes(bluecon.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
+							castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
 								// Pause for concentration.
 								ns.NewTimer(ns.Frames(3), func() {
 									// Check for War Cry before chant.
-									if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 										// Fist Of Vengeance chant.
-										castPhonemes(bluecon.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+										castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
 											// Pause for concentration.
 											ns.NewTimer(ns.Frames(3), func() {
 												// Check for War Cry before chant.
-												if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
+												if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 													// Glyph chant.
-													castPhonemes(bluecon.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
-														if bluecon.spells.isAlive && !bluecon.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															bluecon.spells.SummonBomber2Ready = false
-															bluecon.bomber2 = ns.CreateObject("Bomber", bluecon.unit)
-															ns.AudioEvent("BomberSummon", bluecon.bomber2)
-															bluecon.bomber2.SetOwner(bluecon.unit)
-															bluecon.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
+														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.spells.SummonBomber2Ready = false
+															con.bomber2 = ns.CreateObject("Bomber", con.unit)
+															ns.AudioEvent("BomberSummon", con.bomber2)
+															con.bomber2.SetOwner(con.unit)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	bluecon.spells.SummonBomber2Ready = true
+																	con.spells.SummonBomber2Ready = true
 																})
 															})
-															bluecon.bomber2.Follow(bluecon.unit)
-															bluecon.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
-															bluecon.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
-																bluecon.bomber2.Attack(bluecon.target)
+															con.bomber2.Follow(con.unit)
+															con.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber2.Attack(con.target)
 															})
-															bluecon.bomber2.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
-																bluecon.bomber2.Follow(bluecon.unit)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
+																con.bomber2.Follow(con.unit)
 															})
 															// Global cooldown.
-															bluecon.spells.Ready = true
+															con.spells.Ready = true
 														}
 													})
 												}
@@ -814,12 +814,12 @@ func (bluecon *BlueConjurer) summonBomber2() {
 // ---------------------------------- CTF BOT SCRIPT ------------------------------------//
 // CTF game mechanics.
 // Pick up the enemy flag.
-func (bluecon *BlueConjurer) BlueTeamPickUpRedFlag() {
+func (con *BlueConjurer) BlueTeamPickUpRedFlag() {
 	if ns.GetCaller() == RedFlag {
 		RedFlag.Enable(false)
 		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
 		// Customize code below for individual unit.
-		BlueTeamTank = bluecon.unit
+		BlueTeamTank = con.unit
 		BlueTeamTank.AggressionLevel(0.16)
 		BlueTeamTank.WalkTo(BlueFlag.Pos())
 		ns.PrintStrToAll("Team Blue has the Red flag!")
@@ -827,8 +827,8 @@ func (bluecon *BlueConjurer) BlueTeamPickUpRedFlag() {
 }
 
 // Capture the flag.
-func (bluecon *BlueConjurer) BlueTeamCaptureTheRedFlag() {
-	if ns.GetCaller() == BlueFlag && BlueFlagIsAtBase && bluecon.unit == BlueTeamTank {
+func (con *BlueConjurer) BlueTeamCaptureTheRedFlag() {
+	if ns.GetCaller() == BlueFlag && BlueFlagIsAtBase && con.unit == BlueTeamTank {
 		ns.AudioEvent(audio.FlagCapture, BlueTeamTank) // <----- replace with all players
 		BlueTeamTank = TeamBlue
 		var1 := ns.Players()
@@ -836,27 +836,27 @@ func (bluecon *BlueConjurer) BlueTeamCaptureTheRedFlag() {
 			var1[1].ChangeScore(+1)
 		}
 		FlagReset()
-		bluecon.unit.AggressionLevel(0.83)
-		bluecon.unit.WalkTo(RedFlag.Pos())
+		con.unit.AggressionLevel(0.83)
+		con.unit.WalkTo(RedFlag.Pos())
 		ns.PrintStrToAll("Team Blue has captured the Red flag!")
 	}
 }
 
 // Retrieve own flag.
-func (bluecon *BlueConjurer) BlueTeamRetrievedBlueFlag() {
+func (con *BlueConjurer) BlueTeamRetrievedBlueFlag() {
 	if ns.GetCaller() == BlueFlag && !BlueFlagIsAtBase {
 		BlueFlagIsAtBase = true
 		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
 		BlueFlag.SetPos(ns.Waypoint("BlueFlagStart").Pos())
-		bluecon.unit.WalkTo(BlueBase.Pos())
+		con.unit.WalkTo(BlueBase.Pos())
 		ns.PrintStrToAll("Team Blue has retrieved the flag!")
 		BlueTeamTank.WalkTo(BlueFlag.Pos())
 	}
 }
 
 // Drop flag.
-func (bluecon *BlueConjurer) BlueTeamDropFlag() {
-	if bluecon.unit == BlueTeamTank {
+func (con *BlueConjurer) BlueTeamDropFlag() {
+	if con.unit == BlueTeamTank {
 		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
 		RedFlag.Enable(true)
 		BlueTeamTank = TeamBlue
@@ -867,22 +867,22 @@ func (bluecon *BlueConjurer) BlueTeamDropFlag() {
 // CTF behaviour.
 // Attack enemy tank without
 
-func (bluecon *BlueConjurer) BlueTeamWalkToBlueFlag() {
+func (con *BlueConjurer) BlueTeamWalkToBlueFlag() {
 	if !BlueFlagIsAtBase && BlueFlag.IsEnabled() {
-		bluecon.unit.AggressionLevel(0.16)
-		bluecon.unit.WalkTo(BlueFlag.Pos())
+		con.unit.AggressionLevel(0.16)
+		con.unit.WalkTo(BlueFlag.Pos())
 	} else {
-		bluecon.BlueTeamCheckAttackOrDefend()
+		con.BlueTeamCheckAttackOrDefend()
 	}
 
 }
 
-func (bluecon *BlueConjurer) BlueTeamCheckAttackOrDefend() {
-	if bluecon.unit == BlueTeamTank {
-		bluecon.unit.AggressionLevel(0.16)
-		bluecon.unit.Guard(BlueBase.Pos(), BlueBase.Pos(), 20)
+func (con *BlueConjurer) BlueTeamCheckAttackOrDefend() {
+	if con.unit == BlueTeamTank {
+		con.unit.AggressionLevel(0.16)
+		con.unit.Guard(BlueBase.Pos(), BlueBase.Pos(), 20)
 	} else {
-		bluecon.unit.AggressionLevel(0.83)
-		bluecon.unit.WalkTo(RedFlag.Pos())
+		con.unit.AggressionLevel(0.83)
+		con.unit.WalkTo(RedFlag.Pos())
 	}
 }
