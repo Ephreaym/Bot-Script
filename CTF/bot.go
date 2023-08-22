@@ -23,32 +23,32 @@ func init() {
 		)
 		ns.NewTimer(ns.Frames(1), func() {
 			for i := 0; i < redwarriors; i++ {
-				bots = append(bots, NewRedWarrior())
+				bots = append(bots, NewWarrior(Red))
 			}
 		})
 		ns.NewTimer(ns.Frames(2), func() {
 			for i := 0; i < redwizards; i++ {
-				bots = append(bots, NewRedWizard())
+				bots = append(bots, NewWizard(Red))
 			}
 		})
 		ns.NewTimer(ns.Frames(3), func() {
 			for i := 0; i < redconjurers; i++ {
-				bots = append(bots, NewRedConjurer())
+				bots = append(bots, NewConjurer(Red))
 			}
 		})
 		ns.NewTimer(ns.Frames(4), func() {
 			for i := 0; i < bluewarriors; i++ {
-				bots = append(bots, NewBlueWarrior())
+				bots = append(bots, NewWarrior(Blue))
 			}
 		})
 		ns.NewTimer(ns.Frames(5), func() {
 			for i := 0; i < bluewizards; i++ {
-				bots = append(bots, NewBlueWizard())
+				bots = append(bots, NewWizard(Blue))
 			}
 		})
 		ns.NewTimer(ns.Frames(6), func() {
 			for i := 0; i < blueconjurers; i++ {
-				bots = append(bots, NewBlueConjurer())
+				bots = append(bots, NewConjurer(Blue))
 
 			}
 		})
