@@ -73,7 +73,7 @@ func (wiz *Wizard) init() {
 	wiz.spells.ForceFieldReady = true
 	wiz.spells.InvisibilityReady = true
 	// Create WizBot3.
-	wiz.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
+	wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	wiz.unit.SetMaxHealth(75)
 	wiz.unit.SetStrength(35)
