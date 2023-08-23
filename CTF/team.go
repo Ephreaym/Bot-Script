@@ -1,4 +1,4 @@
-package CapFlagBW
+package EndGameBW
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-module CapFlagBW
+module EndGameBW
 
 go 1.19
 
