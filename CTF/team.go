@@ -70,6 +70,10 @@ func (t *Team) lateInit() {
 	ns.NewWaypoint(t.Name+"FlagWaypoint", t.Flag.Pos())
 }
 
+func (t *Team) SetNPCTeamColor(){
+	
+}
+
 func (t *Team) FlagStartF() ns.WaypointObj {
 	return ns.Waypoint(t.Name + "FlagStart")
 }

@@ -13,45 +13,92 @@ var bots []Bot // bots array; can contain any number of bots.
 func init() {
 	ns.NewTimer(ns.Frames(60), func() {
 		// Add this many bots on map launch.
+		// 1 = active bot.
+		// 0 = deactivated bot.
 		const (
-			redwarriors   = 1
-			redwizards    = 1
-			redconjurers  = 1
-			blueconjurers = 1
-			bluewizards   = 1
-			bluewarriors  = 1
-		)
-		ns.NewTimer(ns.Frames(1), func() {
-			for i := 0; i < redwarriors; i++ {
-				bots = append(bots, NewWarrior(Red))
-			}
-		})
-		ns.NewTimer(ns.Frames(2), func() {
-			for i := 0; i < redwizards; i++ {
-				bots = append(bots, NewWizard(Red))
-			}
-		})
-		ns.NewTimer(ns.Frames(3), func() {
-			for i := 0; i < redconjurers; i++ {
-				bots = append(bots, NewConjurer(Red))
-			}
-		})
-		ns.NewTimer(ns.Frames(4), func() {
-			for i := 0; i < bluewarriors; i++ {
-				bots = append(bots, NewWarrior(Blue))
-			}
-		})
-		ns.NewTimer(ns.Frames(5), func() {
-			for i := 0; i < bluewizards; i++ {
-				bots = append(bots, NewWizard(Blue))
-			}
-		})
-		ns.NewTimer(ns.Frames(6), func() {
-			for i := 0; i < blueconjurers; i++ {
-				bots = append(bots, NewConjurer(Blue))
+			// Team red.
+			// Warriors.
+			redwarriors01 = 1
+			redwarriors02 = 1
+			redwarriors03 = 1
+			// Conjurers.
+			redconjurers01 = 1
+			redconjurers02 = 0
+			redconjurers03 = 0
+			// Wizards.
+			redwizards01 = 1
+			redwizards02 = 0
+			redwizards03 = 0
 
-			}
-		})
+			// Team Blue.
+			// Warriors.
+			bluewarriors01 = 1
+			bluewarriors02 = 1
+			bluewarriors03 = 1
+			// Conjurers.
+			blueconjurers01 = 1
+			blueconjurers02 = 0
+			blueconjurers03 = 0
+			// Wizards.
+			bluewizards01 = 1
+			bluewizards02 = 0
+			bluewizards03 = 0
+		)
+
+		for i := 0; i < redwarriors01; i++ {
+			bots = append(bots, NewWarrior(Red))
+		}
+		for i := 0; i < redwizards01; i++ {
+			bots = append(bots, NewWizard(Red))
+		}
+		for i := 0; i < redconjurers01; i++ {
+			bots = append(bots, NewConjurer(Red))
+		}
+		for i := 0; i < bluewarriors01; i++ {
+			bots = append(bots, NewWarrior(Blue))
+		}
+		for i := 0; i < bluewizards01; i++ {
+			bots = append(bots, NewWizard(Blue))
+		}
+		for i := 0; i < blueconjurers01; i++ {
+			bots = append(bots, NewConjurer(Blue))
+		}
+		for i := 0; i < redwarriors02; i++ {
+			bots = append(bots, NewWarrior(Red))
+		}
+		for i := 0; i < redwizards02; i++ {
+			bots = append(bots, NewWizard(Red))
+		}
+		for i := 0; i < redconjurers02; i++ {
+			bots = append(bots, NewConjurer(Red))
+		}
+		for i := 0; i < bluewarriors02; i++ {
+			bots = append(bots, NewWarrior(Blue))
+		}
+		for i := 0; i < bluewizards02; i++ {
+			bots = append(bots, NewWizard(Blue))
+		}
+		for i := 0; i < blueconjurers02; i++ {
+			bots = append(bots, NewConjurer(Blue))
+		}
+		for i := 0; i < redwarriors03; i++ {
+			bots = append(bots, NewWarrior(Red))
+		}
+		for i := 0; i < redwizards03; i++ {
+			bots = append(bots, NewWizard(Red))
+		}
+		for i := 0; i < redconjurers03; i++ {
+			bots = append(bots, NewConjurer(Red))
+		}
+		for i := 0; i < bluewarriors03; i++ {
+			bots = append(bots, NewWarrior(Blue))
+		}
+		for i := 0; i < bluewizards03; i++ {
+			bots = append(bots, NewWizard(Blue))
+		}
+		for i := 0; i < blueconjurers03; i++ {
+			bots = append(bots, NewConjurer(Blue))
+		}
 	})
 }
 
