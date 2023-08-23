@@ -1,4 +1,4 @@
-package EndGameBW
+package CapFlagBW
 
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"

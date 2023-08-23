@@ -1,4 +1,4 @@
-package EndGameBW
+package CapFlagBW
 
 import (
 	"fmt"
@@ -23,15 +23,16 @@ func NewTeam(name string) *Team {
 }
 
 type Team struct {
-	Name         string
-	Enemy        *Team
-	Flag         ns.Obj
-	FlagStart    ns.WaypointObj
-	FlagIsAtBase bool
-	TeamObj      ns.Obj
-	TeamBase     ns.Obj
-	TeamTank     ns.Obj
-	spawns       []ns.Obj
+	Name            string
+	Enemy           *Team
+	Flag            ns.Obj
+	FlagStart       ns.WaypointObj
+	FlagIsAtBase    bool
+	FlagInteraction bool
+	TeamObj         ns.Obj
+	TeamBase        ns.Obj
+	TeamTank        ns.Obj
+	spawns          []ns.Obj
 }
 
 func (t *Team) init() {
@@ -45,6 +46,7 @@ func (t *Team) lateInit() {
 	t.Flag = ns.Object(t.Name + "Flag")
 	t.FlagStart = ns.NewWaypoint(t.Name+"FlagStart", t.Flag.Pos())
 	t.FlagIsAtBase = true
+	t.FlagInteraction = false
 	ns.NewWaypoint(t.Name+"FlagWaypoint", t.Flag.Pos())
 }
 
@@ -124,7 +126,11 @@ func (t *Team) CheckPickUpEnemyFlag(flag, u ns.Obj) {
 	enemyFlag := t.Enemy.Flag
 	if flag == enemyFlag {
 		enemyFlag.Enable(false)
-		ns.AudioEvent(audio.FlagPickup, ns.GetHost()) // <----- replace with all players
+		soundToAllPlayers1 := ns.Players()
+		t.Enemy.FlagInteraction = false
+		for i := 0; i < len(soundToAllPlayers1); i++ {
+			ns.AudioEvent(audio.FlagPickup, soundToAllPlayers1[i].Unit())
+		}
 		// Customize code below for individual unit.
 		t.TeamTank = u
 		t.TeamTank.AggressionLevel(0.16)
@@ -136,12 +142,17 @@ func (t *Team) CheckPickUpEnemyFlag(flag, u ns.Obj) {
 // Capture the flag.
 func (t *Team) CheckCaptureEnemyFlag(flag, u ns.Obj) {
 	if flag == t.Flag && t.FlagIsAtBase && u == t.TeamTank {
-		ns.AudioEvent(audio.FlagCapture, t.TeamTank) // <----- replace with all players
+		soundToAllPlayers2 := ns.Players()
+		for i := 0; i < len(soundToAllPlayers2); i++ {
+			ns.AudioEvent(audio.FlagCapture, soundToAllPlayers2[i].Unit())
+		}
 		t.TeamTank = t.TeamObj
 		var1 := ns.Players()
 		if len(var1) > 1 {
 			var1[1].ChangeScore(+1)
 		}
+		ns.GetHost().ChangeScore(+1)
+		t.Enemy.FlagInteraction = false
 		t.FlagReset()
 		t.Enemy.FlagReset()
 		u.AggressionLevel(0.83)
@@ -154,7 +165,11 @@ func (t *Team) CheckCaptureEnemyFlag(flag, u ns.Obj) {
 func (t *Team) CheckRetrievedOwnFlag(flag, u ns.Obj) {
 	if flag == t.Flag && !t.FlagIsAtBase {
 		t.FlagIsAtBase = true
-		ns.AudioEvent(audio.FlagRespawn, ns.GetHost())
+		t.FlagInteraction = false
+		soundToAllPlayers3 := ns.Players()
+		for i := 0; i < len(soundToAllPlayers3); i++ {
+			ns.AudioEvent(audio.FlagRespawn, soundToAllPlayers3[i].Unit())
+		}
 		t.Flag.SetPos(t.FlagStart.Pos())
 		u.WalkTo(t.TeamBase.Pos())
 		ns.PrintStrToAll(fmt.Sprintf("Team %s has retrieved the flag!", t.Name))
@@ -165,11 +180,30 @@ func (t *Team) CheckRetrievedOwnFlag(flag, u ns.Obj) {
 // Drop flag.
 func (t *Team) DropEnemyFlag(u ns.Obj) {
 	if u == t.TeamTank {
-		ns.AudioEvent(audio.FlagDrop, ns.GetHost()) // <----- replace with all players
+		t.Enemy.FlagInteraction = true
+		soundToAllPlayers4 := ns.Players()
+		for i := 0; i < len(soundToAllPlayers4); i++ {
+			ns.AudioEvent(audio.FlagDrop, soundToAllPlayers4[i].Unit())
+		}
 		t.Enemy.Flag.Enable(true)
 		t.TeamTank = t.TeamObj
 		ns.PrintStrToAll(fmt.Sprintf("Team %s has dropped the %s flag!", t.Name, t.Enemy.Name))
+		ns.NewTimer(ns.Seconds(30), func() {
+			if t.Enemy.Flag.IsEnabled() && t.Enemy.FlagInteraction {
+				t.ReturnFlagHome(u)
+			}
+		})
 	}
+}
+
+// Return flag home.
+func (t *Team) ReturnFlagHome(u ns.Obj) {
+	t.Enemy.Flag.SetPos(t.FlagStart.Pos())
+	soundToAllPlayers5 := ns.Players()
+	for i := 0; i < len(soundToAllPlayers5); i++ {
+		ns.AudioEvent(audio.FlagRespawn, soundToAllPlayers5[i].Unit())
+	}
+	ns.PrintStrToAll(fmt.Sprintf("The %s flag has returned home.", t.Enemy.Name))
 }
 
 func (t *Team) WalkToOwnFlag(u ns.Obj) {
@@ -185,8 +219,11 @@ func (t *Team) CheckAttackOrDefend(u ns.Obj) {
 	if u == t.TeamTank {
 		u.AggressionLevel(0.16)
 		u.Guard(t.TeamBase.Pos(), t.TeamBase.Pos(), 20)
-	} else {
+	} else if t.Flag.IsEnabled() {
 		u.AggressionLevel(0.83)
 		u.WalkTo(t.Enemy.Flag.Pos())
+	} else if !t.Enemy.Flag.IsEnabled() {
+		u.AggressionLevel(0.83)
+		u.WalkTo(t.Flag.Pos())
 	}
 }

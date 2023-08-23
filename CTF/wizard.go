@@ -1,4 +1,4 @@
-package EndGameBW
+package CapFlagBW
 
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
@@ -18,13 +18,13 @@ func NewWizard(t *Team) *Wizard {
 
 // Wizard bot class.
 type Wizard struct {
-	team         *Team
-	unit         ns.Obj
-	cursor       ns.Pointf
-	cursorObject ns.Obj
-	target       ns.Obj
-	trap         ns.Obj
-	items        struct {
+	team              *Team
+	unit              ns.Obj
+	cursor            ns.Pointf
+	cursorObject      ns.Obj
+	target            ns.Obj
+	trap              ns.Obj
+	startingEquipment struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
 		StreetShirt    ns.Obj
@@ -98,14 +98,14 @@ func (wiz *Wizard) init() {
 	wiz.unit.ResumeLevel(0.8)
 	wiz.unit.RetreatLevel(0.2)
 	// Create and equip WizBot3 starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	wiz.items.StreetSneakers = ns.CreateObject("StreetSneakers", wiz.unit)
-	wiz.items.StreetPants = ns.CreateObject("StreetPants", wiz.unit)
-	wiz.items.StreetShirt = ns.CreateObject("StreetShirt", wiz.unit)
-	wiz.items.WizardRobe = ns.CreateObject("WizardRobe", wiz.unit)
-	wiz.unit.Equip(wiz.items.StreetSneakers)
-	wiz.unit.Equip(wiz.items.StreetPants)
-	wiz.unit.Equip(wiz.items.StreetShirt)
-	wiz.unit.Equip(wiz.items.WizardRobe)
+	wiz.startingEquipment.StreetSneakers = ns.CreateObject("StreetSneakers", wiz.unit)
+	wiz.startingEquipment.StreetPants = ns.CreateObject("StreetPants", wiz.unit)
+	wiz.startingEquipment.StreetShirt = ns.CreateObject("StreetShirt", wiz.unit)
+	wiz.startingEquipment.WizardRobe = ns.CreateObject("WizardRobe", wiz.unit)
+	wiz.unit.Equip(wiz.startingEquipment.StreetSneakers)
+	wiz.unit.Equip(wiz.startingEquipment.StreetPants)
+	wiz.unit.Equip(wiz.startingEquipment.StreetShirt)
+	wiz.unit.Equip(wiz.startingEquipment.WizardRobe)
 	// Buff on respawn.
 	wiz.buffInitial()
 	// On retreat.
@@ -176,9 +176,9 @@ func (wiz *Wizard) onDeath() {
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, wiz.unit)
 		wiz.unit.Delete()
-		wiz.items.StreetPants.Delete()
-		wiz.items.StreetSneakers.Delete()
-		wiz.items.StreetShirt.Delete()
+		wiz.startingEquipment.StreetPants.Delete()
+		wiz.startingEquipment.StreetSneakers.Delete()
+		wiz.startingEquipment.StreetShirt.Delete()
 		wiz.init()
 	})
 }

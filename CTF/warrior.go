@@ -1,4 +1,4 @@
-package EndGameBW
+package CapFlagBW
 
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
@@ -18,12 +18,12 @@ func NewWarrior(t *Team) *Warrior {
 
 // Warrior bot class.
 type Warrior struct {
-	team         *Team
-	unit         ns.Obj
-	target       ns.Obj
-	cursor       ns.Pointf
-	targetPotion ns.Obj
-	items        struct {
+	team              *Team
+	unit              ns.Obj
+	target            ns.Obj
+	cursor            ns.Pointf
+	targetPotion      ns.Obj
+	startingEquipment struct {
 		Longsword      ns.Obj
 		WoodenShield   ns.Obj
 		StreetSneakers ns.Obj
@@ -47,6 +47,10 @@ type Warrior struct {
 	}
 	inventory struct {
 		redPotionInInventory int
+		meleeweapons         []ns.Obj
+		throwingweapons      []ns.Obj
+		potions              []ns.Obj
+		armor                []ns.Obj
 	}
 	reactionTime int
 }
@@ -91,14 +95,14 @@ func (war *Warrior) init() {
 	war.unit.ResumeLevel(1)
 	war.unit.RetreatLevel(0.0)
 	// Create and equip WarBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	war.items.Longsword = ns.CreateObject("Longsword", war.unit)
-	war.items.WoodenShield = ns.CreateObject("WoodenShield", war.unit)
-	war.items.StreetSneakers = ns.CreateObject("StreetSneakers", war.unit)
-	war.items.StreetPants = ns.CreateObject("StreetPants", war.unit)
-	war.unit.Equip(war.items.Longsword)
-	war.unit.Equip(war.items.WoodenShield)
-	war.unit.Equip(war.items.StreetSneakers)
-	war.unit.Equip(war.items.StreetPants)
+	war.startingEquipment.Longsword = ns.CreateObject("Longsword", war.unit)
+	war.startingEquipment.WoodenShield = ns.CreateObject("WoodenShield", war.unit)
+	war.startingEquipment.StreetSneakers = ns.CreateObject("StreetSneakers", war.unit)
+	war.startingEquipment.StreetPants = ns.CreateObject("StreetPants", war.unit)
+	war.unit.Equip(war.startingEquipment.Longsword)
+	war.unit.Equip(war.startingEquipment.WoodenShield)
+	war.unit.Equip(war.startingEquipment.StreetSneakers)
+	war.unit.Equip(war.startingEquipment.StreetPants)
 	// Select a WarBot loadout (tactical preference, dialog). TODO: Give different audio and chat for each set so they feel like different characters.
 	// On looking for enemy.
 	war.unit.OnEvent(ns.EventLookingForEnemy, war.onLookingForEnemy)
@@ -276,8 +280,8 @@ func (war *Warrior) onDeath() {
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, war.unit)
 		war.unit.Delete()
-		war.items.StreetPants.Delete()
-		war.items.StreetSneakers.Delete()
+		war.startingEquipment.StreetPants.Delete()
+		war.startingEquipment.StreetSneakers.Delete()
 		war.init()
 	})
 }

@@ -1,4 +1,4 @@
-package EndGameBW
+package CapFlagBW
 
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
@@ -18,13 +18,13 @@ func NewConjurer(t *Team) *Conjurer {
 
 // Conjurer bot class.
 type Conjurer struct {
-	team    *Team
-	unit    ns.Obj
-	cursor  ns.Pointf
-	target  ns.Obj
-	bomber1 ns.Obj
-	bomber2 ns.Obj
-	items   struct {
+	team              *Team
+	unit              ns.Obj
+	cursor            ns.Pointf
+	target            ns.Obj
+	bomber1           ns.Obj
+	bomber2           ns.Obj
+	startingEquipment struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
 		StreetShirt    ns.Obj
@@ -103,12 +103,12 @@ func (con *Conjurer) init() {
 	con.unit.ResumeLevel(0.8)
 	con.unit.RetreatLevel(0.4)
 	// Create and equip ConBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
-	con.items.StreetSneakers = ns.CreateObject("StreetSneakers", con.unit)
-	con.items.StreetPants = ns.CreateObject("StreetPants", con.unit)
-	con.items.StreetShirt = ns.CreateObject("StreetShirt", con.unit)
-	con.unit.Equip(con.items.StreetPants)
-	con.unit.Equip(con.items.StreetShirt)
-	con.unit.Equip(con.items.StreetSneakers)
+	con.startingEquipment.StreetSneakers = ns.CreateObject("StreetSneakers", con.unit)
+	con.startingEquipment.StreetPants = ns.CreateObject("StreetPants", con.unit)
+	con.startingEquipment.StreetShirt = ns.CreateObject("StreetShirt", con.unit)
+	con.unit.Equip(con.startingEquipment.StreetPants)
+	con.unit.Equip(con.startingEquipment.StreetShirt)
+	con.unit.Equip(con.startingEquipment.StreetSneakers)
 	// Buff on respawn.
 	con.buffInitial()
 	// Enemy sighted.
@@ -179,9 +179,9 @@ func (con *Conjurer) onDeath() {
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, con.unit)
 		con.unit.Delete()
-		con.items.StreetPants.Delete()
-		con.items.StreetShirt.Delete()
-		con.items.StreetSneakers.Delete()
+		con.startingEquipment.StreetPants.Delete()
+		con.startingEquipment.StreetShirt.Delete()
+		con.startingEquipment.StreetSneakers.Delete()
 		con.init()
 	})
 }
