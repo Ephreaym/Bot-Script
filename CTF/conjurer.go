@@ -78,7 +78,7 @@ func (con *Conjurer) init() {
 	con.spells.ProtFromShockReady = true
 
 	// Create ConBot.
-	con.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
+	con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
 	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	con.unit.SetMaxHealth(100)
 	con.unit.SetStrength(55)

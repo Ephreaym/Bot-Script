@@ -35,8 +35,28 @@ type Team struct {
 	spawns          []ns.Obj
 }
 
+// SpawnPoint selects a random PlayerStart for the bot to spawn on.
+func (t *Team) SpawnPoint() ns.Pointf {
+	if t.spawns == nil {
+		// Filter to only select PlayStart objects that are owned by the team.
+		filter := ns.HasTypeName{"PlayerStart"}
+		ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
+			if filter.Matches(it) {
+				t.spawns = append(t.spawns, it)
+			}
+			return true // keep iterating in any case
+		})
+		//t.spawns = ns.FindAllObjects(ns.HasTypeName{"PlayerStart"}) // <---- Use this when no teams are used.
+	}
+	if len(t.spawns) == 0 {
+		return ns.GetHost().Pos()
+	}
+	i := ns.Random(0, len(t.spawns)-1)
+	pick := t.spawns[i]
+	return pick.Pos()
+}
+
 func (t *Team) init() {
-	ns.NewWaypoint("BotSpawnPoint"+t.Name, ns.GetHost().Pos())
 }
 
 func (t *Team) lateInit() {
@@ -62,7 +82,7 @@ func (t *Team) FlagReset() {
 func (t *Team) PreUpdate() {
 	// Script for bots that moves the flag towards them each frame.
 	t.MoveEquipedFlagWithBot()
-	t.RandomizeBotSpawnCTF()
+	t.SetBasePosition()
 }
 
 func (t *Team) PostUpdate() {
@@ -86,24 +106,9 @@ func (t *Team) CheckIfFlagsAreAtBase() {
 	}
 }
 
-func (t *Team) RandomizeBotSpawnCTF() {
-	// Script to select a random PlayerStart for the bot to spawn on.
-	// Filter to only select PlayStart objects that are owned by the team.
-	if t.spawns == nil {
-		filter := ns.HasTypeName{"PlayerStart"}
-		ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
-			if filter.Matches(it) {
-				t.spawns = append(t.spawns, it)
-			}
-			return true // keep iterating in any case
-		})
-	}
+func (t *Team) SetBasePosition() {
 	if InitLoadComplete {
 		t.TeamBase.SetPos(t.Flag.Pos())
-		//spawns := ns.FindAllObjects(ns.HasTypeName{"PlayerStart"}) // <---- Use this when no teams are used.
-		randomIndex := ns.Random(0, len(t.spawns)-1)
-		pick := t.spawns[randomIndex]
-		ns.Waypoint("BotSpawnPoint" + t.Name).SetPos(pick.Pos())
 	}
 }
 

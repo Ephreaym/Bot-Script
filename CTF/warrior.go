@@ -74,7 +74,7 @@ func (war *Warrior) init() {
 	war.abilities.TreadLightlyReady = true
 	// Select spawnpoint.
 	// Create WarBot.
-	war.unit = ns.CreateObject("NPC", ns.Waypoint("BotSpawnPointBlue"))
+	war.unit = ns.CreateObject("NPC", war.team.SpawnPoint())
 	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	war.unit.SetMaxHealth(150)
 	war.unit.SetStrength(125)
