@@ -203,7 +203,7 @@ func (t *Team) DropEnemyFlag(u ns.Obj) {
 
 // Return flag home.
 func (t *Team) ReturnFlagHome(u ns.Obj) {
-	t.Enemy.Flag.SetPos(t.FlagStart.Pos())
+	t.Enemy.Flag.SetPos(t.Enemy.FlagStart.Pos())
 	soundToAllPlayers5 := ns.Players()
 	for i := 0; i < len(soundToAllPlayers5); i++ {
 		ns.AudioEvent(audio.FlagRespawn, soundToAllPlayers5[i].Unit())
