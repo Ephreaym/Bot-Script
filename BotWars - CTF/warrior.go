@@ -81,6 +81,7 @@ func (war *Warrior) init() {
 	war.unit.SetBaseSpeed(100)
 	// Set Team.
 	war.unit.SetOwner(war.team.TeamObj)
+	war.unit.SetTeam(war.team.TeamObj.Team())
 	// Create WarBot mouse cursor.
 	war.target = war.team.Enemy.TeamObj
 	war.cursor = war.target.Pos()
@@ -127,16 +128,16 @@ func (war *Warrior) init() {
 }
 
 func (war *Warrior) onChangeFocus() {
-	if !war.behaviour.lookingForHealing {
-		//war.unit.Chat("onChangeFocus")
-	}
+	//if !war.behaviour.lookingForHealing {
+	//war.unit.Chat("onChangeFocus")
+	//}
 }
 
 func (war *Warrior) onLookingForEnemy() {
 
-	if !war.behaviour.lookingForHealing {
-		//war.unit.Chat("onLookingForEnemy")
-	}
+	//if !war.behaviour.lookingForHealing {
+	//war.unit.Chat("onLookingForEnemy")
+	//}
 }
 
 func (war *Warrior) onEnemyHeard() {
@@ -162,10 +163,10 @@ func (war *Warrior) onCollide() {
 		war.team.CheckPickUpEnemyFlag(caller, war.unit)
 		war.team.CheckCaptureEnemyFlag(caller, war.unit)
 		war.team.CheckRetrievedOwnFlag(caller, war.unit)
-		if !war.behaviour.lookingForHealing {
-			//war.unit.Chat("onCollide")
-			// TODO: determine tactic.
-		}
+		//	if !war.behaviour.lookingForHealing {
+		//war.unit.Chat("onCollide")
+		// TODO: determine tactic.
+		//}
 		//if ns.GetCaller() == BlueFlag {
 		//	RedTeamHasBlueFlag = false
 		//	RedFlagIsAtBase = true
@@ -178,6 +179,7 @@ func (war *Warrior) onCollide() {
 }
 
 func (war *Warrior) onEnemySighted() {
+	war.target = ns.GetCaller()
 	// SCRIPT FOR WEAPON SWITCHING. On HOLD FOR NOW
 	//if war.unit.HasItem(ns.Object("FanChakram")) {
 	//	war.unit.Chat("HELLLLOOOOOO")
@@ -188,7 +190,7 @@ func (war *Warrior) onEnemySighted() {
 	if !war.behaviour.lookingForHealing {
 		//war.unit.Chat("onEnemySighted")
 		//war.WarBotDetectEnemy() TEMP DISALBE
-		//war.useWarCry()
+		war.useWarCry()
 	}
 }
 
@@ -293,7 +295,7 @@ func (war *Warrior) Update() {
 			war.unit.EnchantOff(enchant.HELD)
 		}
 		war.findLoot()
-		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+		//war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
 		war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
 	}
 }
@@ -372,8 +374,6 @@ func (war *Warrior) findLoot() {
 func (war *Warrior) useWarCry() {
 	// Check if cooldown is ready.
 	if war.abilities.WarCryReady && !war.behaviour.charging {
-		// Select target.
-		war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
 		// Trigger global cooldown.
 		war.abilities.Ready = false
 		if war.target.MaxHealth() == 150 {
@@ -383,8 +383,43 @@ func (war *Warrior) useWarCry() {
 			ns.NewTimer(ns.Frames(war.reactionTime), func() {
 				war.unit.Pause(ns.Seconds(1))
 				ns.AudioEvent("WarcryInvoke", war.unit)
-				ns.CastSpell(spell.COUNTERSPELL, war.unit, war.target)
-				war.target.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+				ns.FindObjects(
+					// Target enemy players.
+					func(it ns.Obj) bool {
+						ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+						it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+						return true
+					},
+					ns.InCirclef{Center: war.unit, R: 300},
+					ns.HasClass(object.ClassPlayer),
+					ns.HasTeam{war.team.Enemy.TeamObj.Team()},
+				)
+				// Select target.
+				// Target enemy bots.
+				ns.FindObjects(
+					func(it ns.Obj) bool {
+						ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+						it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+						return true
+					},
+					ns.InCirclef{Center: war.unit, R: 300},
+					ns.HasTypeName{"NPC"},
+					ns.HasTeam{war.team.Enemy.TeamObj.Team()},
+				)
+				// Target enemy monsters small.
+				// ns.HasTypeName{"Urchin"} || ns.HasTypeName{"Bat"}, // | "Bomber" | "SmallSpider" | "Ghost" | "Imp" | "FlyingGolem" | "Bat"},
+				//ns.FindObjects(
+				//	func(it ns.Obj) bool {
+				//		ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+				//		it.Enchant(enchant.HELD, ns.Seconds(3))
+				//		return true
+				//	},
+				//	ns.InCirclef{Center: war.unit, R: 300},
+				//	ns.HasTypeName{"Urchin"},
+				//	// "HasOwner in Enemy.Team"
+				//)
+				// Target enemy monsters casters.
+				// continue script.
 				war.unit.EnchantOff(enchant.INVULNERABLE)
 				ns.NewTimer(ns.Seconds(10), func() {
 					war.abilities.WarCryReady = true

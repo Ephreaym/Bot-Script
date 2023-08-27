@@ -21,9 +21,9 @@ type Wizard struct {
 	team              *Team
 	unit              ns.Obj
 	cursor            ns.Pointf
-	cursorObject      ns.Obj
 	target            ns.Obj
 	trap              ns.Obj
+	mana              int
 	startingEquipment struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
@@ -79,8 +79,11 @@ func (wiz *Wizard) init() {
 	wiz.unit.SetStrength(35)
 	wiz.unit.SetBaseSpeed(83)
 	wiz.spells.isAlive = true
+	wiz.mana = 150
+	wiz.PassiveManaRegen()
 	// Set Team.
 	wiz.unit.SetOwner(wiz.team.TeamObj)
+	wiz.unit.SetTeam(wiz.team.TeamObj.Team())
 	// Create WizBot3 mouse cursor.
 	wiz.target = wiz.team.Enemy.TeamObj
 	wiz.cursor = wiz.target.Pos()
@@ -180,6 +183,15 @@ func (wiz *Wizard) onDeath() {
 		wiz.startingEquipment.StreetSneakers.Delete()
 		wiz.startingEquipment.StreetShirt.Delete()
 		wiz.init()
+	})
+}
+
+func (wiz *Wizard) PassiveManaRegen() {
+	ns.NewTimer(ns.Seconds(1), func() {
+		if wiz.mana < 150 {
+			wiz.mana = wiz.mana + 20
+		}
+		wiz.PassiveManaRegen()
 	})
 }
 

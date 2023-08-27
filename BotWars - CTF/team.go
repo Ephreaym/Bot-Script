@@ -237,12 +237,6 @@ func (t *Team) CheckAttackOrDefend(u ns.Obj) {
 	}
 }
 
-// Bot interaction.
-func (t *Team) initDialog(u ns.Obj) {
-	ns.SetDialog(u, ns.DialogNormal, t.DialogStart, t.DialogEnd)
-
-}
-
 func (t *Team) DialogStart(u ns.Obj) {
 	u.Chat("Con03B.scr:Worker1ChatA")
 	u.SetOwner(ns.GetCaller())
