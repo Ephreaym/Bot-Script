@@ -258,8 +258,12 @@ func (wiz *Wizard) findLoot() {
 	}
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------------ //
+// ---------------------------------------------------------------- SPELL BOOK -------------------------------------------------------- //
+// ------------------------------------------------------------------------------------------------------------------------------------ //
+
 func (wiz *Wizard) castTrap() {
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.TrapReady {
+	if wiz.mana >= 105 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.TrapReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -290,6 +294,7 @@ func (wiz *Wizard) castTrap() {
 														if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 															wiz.spells.TrapReady = false
 															ns.AudioEvent(audio.TrapDrop, wiz.unit)
+															wiz.mana = wiz.mana - 105
 															wiz.trap = ns.NewTrap(wiz.unit, spell.CLEANSING_FLAME, spell.MAGIC_MISSILE, spell.SHOCK)
 															wiz.trap.SetOwner(wiz.unit)
 															// Global cooldown.
@@ -316,7 +321,7 @@ func (wiz *Wizard) castTrap() {
 
 func (wiz *Wizard) castShock() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHOCK) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.ShockReady {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHOCK) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.ShockReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -327,6 +332,7 @@ func (wiz *Wizard) castShock() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ShockReady = false
+						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.SHOCK, wiz.unit, wiz.unit)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -343,7 +349,7 @@ func (wiz *Wizard) castShock() {
 
 func (wiz *Wizard) castInvisibility() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady && wiz.unit != wiz.team.TeamTank {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady && wiz.unit != wiz.team.TeamTank {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -354,6 +360,7 @@ func (wiz *Wizard) castInvisibility() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.InvisibilityReady = false
+						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.INVISIBILITY, wiz.unit, wiz.unit)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -401,7 +408,7 @@ func (wiz *Wizard) castEnergyBolt() {
 
 func (wiz *Wizard) castDeathRay() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
+	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready {
 		// Select target.
 		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
@@ -418,6 +425,7 @@ func (wiz *Wizard) castDeathRay() {
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.DeathRayReady = false
 						ns.CastSpell(spell.DEATH_RAY, wiz.unit, wiz.cursor)
+						wiz.mana = wiz.mana - 60
 						// Global cooldown.
 						wiz.spells.Ready = true
 						// Death Ray cooldown.
@@ -433,7 +441,7 @@ func (wiz *Wizard) castDeathRay() {
 
 func (wiz *Wizard) castFireball() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
 		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
@@ -449,6 +457,7 @@ func (wiz *Wizard) castFireball() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.FireballReady = false
+						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.cursor)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -465,7 +474,7 @@ func (wiz *Wizard) castFireball() {
 
 func (wiz *Wizard) castFireballAtHeard() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -480,6 +489,7 @@ func (wiz *Wizard) castFireballAtHeard() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.FireballReady = false
+						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.target)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -496,7 +506,7 @@ func (wiz *Wizard) castFireballAtHeard() {
 
 func (wiz *Wizard) castBlink() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady && wiz.unit != wiz.team.TeamTank {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady && wiz.unit != wiz.team.TeamTank {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -507,6 +517,7 @@ func (wiz *Wizard) castBlink() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.BlinkReady = false
+						wiz.mana = wiz.mana - 10
 						ns.NewTrap(wiz.unit, spell.BLINK)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -523,7 +534,7 @@ func (wiz *Wizard) castBlink() {
 
 func (wiz *Wizard) castMissilesOfMagic() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
+	if wiz.mana >= 15 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -539,6 +550,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.MagicMissilesReady = false
 						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
+						wiz.mana = wiz.mana - 15
 						// Global cooldown.
 						wiz.spells.Ready = true
 						// Missiles Of Magic cooldown.
@@ -554,7 +566,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 
 func (wiz *Wizard) castSlow() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -569,6 +581,7 @@ func (wiz *Wizard) castSlow() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.SlowReady = false
+						wiz.mana = wiz.mana - 10
 						ns.CastSpell(spell.SLOW, wiz.unit, wiz.target)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -585,7 +598,7 @@ func (wiz *Wizard) castSlow() {
 
 func (wiz *Wizard) castHaste() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.HASTED) && wiz.spells.Ready && wiz.spells.HasteReady {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.HASTED) && wiz.spells.Ready && wiz.spells.HasteReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -596,6 +609,7 @@ func (wiz *Wizard) castHaste() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.HasteReady = false
+						wiz.mana = wiz.mana - 10
 						ns.CastSpell(spell.HASTE, wiz.unit, wiz.unit)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -613,7 +627,7 @@ func (wiz *Wizard) castHaste() {
 func (wiz *Wizard) castForceField() {
 	// if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.SHIELD)
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHIELD) && wiz.spells.Ready && wiz.spells.ForceFieldReady {
+	if wiz.mana >= 80 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.SHIELD) && wiz.spells.Ready && wiz.spells.ForceFieldReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -624,6 +638,7 @@ func (wiz *Wizard) castForceField() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ForceFieldReady = false
+						wiz.mana = wiz.mana - 80
 						ns.CastSpell(spell.SHIELD, wiz.unit, wiz.unit)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -640,7 +655,7 @@ func (wiz *Wizard) castForceField() {
 
 func (wiz *Wizard) castProtectionFromFire() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && wiz.spells.Ready && wiz.spells.ProtFromFireReady {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) && wiz.spells.Ready && wiz.spells.ProtFromFireReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -651,6 +666,7 @@ func (wiz *Wizard) castProtectionFromFire() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ProtFromFireReady = false
+						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_FIRE, wiz.unit, wiz.unit)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -667,7 +683,7 @@ func (wiz *Wizard) castProtectionFromFire() {
 
 func (wiz *Wizard) castProtectionFromShock() {
 	// Check if cooldowns are ready.
-	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && wiz.spells.Ready && wiz.spells.ProtFromShockReady {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) && wiz.spells.Ready && wiz.spells.ProtFromShockReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -678,6 +694,7 @@ func (wiz *Wizard) castProtectionFromShock() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.ProtFromShockReady = false
+						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, wiz.unit, wiz.unit)
 						// Global cooldown.
 						wiz.spells.Ready = true
@@ -691,3 +708,7 @@ func (wiz *Wizard) castProtectionFromShock() {
 		})
 	}
 }
+
+// ------------------------------------------------------------------------------------------------------------------------------------ //
+// ---------------------------------------------------------------- SPELL BOOK -------------------------------------------------------- //
+// ------------------------------------------------------------------------------------------------------------------------------------ //

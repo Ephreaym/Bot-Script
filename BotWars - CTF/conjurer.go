@@ -287,9 +287,13 @@ func (con *Conjurer) findLoot() {
 	}
 }
 
+// ------------------------------------------------------------------------------------------------------------------------------------ //
+// ---------------------------------------------------------------- SPELL BOOK -------------------------------------------------------- //
+// ------------------------------------------------------------------------------------------------------------------------------------ //
+
 func (con *Conjurer) castVampirism() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.VampirismReady {
+	if con.mana >= 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.VampirismReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -300,6 +304,7 @@ func (con *Conjurer) castVampirism() {
 					// Check for War Cry before spell release.
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.VampirismReady = false
+						con.mana = con.mana - 20
 						ns.CastSpell(spell.VAMPIRISM, con.unit, con.unit)
 						// Global cooldown.
 						con.spells.Ready = true
@@ -316,7 +321,7 @@ func (con *Conjurer) castVampirism() {
 
 func (con *Conjurer) castProtectionFromFire() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromFireReady {
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromFireReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -327,6 +332,7 @@ func (con *Conjurer) castProtectionFromFire() {
 					// Check for War Cry before spell release.
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.ProtFromFireReady = false
+						con.mana = con.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_FIRE, con.unit, con.unit)
 						// Global cooldown.
 						con.spells.Ready = true
@@ -343,7 +349,7 @@ func (con *Conjurer) castProtectionFromFire() {
 
 func (con *Conjurer) castProtectionFromPoison() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromPoisonReady {
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromPoisonReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -354,6 +360,7 @@ func (con *Conjurer) castProtectionFromPoison() {
 					// Check for War Cry before spell release.
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.ProtFromPoisonReady = false
+						con.mana = con.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_POISON, con.unit, con.unit)
 						// Global cooldown.
 						con.spells.Ready = true
@@ -370,7 +377,7 @@ func (con *Conjurer) castProtectionFromPoison() {
 
 func (con *Conjurer) castProtectionFromShock() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromShockReady {
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.ProtFromShockReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -381,6 +388,7 @@ func (con *Conjurer) castProtectionFromShock() {
 					// Check for War Cry before spell release.
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.ProtFromShockReady = false
+						con.mana = con.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, con.unit, con.unit)
 						// Global cooldown.
 						con.spells.Ready = true
@@ -397,7 +405,7 @@ func (con *Conjurer) castProtectionFromShock() {
 
 func (con *Conjurer) castPixieSwarm() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.PixieSwarmReady {
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.PixieSwarmReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -408,6 +416,7 @@ func (con *Conjurer) castPixieSwarm() {
 					// Check for War Cry before spell release.
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.PixieSwarmReady = false
+						con.mana = con.mana - 30
 						ns.CastSpell(spell.PIXIE_SWARM, con.unit, con.unit)
 						// Global cooldown.
 						con.spells.Ready = true
@@ -424,7 +433,7 @@ func (con *Conjurer) castPixieSwarm() {
 
 func (con *Conjurer) castFistOfVengeance() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.
@@ -441,6 +450,7 @@ func (con *Conjurer) castFistOfVengeance() {
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.FistOfVengeanceReady = false
 						ns.CastSpell(spell.FIST, con.unit, con.cursor)
+						con.mana = con.mana - 60
 						// Global cooldown.
 						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
@@ -456,7 +466,7 @@ func (con *Conjurer) castFistOfVengeance() {
 
 func (con *Conjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
 		con.spells.Ready = false
@@ -471,6 +481,7 @@ func (con *Conjurer) castForceOfNature() {
 						con.spells.ForceOfNatureReady = false
 						con.unit.LookAtObject(con.target)
 						con.unit.Pause(ns.Frames(30))
+						con.mana = con.mana - 60
 						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target)
 						// Global cooldown.
 						con.spells.Ready = true
@@ -487,7 +498,7 @@ func (con *Conjurer) castForceOfNature() {
 
 func (con *Conjurer) castBlink() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != con.team.TeamTank {
+	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != con.team.TeamTank {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -499,6 +510,7 @@ func (con *Conjurer) castBlink() {
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.BlinkReady = false
 						ns.NewTrap(con.unit, spell.BLINK)
+						con.mana = con.mana - 10
 						// Global cooldown.
 						con.spells.Ready = true
 						// Blink cooldown.
@@ -545,7 +557,7 @@ func (con *Conjurer) castBlink() {
 
 func (con *Conjurer) castToxicCloud() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.
@@ -562,6 +574,7 @@ func (con *Conjurer) castToxicCloud() {
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.ToxicCloudReady = false
 						ns.CastSpell(spell.TOXIC_CLOUD, con.unit, con.cursor)
+						con.mana = con.mana - 60
 						// Global cooldown.
 						con.spells.Ready = true
 						// Toxic Cloud cooldown.
@@ -577,7 +590,7 @@ func (con *Conjurer) castToxicCloud() {
 
 func (con *Conjurer) castSlow() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready {
+	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
 		con.spells.Ready = false
@@ -593,6 +606,7 @@ func (con *Conjurer) castSlow() {
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.SlowReady = false
 						ns.CastSpell(spell.SLOW, con.unit, con.target)
+						con.mana = con.mana - 10
 						// Global cooldown.
 						con.spells.Ready = true
 						// Slow cooldown.
@@ -608,7 +622,7 @@ func (con *Conjurer) castSlow() {
 
 func (con *Conjurer) castMeteor() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.
@@ -625,6 +639,7 @@ func (con *Conjurer) castMeteor() {
 						con.unit.Pause(ns.Frames(con.reactionTime))
 						con.spells.MeteorReady = false
 						ns.CastSpell(spell.METEOR, con.unit, con.cursor)
+						con.mana = con.mana - 30
 						// Global cooldown.
 						con.spells.Ready = true
 						ns.NewTimer(ns.Seconds(10), func() {
@@ -640,7 +655,7 @@ func (con *Conjurer) castMeteor() {
 
 func (con *Conjurer) castInfravision() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InfravisionReady {
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InfravisionReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -652,6 +667,7 @@ func (con *Conjurer) castInfravision() {
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						con.spells.InfravisionReady = false
 						ns.CastSpell(spell.INFRAVISION, con.unit, con.unit)
+						con.mana = con.mana - 30
 						// Global cooldown.
 						con.spells.Ready = true
 						// Invravision cooldown.
@@ -761,7 +777,7 @@ func (con *Conjurer) summonBomber1() {
 
 func (con *Conjurer) summonBomber2() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
+	if con.mana >= 80 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -792,6 +808,7 @@ func (con *Conjurer) summonBomber2() {
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 															con.spells.SummonBomber2Ready = false
 															con.bomber2 = ns.CreateObject("Bomber", con.unit)
+															con.mana = con.mana - 80
 															ns.AudioEvent("BomberSummon", con.bomber2)
 															con.bomber2.SetOwner(con.unit)
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
@@ -825,3 +842,7 @@ func (con *Conjurer) summonBomber2() {
 		})
 	}
 }
+
+// ------------------------------------------------------------------------------------------------------------------------------------ //
+// ---------------------------------------------------------------- SPELL BOOK -------------------------------------------------------- //
+// ------------------------------------------------------------------------------------------------------------------------------------ //
