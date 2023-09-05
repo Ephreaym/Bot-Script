@@ -1,6 +1,8 @@
 package BotWars
 
 import (
+	"image/color"
+
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
@@ -89,6 +91,11 @@ func (con *Conjurer) init() {
 	// Set Team.
 	con.unit.SetOwner(con.team.TeamObj)
 	con.unit.SetTeam(con.team.TeamObj.Team())
+	if con.team.TeamObj.HasTeam(ns.Teams()[0]) {
+		con.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	} else {
+		con.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+	}
 	// Create ConBot mouse cursor.
 	con.target = con.team.Enemy.TeamObj
 	con.cursor = con.target.Pos()
@@ -131,10 +138,12 @@ func (con *Conjurer) init() {
 	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
 	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
 	con.PassiveManaRegen()
+	con.LookForWeapon()
 }
 
 func (con *Conjurer) onEndOfWaypoint() {
 	con.team.CheckAttackOrDefend(con.unit)
+	con.LookForNearbyItems()
 }
 
 func (con *Conjurer) buffInitial() {
@@ -191,15 +200,34 @@ func (con *Conjurer) onDeath() {
 }
 
 func (con *Conjurer) PassiveManaRegen() {
-	ns.NewTimer(ns.Seconds(1), func() {
-		if con.mana < 150 {
-			con.mana = con.mana + 20
-		}
-		con.PassiveManaRegen()
-	})
+	if con.spells.isAlive {
+		ns.NewTimer(ns.Seconds(2), func() {
+			if con.mana < 125 {
+				con.mana = con.mana + 1
+			}
+			con.PassiveManaRegen()
+		})
+	}
+	//con.unit.Chat("con mana" + strconv.Itoa(con.mana))
+}
+
+func (con *Conjurer) UsePotions() {
+	if con.unit.CurrentHealth() <= 25 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
+		ns.AudioEvent(audio.LesserHealEffect, con.unit)
+		RedPotion := con.unit.Items(ns.HasTypeName{"RedPotion"})
+		con.unit.SetHealth(con.unit.CurrentHealth() + 50)
+		RedPotion[0].Delete()
+	}
+	if con.mana <= 100 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"BluePotion"}) != 0 {
+		con.mana = con.mana + 50
+		ns.AudioEvent(audio.RestoreMana, con.unit)
+		BluePotion := con.unit.Items(ns.HasTypeName{"BluePotion"})
+		BluePotion[0].Delete()
+	}
 }
 
 func (con *Conjurer) Update() {
+	con.UsePotions()
 	con.findLoot()
 	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		con.spells.Ready = true
@@ -227,6 +255,39 @@ func (con *Conjurer) Update() {
 		con.castProtectionFromPoison()
 		con.summonBomber1()
 		con.summonBomber2()
+	}
+}
+
+func (con *Conjurer) LookForWeapon() {
+	ItemLocation := ns.FindClosestObject(con.unit, ns.HasTypeName{"CrossBow", "InfinitePainWand"})
+	con.unit.WalkTo(ItemLocation.Pos())
+}
+
+func (con *Conjurer) LookForNearbyItems() {
+	if ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver",
+		"LeatherArmoredBoots", "LeatherArmor",
+		"LeatherHelm",
+		"LeatherLeggings", "LeatherArmbands",
+		"RedPotion",
+		"ConjurerHelm",
+		"CurePoisonPotion",
+		"BluePotion",
+		"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
+		ns.InCirclef{Center: con.unit, R: 200}) != nil {
+		ItemLocation := ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver",
+			"LeatherArmoredBoots", "LeatherArmor",
+			"LeatherHelm",
+			"LeatherLeggings", "LeatherArmbands",
+			"RedPotion",
+			"ConjurerHelm",
+			"CurePoisonPotion",
+			"BluePotion",
+			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
+			ns.InCirclef{Center: con.unit, R: 200},
+		)
+		if con.unit.CanSee(ItemLocation[0]) {
+			con.unit.WalkTo(ItemLocation[0].Pos())
+		}
 	}
 }
 
@@ -274,7 +335,9 @@ func (con *Conjurer) findLoot() {
 			"ConjurerHelm",
 
 			// Leather armor.
-			"LeatherArmoredBoots", "LeatherArmor", "LeatherHelm", "LeatherLeggings", "LeatherArmbands",
+			"LeatherArmoredBoots", "LeatherArmor",
+			"LeatherHelm",
+			"LeatherLeggings", "LeatherArmbands",
 
 			// Cloth armor.
 			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
@@ -283,6 +346,32 @@ func (con *Conjurer) findLoot() {
 	for _, item := range armor {
 		if con.unit.CanSee(item) {
 			con.unit.Equip(item)
+		}
+	}
+	// Potions.
+	potions := ns.FindAllObjects(
+		ns.InCirclef{Center: con.unit, R: dist},
+		ns.HasTypeName{
+			"RedPotion",
+			"CurePoisonPotion",
+			"BluePotion",
+		},
+	)
+	for _, item := range potions {
+		if con.unit.CanSee(item) {
+			con.unit.Pickup(item)
+		}
+	}
+
+	bluepotions := ns.FindAllObjects(
+		ns.InCirclef{Center: con.unit, R: dist},
+		ns.HasTypeName{
+			"BluePotion",
+		},
+	)
+	for _, item := range bluepotions {
+		if con.unit.CanSee(item) {
+			con.unit.Pickup(item)
 		}
 	}
 }
@@ -743,6 +832,7 @@ func (con *Conjurer) summonBomber1() {
 															con.bomber1 = ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", con.bomber1)
 															con.bomber1.SetOwner(con.unit)
+															con.bomber1.SetTeam(con.team.TeamObj.Team())
 															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
@@ -811,6 +901,7 @@ func (con *Conjurer) summonBomber2() {
 															con.mana = con.mana - 80
 															ns.AudioEvent("BomberSummon", con.bomber2)
 															con.bomber2.SetOwner(con.unit)
+															con.bomber2.SetTeam(con.team.TeamObj.Team())
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {

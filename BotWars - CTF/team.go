@@ -40,14 +40,16 @@ type Team struct {
 func (t *Team) SpawnPoint() ns.Pointf {
 	if t.spawns == nil {
 		// Filter to only select PlayStart objects that are owned by the team.
-		filter := ns.HasTypeName{"PlayerStart"}
-		ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
-			if filter.Matches(it) {
-				t.spawns = append(t.spawns, it)
-			}
-			return true // keep iterating in any case
-		})
-		//t.spawns = ns.FindAllObjects(ns.HasTypeName{"PlayerStart"}) // <---- Use this when no teams are used.
+		//filter := ns.HasTypeName{"PlayerStart"}
+		//ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
+		//	if filter.Matches(it) {
+		//		t.spawns = append(t.spawns, it)
+		//	}
+		//	return true // keep iterating in any case
+		//})
+		t.spawns = ns.FindAllObjects(
+			ns.HasTypeName{"PlayerStart"},
+			ns.HasTeam{t.TeamObj.Team()}) // <---- Use this when no teams are used.
 	}
 	if len(t.spawns) == 0 {
 		return ns.GetHost().Pos()

@@ -1,6 +1,8 @@
 package BotWars
 
 import (
+	"image/color"
+
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
@@ -45,13 +47,6 @@ type Warrior struct {
 		attacking         bool
 		lookingForTarget  bool
 	}
-	inventory struct {
-		redPotionInInventory int
-		meleeweapons         []ns.Obj
-		throwingweapons      []ns.Obj
-		potions              []ns.Obj
-		armor                []ns.Obj
-	}
 	reactionTime int
 }
 
@@ -63,7 +58,6 @@ func (war *Warrior) init() {
 	war.behaviour.charging = false
 	war.behaviour.lookingForTarget = true
 	// Inventory
-	war.inventory.redPotionInInventory = 0
 	// Reset abilities WarBot.
 	war.abilities.isAlive = true
 	war.abilities.Ready = true
@@ -82,6 +76,11 @@ func (war *Warrior) init() {
 	// Set Team.
 	war.unit.SetOwner(war.team.TeamObj)
 	war.unit.SetTeam(war.team.TeamObj.Team())
+	if war.team.TeamObj.HasTeam(ns.Teams()[0]) {
+		war.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	} else {
+		war.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+	}
 	// Create WarBot mouse cursor.
 	war.target = war.team.Enemy.TeamObj
 	war.cursor = war.target.Pos()
@@ -125,6 +124,7 @@ func (war *Warrior) init() {
 	war.unit.OnEvent(ns.EventRetreat, war.onRetreat)
 	// On death.
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
+	war.LookForWeapon()
 }
 
 func (war *Warrior) onChangeFocus() {
@@ -240,25 +240,26 @@ func (war *Warrior) onHit() {
 }
 
 func (war *Warrior) onEndOfWaypoint() {
-	if war.behaviour.lookingForHealing {
-		if war.unit.CurrentHealth() >= 140 {
-			//war.unit.Chat("onEndOfWaypoint")
-			war.unit.AggressionLevel(0.83)
-			war.unit.Hunt()
-			war.behaviour.lookingForHealing = false
-		} else {
-			if war.inventory.redPotionInInventory <= 1 {
-				war.lookForRedPotion()
-			}
-		}
-	} else {
-		if !war.behaviour.lookingForTarget {
-			war.unit.Hunt()
-			war.unit.AggressionLevel(0.83)
-			war.behaviour.lookingForTarget = true
-		}
-	}
+	//if war.behaviour.lookingForHealing {
+	//	if war.unit.CurrentHealth() >= 140 {
+	//		//war.unit.Chat("onEndOfWaypoint")
+	//		war.unit.AggressionLevel(0.83)
+	//		war.unit.Hunt()
+	//		war.behaviour.lookingForHealing = false
+	//	} else {
+	//		//if war.inventory.redPotionInInventory <= 1 {
+	//		//	war.lookForRedPotion()
+	//		//}
+	//	}
+	//} else {
+	//	if !war.behaviour.lookingForTarget {
+	//		war.unit.Hunt()
+	//		war.unit.AggressionLevel(0.83)
+	//		war.behaviour.lookingForTarget = true
+	//	}
+	//}
 	war.team.CheckAttackOrDefend(war.unit)
+	war.LookForNearbyItems()
 }
 
 func (war *Warrior) lookForRedPotion() {
@@ -288,8 +289,18 @@ func (war *Warrior) onDeath() {
 	})
 }
 
+func (war *Warrior) UsePotions() {
+	if war.unit.CurrentHealth() <= 100 && war.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
+		ns.AudioEvent(audio.LesserHealEffect, war.unit)
+		RedPotion := war.unit.Items(ns.HasTypeName{"RedPotion"})
+		war.unit.SetHealth(war.unit.CurrentHealth() + 50)
+		RedPotion[0].Delete()
+	}
+}
+
 func (war *Warrior) Update() {
 	if InitLoadComplete {
+		war.UsePotions()
 		if war.unit.HasEnchant(enchant.HELD) {
 			ns.CastSpell(spell.SLOW, war.unit, war.unit)
 			war.unit.EnchantOff(enchant.HELD)
@@ -300,15 +311,61 @@ func (war *Warrior) Update() {
 	}
 }
 
+func (war *Warrior) LookForWeapon() {
+	ItemLocation := ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
+	war.unit.WalkTo(ItemLocation.Pos())
+}
+
+func (war *Warrior) LookForNearbyItems() {
+	if ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
+		//"LeatherHelm",
+		"GreatSword", "WarHammer", //"MorningStar", "BattleAxe", "Sword", "OgreAxe",
+		//"LeatherLeggings", "LeatherArmbands",
+		"RoundChakram", //"FanChakram",
+		//"CurePoisonPotion",
+		// Plate armor.
+		//"OrnateHelm",
+		//"SteelHelm",
+		//"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
+
+		// Chainmail armor.
+		//	"ChainCoif",
+		//"ChainTunic", "ChainLeggings",
+		//"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
+		"RedPotion"},
+		ns.InCirclef{Center: war.unit, R: 200}) != nil {
+		ItemLocation := ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
+			//"LeatherHelm",
+			"GreatSword", "WarHammer", // "MorningStar", "BattleAxe", "Sword", "OgreAxe",
+			//"LeatherLeggings", "LeatherArmbands",
+			"RoundChakram", //"FanChakram",
+			//"CurePoisonPotion",
+			// Plate armor.
+			//"OrnateHelm",
+			//"SteelHelm",
+			//"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
+
+			// Chainmail armor.
+			//"ChainCoif",
+			//"ChainTunic", "ChainLeggings",
+			//"LeatherBoots", "MedievalCloak", "MedievalShirt",
+			//"MedievalPants",
+			"RedPotion"},
+			ns.InCirclef{Center: war.unit, R: 200},
+		)
+		if war.unit.CanSee(ItemLocation[0]) {
+			war.unit.WalkTo(ItemLocation[0].Pos())
+		}
+	}
+}
+
 func (war *Warrior) findLoot() {
 	const dist = 75
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
-
 			"GreatSword", "WarHammer", "MorningStar", "BattleAxe", "Sword", "OgreAxe",
-
 			//"StaffWooden",
 		},
 	)
@@ -335,15 +392,13 @@ func (war *Warrior) findLoot() {
 	potions := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
-			"RedPotion", "CurePoisonPotion",
+			"RedPotion",
+			"CurePoisonPotion",
 		},
 	)
 	for _, item := range potions {
 		if war.unit.CanSee(item) {
 			war.unit.Pickup(item)
-		}
-		if war.inventory.redPotionInInventory < 3 {
-			war.inventory.redPotionInInventory = war.inventory.redPotionInInventory + 1
 		}
 	}
 
@@ -352,13 +407,18 @@ func (war *Warrior) findLoot() {
 		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
 			// Plate armor.
-			"OrnateHelm", "SteelHelm", "Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
+			"OrnateHelm",
+			"SteelHelm",
+			"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
 
 			// Chainmail armor.
-			"ChainCoif", "ChainTunic", "ChainLeggings",
+			"ChainCoif",
+			"ChainTunic", "ChainLeggings",
 
 			// Leather armor.
-			"LeatherArmoredBoots", "LeatherArmor", "LeatherHelm", "LeatherLeggings", "LeatherArmbands",
+			"LeatherArmoredBoots", "LeatherArmor",
+			//"LeatherHelm",
+			"LeatherLeggings", "LeatherArmbands",
 
 			// Cloth armor.
 			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
@@ -386,8 +446,10 @@ func (war *Warrior) useWarCry() {
 				ns.FindObjects(
 					// Target enemy players.
 					func(it ns.Obj) bool {
-						ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
-						it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+						if war.unit.CanSee(it) {
+							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+						}
 						return true
 					},
 					ns.InCirclef{Center: war.unit, R: 300},
@@ -398,27 +460,28 @@ func (war *Warrior) useWarCry() {
 				// Target enemy bots.
 				ns.FindObjects(
 					func(it ns.Obj) bool {
-						ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
-						it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+						if war.unit.CanSee(it) {
+							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+						}
 						return true
 					},
 					ns.InCirclef{Center: war.unit, R: 300},
 					ns.HasTypeName{"NPC"},
 					ns.HasTeam{war.team.Enemy.TeamObj.Team()},
 				)
-				// Target enemy monsters small.
-				// ns.HasTypeName{"Urchin"} || ns.HasTypeName{"Bat"}, // | "Bomber" | "SmallSpider" | "Ghost" | "Imp" | "FlyingGolem" | "Bat"},
-				//ns.FindObjects(
-				//	func(it ns.Obj) bool {
-				//		ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
-				//		it.Enchant(enchant.HELD, ns.Seconds(3))
-				//		return true
-				//	},
-				//	ns.InCirclef{Center: war.unit, R: 300},
-				//	ns.HasTypeName{"Urchin"},
-				//	// "HasOwner in Enemy.Team"
-				//)
-				// Target enemy monsters casters.
+				//Target enemy monsters small.
+				//	ns.FindObjects(
+				//		func(it ns.Obj) bool {
+				//			ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+				//			it.Enchant(enchant.HELD, ns.Seconds(3))
+				//			return true
+				//		},
+				//		ns.InCirclef{Center: war.unit, R: 300},
+				//		ns.HasTypeName{"Urchin", "Bat, Bomber", "SmallSpider", "Ghost", "Imp", "FlyingGolem"},
+				//		// "HasOwner in Enemy.Team"
+				//	)
+				//	 Target enemy monsters casters.
 				// continue script.
 				war.unit.EnchantOff(enchant.INVULNERABLE)
 				ns.NewTimer(ns.Seconds(10), func() {
