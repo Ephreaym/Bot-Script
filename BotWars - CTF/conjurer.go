@@ -314,7 +314,7 @@ func (con *Conjurer) LookForNearbyItems() {
 		"BluePotion",
 		"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
 		ns.InCirclef{Center: con.unit, R: 200}) != nil {
-		ItemLocation := ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver",
+		if con.unit.InItems().FindObjects(nil, ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver",
 			"LeatherArmoredBoots", "LeatherArmor",
 			"LeatherHelm",
 			"LeatherLeggings", "LeatherArmbands",
@@ -322,11 +322,21 @@ func (con *Conjurer) LookForNearbyItems() {
 			"ConjurerHelm",
 			"CurePoisonPotion",
 			"BluePotion",
-			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
-			ns.InCirclef{Center: con.unit, R: 200},
-		)
-		if con.unit.CanSee(ItemLocation[0]) {
-			con.unit.WalkTo(ItemLocation[0].Pos())
+			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"}) == 0 {
+			ItemLocation := ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver",
+				"LeatherArmoredBoots", "LeatherArmor",
+				"LeatherHelm",
+				"LeatherLeggings", "LeatherArmbands",
+				"RedPotion",
+				"ConjurerHelm",
+				"CurePoisonPotion",
+				"BluePotion",
+				"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
+				ns.InCirclef{Center: con.unit, R: 200},
+			)
+			if con.unit.CanSee(ItemLocation[0]) {
+				con.unit.WalkTo(ItemLocation[0].Pos())
+			}
 		}
 	}
 }

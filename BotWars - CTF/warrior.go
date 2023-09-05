@@ -334,27 +334,29 @@ func (war *Warrior) LookForNearbyItems() {
 		//"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
 		"RedPotion"},
 		ns.InCirclef{Center: war.unit, R: 200}) != nil {
-		ItemLocation := ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
-			//"LeatherHelm",
-			"GreatSword", "WarHammer", // "MorningStar", "BattleAxe", "Sword", "OgreAxe",
-			//"LeatherLeggings", "LeatherArmbands",
-			"RoundChakram", //"FanChakram",
-			//"CurePoisonPotion",
-			// Plate armor.
-			//"OrnateHelm",
-			//"SteelHelm",
-			//"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
+		if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"GreatSword", "WarHammer", "RoundChakram", "RedPotion"}) == 0 {
+			ItemLocation := ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
+				//"LeatherHelm",
+				"GreatSword", "WarHammer", // "MorningStar", "BattleAxe", "Sword", "OgreAxe",
+				//"LeatherLeggings", "LeatherArmbands",
+				"RoundChakram", //"FanChakram",
+				//"CurePoisonPotion",
+				// Plate armor.
+				//"OrnateHelm",
+				//"SteelHelm",
+				//"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
 
-			// Chainmail armor.
-			//"ChainCoif",
-			//"ChainTunic", "ChainLeggings",
-			//"LeatherBoots", "MedievalCloak", "MedievalShirt",
-			//"MedievalPants",
-			"RedPotion"},
-			ns.InCirclef{Center: war.unit, R: 200},
-		)
-		if war.unit.CanSee(ItemLocation[0]) {
-			war.unit.WalkTo(ItemLocation[0].Pos())
+				// Chainmail armor.
+				//"ChainCoif",
+				//"ChainTunic", "ChainLeggings",
+				//"LeatherBoots", "MedievalCloak", "MedievalShirt",
+				//"MedievalPants",
+				"RedPotion"},
+				ns.InCirclef{Center: war.unit, R: 200},
+			)
+			if war.unit.CanSee(ItemLocation[0]) {
+				war.unit.WalkTo(ItemLocation[0].Pos())
+			}
 		}
 	}
 }
@@ -446,7 +448,7 @@ func (war *Warrior) useWarCry() {
 				ns.FindObjects(
 					// Target enemy players.
 					func(it ns.Obj) bool {
-						if war.unit.CanSee(it) {
+						if war.unit.CanSee(it) && it.MaxHealth() < 150 {
 							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
 							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
 						}
@@ -460,7 +462,7 @@ func (war *Warrior) useWarCry() {
 				// Target enemy bots.
 				ns.FindObjects(
 					func(it ns.Obj) bool {
-						if war.unit.CanSee(it) {
+						if war.unit.CanSee(it) && it.MaxHealth() < 150 {
 							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
 							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
 						}

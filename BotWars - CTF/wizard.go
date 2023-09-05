@@ -349,12 +349,14 @@ func (wiz *Wizard) LookForNearbyItems() {
 	if ns.FindAllObjects(ns.HasTypeName{
 		"RedPotion", "FireStormWand", "LesserFireballWand", "ForceWand", "CurePoisonPotion", "WizardHelm", "WizardRobe", "BluePotion", "LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
 		ns.InCirclef{Center: wiz.unit, R: 200}) != nil {
-		ItemLocation := ns.FindAllObjects(ns.HasTypeName{
-			"RedPotion", "CurePoisonPotion", "WizardHelm", "WizardRobe", "BluePotion", "FireStormWand", "LesserFireballWand", "ForceWand", "LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
-			ns.InCirclef{Center: wiz.unit, R: 200},
-		)
-		if wiz.unit.CanSee(ItemLocation[0]) {
-			wiz.unit.WalkTo(ItemLocation[0].Pos())
+		if wiz.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion", "FireStormWand", "LesserFireballWand", "ForceWand", "CurePoisonPotion", "WizardHelm", "WizardRobe", "BluePotion", "LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"}) == 0 {
+			ItemLocation := ns.FindAllObjects(ns.HasTypeName{
+				"RedPotion", "CurePoisonPotion", "WizardHelm", "WizardRobe", "BluePotion", "FireStormWand", "LesserFireballWand", "ForceWand", "LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
+				ns.InCirclef{Center: wiz.unit, R: 200},
+			)
+			if wiz.unit.CanSee(ItemLocation[0]) {
+				wiz.unit.WalkTo(ItemLocation[0].Pos())
+			}
 		}
 	}
 }
