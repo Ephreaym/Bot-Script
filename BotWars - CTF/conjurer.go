@@ -52,6 +52,9 @@ type Conjurer struct {
 		SlowReady            bool
 		MeteorReady          bool
 	}
+	audio struct {
+		ManaRestoreSound bool
+	}
 	reactionTime int
 }
 
@@ -206,9 +209,9 @@ func (con *Conjurer) PassiveManaRegen() {
 				con.mana = con.mana + 1
 			}
 			con.PassiveManaRegen()
+			//ns.PrintStrToAll("wiz mana: " + strconv.Itoa(wiz.mana))
 		})
 	}
-	//con.unit.Chat("con mana" + strconv.Itoa(con.mana))
 }
 
 func (con *Conjurer) UsePotions() {
@@ -226,8 +229,45 @@ func (con *Conjurer) UsePotions() {
 	}
 }
 
+func (con *Conjurer) GoToManaObelisk() {
+	//wiz.unit.AggressionLevel(0.16)
+	ManaSource := ns.FindClosestObject(con.unit, ns.HasTypeName{
+		"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
+	})
+	con.unit.WalkTo(ManaSource.Pos())
+}
+
+func (con *Conjurer) RestoreMana() {
+	if con.mana < 150 {
+		ManaSource := ns.FindAllObjects(
+			ns.HasTypeName{
+				"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
+			},
+			ns.InCirclef{Center: con.unit, R: 50},
+		)
+		for i := 0; i < len(ManaSource); i++ {
+			if ManaSource[i].CurrentMana() > 0 && con.unit.CanSee(ManaSource[i]) {
+				con.mana = con.mana + 1
+				ManaSource[i].SetMana(ManaSource[i].CurrentMana() - 1)
+				con.RestoreManaSound()
+			}
+		}
+	}
+}
+
+func (con *Conjurer) RestoreManaSound() {
+	if !con.audio.ManaRestoreSound {
+		con.audio.ManaRestoreSound = true
+		ns.AudioEvent(audio.RestoreMana, con.unit)
+		ns.NewTimer(ns.Frames(15), func() {
+			con.audio.ManaRestoreSound = false
+		})
+	}
+}
+
 func (con *Conjurer) Update() {
 	con.UsePotions()
+	con.RestoreMana()
 	con.findLoot()
 	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		con.spells.Ready = true

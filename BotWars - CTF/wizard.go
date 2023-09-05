@@ -2,7 +2,6 @@ package BotWars
 
 import (
 	"image/color"
-	"strconv"
 
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
@@ -249,7 +248,7 @@ func (wiz *Wizard) PassiveManaRegen() {
 				wiz.mana = wiz.mana + 1
 			}
 			wiz.PassiveManaRegen()
-			ns.PrintStrToAll("wiz mana: " + strconv.Itoa(wiz.mana))
+			//ns.PrintStrToAll("wiz mana: " + strconv.Itoa(wiz.mana))
 		})
 	}
 }
@@ -348,22 +347,10 @@ func (wiz *Wizard) LookForWeapon() {
 
 func (wiz *Wizard) LookForNearbyItems() {
 	if ns.FindAllObjects(ns.HasTypeName{
-		"RedPotion",
-		"FireStormWand", "LesserFireballWand", "ForceWand",
-		"CurePoisonPotion",
-		"WizardHelm",
-		"WizardRobe",
-		"BluePotion",
-		"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
+		"RedPotion", "FireStormWand", "LesserFireballWand", "ForceWand", "CurePoisonPotion", "WizardHelm", "WizardRobe", "BluePotion", "LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
 		ns.InCirclef{Center: wiz.unit, R: 200}) != nil {
 		ItemLocation := ns.FindAllObjects(ns.HasTypeName{
-			"RedPotion",
-			"CurePoisonPotion",
-			"WizardHelm",
-			"WizardRobe",
-			"BluePotion",
-			"FireStormWand", "LesserFireballWand", "ForceWand",
-			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
+			"RedPotion", "CurePoisonPotion", "WizardHelm", "WizardRobe", "BluePotion", "FireStormWand", "LesserFireballWand", "ForceWand", "LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants"},
 			ns.InCirclef{Center: wiz.unit, R: 200},
 		)
 		if wiz.unit.CanSee(ItemLocation[0]) {
@@ -397,8 +384,7 @@ func (wiz *Wizard) findLoot() {
 		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
 			// Armor.
-			"WizardHelm",
-			"WizardRobe",
+			"WizardHelm", "WizardRobe",
 			// Cloth armor.
 			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
 		},
@@ -413,9 +399,7 @@ func (wiz *Wizard) findLoot() {
 	potions := ns.FindAllObjects(
 		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
-			"RedPotion",
-			"CurePoisonPotion",
-			"BluePotion",
+			"RedPotion", "CurePoisonPotion", "BluePotion",
 		},
 	)
 	for _, item := range potions {
