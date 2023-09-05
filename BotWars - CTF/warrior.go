@@ -373,7 +373,8 @@ func (war *Warrior) findLoot() {
 	)
 	for _, item := range meleeweapons {
 		if war.unit.CanSee(item) {
-			war.unit.Equip(item)
+			war.unit.Pickup(item)
+			war.unit.Equip(war.unit.GetLastItem())
 		}
 	}
 
@@ -411,7 +412,8 @@ func (war *Warrior) findLoot() {
 			// Plate armor.
 			"OrnateHelm",
 			"SteelHelm",
-			"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
+			"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms",
+			//"SteelShield",
 
 			// Chainmail armor.
 			"ChainCoif",
@@ -428,7 +430,8 @@ func (war *Warrior) findLoot() {
 	)
 	for _, item := range armor {
 		if war.unit.CanSee(item) {
-			war.unit.Equip(item)
+			war.unit.Pickup(item)
+			war.unit.Equip(war.unit.GetLastItem())
 		}
 	}
 }

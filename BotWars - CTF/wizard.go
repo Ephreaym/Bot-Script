@@ -764,17 +764,18 @@ func (wiz *Wizard) castDrainMana() {
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.DrainManaReady = false
 						wiz.behaviour.IsCastinDrainMana = true
-						wiz.unit.Pause(ns.Frames(30))
 						ManaSource := ns.FindAllObjects(
 							ns.HasTypeName{
 								"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
 							},
 							ns.InCirclef{Center: wiz.unit, R: 200})
-						wiz.unit.LookAtObject(ManaSource[0])
+
 						ns.NewTimer(ns.Frames(30), func() {
 							wiz.behaviour.IsCastinDrainMana = false
 						})
 						ns.CastSpell(spell.DRAIN_MANA, wiz.unit, wiz.unit.Pos())
+						wiz.unit.LookAtObject(ManaSource[0])
+						wiz.unit.Pause(ns.Frames(30))
 						// Global cooldown.
 						wiz.spells.Ready = true
 						// Haste cooldown.
