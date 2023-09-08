@@ -55,6 +55,9 @@ type Conjurer struct {
 	audio struct {
 		ManaRestoreSound bool
 	}
+	behaviour struct {
+		AntiStuck bool
+	}
 	reactionTime int
 }
 
@@ -82,7 +85,8 @@ func (con *Conjurer) init() {
 	con.spells.ProtFromFireReady = true
 	con.spells.ProtFromPoisonReady = true
 	con.spells.ProtFromShockReady = true
-
+	// Behaviour.
+	con.behaviour.AntiStuck = true
 	// Create ConBot.
 	con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
 	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -300,7 +304,9 @@ func (con *Conjurer) Update() {
 
 func (con *Conjurer) LookForWeapon() {
 	ItemLocation := ns.FindClosestObject(con.unit, ns.HasTypeName{"CrossBow", "InfinitePainWand"})
-	con.unit.WalkTo(ItemLocation.Pos())
+	if ItemLocation != nil {
+		con.unit.WalkTo(ItemLocation.Pos())
+	}
 }
 
 func (con *Conjurer) LookForNearbyItems() {
@@ -339,6 +345,16 @@ func (con *Conjurer) LookForNearbyItems() {
 			}
 		}
 	}
+	ns.NewTimer(ns.Seconds(5), func() {
+		// prevent bots getting stuck to stay in loop.
+		if con.behaviour.AntiStuck {
+			con.behaviour.AntiStuck = false
+			con.team.CheckAttackOrDefend(con.unit)
+			ns.NewTimer(ns.Seconds(6), func() {
+				con.behaviour.AntiStuck = true
+			})
+		}
+	})
 }
 
 func (con *Conjurer) findLoot() {
@@ -361,7 +377,8 @@ func (con *Conjurer) findLoot() {
 	)
 	for _, item := range weapons {
 		if con.unit.CanSee(item) {
-			con.unit.Equip(item)
+			con.unit.Pickup(item)
+			con.unit.Equip(con.unit.GetLastItem())
 		}
 	}
 	// Quiver.
@@ -395,7 +412,8 @@ func (con *Conjurer) findLoot() {
 	)
 	for _, item := range armor {
 		if con.unit.CanSee(item) {
-			con.unit.Equip(item)
+			con.unit.Pickup(item)
+			con.unit.Equip(con.unit.GetLastItem())
 		}
 	}
 	// Potions.
@@ -408,18 +426,6 @@ func (con *Conjurer) findLoot() {
 		},
 	)
 	for _, item := range potions {
-		if con.unit.CanSee(item) {
-			con.unit.Pickup(item)
-		}
-	}
-
-	bluepotions := ns.FindAllObjects(
-		ns.InCirclef{Center: con.unit, R: dist},
-		ns.HasTypeName{
-			"BluePotion",
-		},
-	)
-	for _, item := range bluepotions {
 		if con.unit.CanSee(item) {
 			con.unit.Pickup(item)
 		}

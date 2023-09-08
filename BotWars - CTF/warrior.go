@@ -3,6 +3,7 @@ package BotWars
 import (
 	"image/color"
 
+	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
@@ -39,6 +40,7 @@ type Warrior struct {
 		HarpoonReady         bool
 		EyeOfTheWolfReady    bool // Cooldown is 20 seconds.
 		TreadLightlyReady    bool
+		RoundChackramReady   bool // for now cooldown 10 seconds.
 	}
 	behaviour struct {
 		listening         bool
@@ -46,6 +48,7 @@ type Warrior struct {
 		charging          bool
 		attacking         bool
 		lookingForTarget  bool
+		AntiStuck         bool
 	}
 	reactionTime int
 }
@@ -57,6 +60,7 @@ func (war *Warrior) init() {
 	war.behaviour.lookingForHealing = false
 	war.behaviour.charging = false
 	war.behaviour.lookingForTarget = true
+	war.behaviour.AntiStuck = true
 	// Inventory
 	// Reset abilities WarBot.
 	war.abilities.isAlive = true
@@ -66,6 +70,7 @@ func (war *Warrior) init() {
 	war.abilities.HarpoonReady = true
 	war.abilities.EyeOfTheWolfReady = true
 	war.abilities.TreadLightlyReady = true
+	war.abilities.RoundChackramReady = true
 	// Select spawnpoint.
 	// Create WarBot.
 	war.unit = ns.CreateObject("NPC", war.team.SpawnPoint())
@@ -141,19 +146,20 @@ func (war *Warrior) onLookingForEnemy() {
 }
 
 func (war *Warrior) onEnemyHeard() {
-	if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
-		//war.unit.Chat("onEnemyHeard")
-		war.behaviour.attacking = true
-		//war.WarBotDetectEnemy() TEMP DISABLE
-		//if war.behaviour.listening {
-		//	war.behaviour.listening = false
-		//	war.unit.Chat("Wiz06a:Guard2Listen")
-		//	war.unit.Guard(war.target.Pos(), war.target.Pos(), 300)
-		//	ns.NewTimer(ns.Seconds(10), func() {
-		//		war.behaviour.listening = true
-		//	})
-		//}
-	}
+	//if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
+	//war.unit.Chat("onEnemyHeard")
+	//war.behaviour.attacking = true
+	//war.WarBotDetectEnemy() TEMP DISABLE
+	//if war.behaviour.listening {
+	//	war.behaviour.listening = false
+	//	war.unit.Chat("Wiz06a:Guard2Listen")
+	//	war.unit.Guard(war.target.Pos(), war.target.Pos(), 300)
+	//	ns.NewTimer(ns.Seconds(10), func() {
+	//		war.behaviour.listening = true
+	//	})
+	//}
+	//}
+	war.ThrowChakram()
 }
 
 func (war *Warrior) onCollide() {
@@ -180,18 +186,11 @@ func (war *Warrior) onCollide() {
 
 func (war *Warrior) onEnemySighted() {
 	war.target = ns.GetCaller()
-	// SCRIPT FOR WEAPON SWITCHING. On HOLD FOR NOW
-	//if war.unit.HasItem(ns.Object("FanChakram")) {
-	//	war.unit.Chat("HELLLLOOOOOO")
-	//war.unit.Equip(ns.Object("FanChakram"))
-	//war.unit.HitRanged(war.target.Pos())
-	//}
-
+	//war.WarBotDetectEnemy()
 	if !war.behaviour.lookingForHealing {
-		//war.unit.Chat("onEnemySighted")
-		//war.WarBotDetectEnemy() TEMP DISALBE
 		war.useWarCry()
 	}
+	war.ThrowChakram()
 }
 
 func (war *Warrior) onRetreat() {
@@ -313,7 +312,9 @@ func (war *Warrior) Update() {
 
 func (war *Warrior) LookForWeapon() {
 	ItemLocation := ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
-	war.unit.WalkTo(ItemLocation.Pos())
+	if ItemLocation != nil {
+		war.unit.WalkTo(ItemLocation.Pos())
+	}
 }
 
 func (war *Warrior) LookForNearbyItems() {
@@ -358,6 +359,65 @@ func (war *Warrior) LookForNearbyItems() {
 				war.unit.WalkTo(ItemLocation[0].Pos())
 			}
 		}
+	}
+	ns.NewTimer(ns.Seconds(5), func() {
+		// prevent bots getting stuck to stay in loop.
+		if war.behaviour.AntiStuck {
+			war.behaviour.AntiStuck = false
+			war.team.CheckAttackOrDefend(war.unit)
+			ns.NewTimer(ns.Seconds(6), func() {
+				war.behaviour.AntiStuck = true
+			})
+		}
+	})
+}
+
+func (war *Warrior) ThrowChakram() {
+	if war.abilities.RoundChackramReady && war.unit.InItems().FindObjects(nil, ns.HasTypeName{"RoundChakram"}) != 0 {
+		war.abilities.RoundChackramReady = false
+		//war.unit.Chat("I have a Chakram")
+		war.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				war.unit.Equip(it)
+				war.unit.LookAtObject(war.target)
+				war.unit.HitRanged(war.target.Pos())
+				ns.NewTimer(ns.Frames(5), func() {
+					war.WeaponPreference()
+				})
+				ns.NewTimer(ns.Seconds(10), func() {
+					war.abilities.RoundChackramReady = true
+				})
+				return true
+			},
+			ns.HasTypeName{"RoundChakram"},
+		)
+	}
+}
+
+func (war *Warrior) WeaponPreference() {
+	// Priority list to get the prefered weapon.
+	// TODO: Add stun and range conditions.
+	if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"GreatSword"}) != 0 {
+		war.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				war.unit.Equip(it)
+				//war.unit.Chat("I swapped to my GreatSword!")
+				return true
+			},
+			ns.HasTypeName{"GreatSword"},
+		)
+	} else if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"WarHammer"}) != 0 {
+		war.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				war.unit.Equip(it)
+				//war.unit.Chat("I swapped to my WarHammer!")
+				return true
+			},
+			ns.HasTypeName{"WarHammer"},
+		)
+	} else {
+		war.unit.Equip(war.startingEquipment.Longsword)
+		//war.unit.Chat("I swapped to my LongSword!")
 	}
 }
 
@@ -451,7 +511,7 @@ func (war *Warrior) useWarCry() {
 				ns.FindObjects(
 					// Target enemy players.
 					func(it ns.Obj) bool {
-						if war.unit.CanSee(it) && it.MaxHealth() < 150 {
+						if war.unit.CanSee(it) && it.MaxHealth() < 150 && !it.HasEnchant(enchant.ANTI_MAGIC) {
 							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
 							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
 						}
@@ -465,7 +525,7 @@ func (war *Warrior) useWarCry() {
 				// Target enemy bots.
 				ns.FindObjects(
 					func(it ns.Obj) bool {
-						if war.unit.CanSee(it) && it.MaxHealth() < 150 {
+						if war.unit.CanSee(it) && it.MaxHealth() < 150 && !it.HasEnchant(enchant.ANTI_MAGIC) {
 							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
 							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
 						}
@@ -515,4 +575,178 @@ func (war *Warrior) useEyeOfTheWolf() {
 			war.abilities.EyeOfTheWolfReady = true
 		})
 	}
+}
+
+////////// ------------------------ BERSERK SCRIPT MIGHT BUG ------------------------ ////////
+// --------------------------------------------------------- //
+
+var (
+	WarBot                  ns3.ObjectID
+	WizBot                  ns3.ObjectID
+	WizBotCorpse            ns3.ObjectID
+	WarBotCorpse            ns3.ObjectID
+	OutOfGameWar            ns3.WaypointID
+	OutOfGameWiz            ns3.WaypointID
+	WarSound                ns3.WaypointID
+	WizSound                ns3.WaypointID
+	WarCryCooldown          bool
+	EyeOfTheWolfCooldown    bool
+	BerserkerChargeCooldown bool
+	GlobalCooldown          bool
+	RespawnCooldownDelay    bool
+)
+
+func (war *Warrior) UnitRatioX(unit, target ns3.ObjectID, size float32) float32 {
+	return (ns3.GetObjectX(unit) - ns3.GetObjectX(target)) * size / ns3.Distance(ns3.GetObjectX(unit), ns3.GetObjectY(unit), ns3.GetObjectX(target), ns3.GetObjectY(target))
+}
+
+func (war *Warrior) UnitRatioY(unit, target ns3.ObjectID, size float32) float32 {
+	return (ns3.GetObjectY(unit) - ns3.GetObjectY(target)) * size / ns3.Distance(ns3.GetObjectX(unit), ns3.GetObjectY(unit), ns3.GetObjectX(target), ns3.GetObjectY(target))
+}
+func (war *Warrior) WarBotDetectEnemy() {
+	if !BerserkerChargeCooldown && !GlobalCooldown {
+		rnd := ns3.Random(1, 1)
+
+		if (rnd == 0) || (rnd == 1) {
+			BerserkerChargeCooldown = true
+			GlobalCooldown = true
+			ns3.SecondTimer(1, war.GlobalCooldownReset)
+			war.BerserkerInRange(ns3.GetTrigger(), ns3.GetCaller(), 10)
+		}
+	} else {
+		if !war.abilities.WarCryReady {
+			war.useWarCry()
+		}
+	}
+}
+func (war *Warrior) CheckUnitFrontSight(unit ns3.ObjectID, dtX, dtY float32) bool {
+	ns3.MoveWaypoint(1, ns3.GetObjectX(unit)+dtX, ns3.GetObjectY(unit)+dtY)
+	temp := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+	res := ns3.IsVisibleTo(unit, temp)
+	ns3.Delete(temp)
+	return res
+}
+
+func (war *Warrior) BerserkerInRange(owner, target ns3.ObjectID, wait int) {
+	if ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 {
+		if !ns3.HasEnchant(owner, "ENCHANT_ETHEREAL") {
+			ns3.Enchant(owner, "ENCHANT_ETHEREAL", 0.0)
+			ns3.MoveWaypoint(1, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+			unit := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+			ns3.MoveWaypoint(1, ns3.GetObjectX(unit), ns3.GetObjectY(unit))
+			unit1 := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+			ns3.LookWithAngle(unit, wait)
+			ns3.FrameTimer(1, func() {
+				war.BerserkerWaitStrike(unit, unit1, owner, target, wait)
+			})
+		}
+	}
+}
+
+func (war *Warrior) BerserkerWaitStrike(ptr, ptr1, owner, target ns3.ObjectID, count int) {
+	for {
+		if ns3.IsObjectOn(ptr) && ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 && ns3.IsObjectOn(owner) {
+			if count != 0 {
+				if ns3.IsVisibleTo(owner, target) && ns3.Distance(ns3.GetObjectX(owner), ns3.GetObjectY(owner), ns3.GetObjectX(target), ns3.GetObjectY(target)) < 400.0 {
+					war.BerserkerCharge(owner, target)
+				} else {
+					ns3.FrameTimer(6, func() {
+						war.BerserkerWaitStrike(ptr, ptr1, owner, target, count-1)
+					})
+					break
+				}
+			}
+		}
+		if ns3.CurrentHealth(owner) != 0 {
+			ns3.EnchantOff(owner, "ENCHANT_ETHEREAL")
+		}
+		if ns3.IsObjectOn(ptr) {
+			ns3.Delete(ptr)
+			ns3.Delete(ptr1)
+		}
+		break
+	}
+}
+
+func (war *Warrior) BerserkerCharge(owner, target ns3.ObjectID) {
+	if ns3.CurrentHealth(owner) != 0 && ns3.CurrentHealth(target) != 0 {
+		ns3.EnchantOff(owner, "ENCHANT_INVULNERABLE")
+		ns3.MoveWaypoint(2, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+		ns3.AudioEvent("BerserkerChargeInvoke", 2)
+		ns3.MoveWaypoint(1, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+
+		unit := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+		ns3.MoveWaypoint(1, ns3.GetObjectX(unit), ns3.GetObjectY(unit))
+
+		unit1 := ns3.CreateObject("InvisibleLightBlueHigh", 1)
+		ns3.LookAtObject(unit1, target)
+
+		ns3.LookWithAngle(ns3.GetLastItem(owner), 0)
+		ns3.SetCallback(owner, 9, war.BerserkerTouched)
+
+		ratioX := war.UnitRatioX(target, owner, 23.0)
+		ratioY := war.UnitRatioY(target, owner, 23.0)
+		ns3.FrameTimer(1, func() {
+			war.BerserkerLoop(unit, unit1, owner, target, ratioX, ratioY)
+		})
+	}
+}
+
+func (war *Warrior) BerserkerLoop(ptr, ptr1, owner, target ns3.ObjectID, ratioX, ratioY float32) {
+	count := ns3.GetDirection(ptr)
+
+	if ns3.CurrentHealth(owner) != 0 && count < 60 && ns3.IsObjectOn(ptr) && ns3.IsObjectOn(owner) {
+		if war.CheckUnitFrontSight(owner, ratioX*1.5, ratioY*1.5) && ns3.GetDirection(ns3.GetLastItem(owner)) == 0 {
+			ns3.MoveObject(owner, ns3.GetObjectX(owner)+ratioX, ns3.GetObjectY(owner)+ratioY)
+			ns3.LookWithAngle(owner, ns3.GetDirection(ptr1))
+			ns3.Walk(owner, ns3.GetObjectX(owner), ns3.GetObjectY(owner))
+		} else {
+			ns3.LookWithAngle(ptr, 100)
+		}
+		ns3.FrameTimer(1, func() {
+			war.BerserkerLoop(ptr, ptr1, owner, target, ratioX, ratioY)
+		})
+	} else {
+		ns3.SetCallback(owner, 9, war.NullCollide)
+		ns3.Delete(ptr)
+		ns3.Delete(ptr1)
+	}
+}
+
+func (war *Warrior) BerserkerTouched() {
+	self, other := ns3.GetTrigger(), ns3.GetCaller()
+	if ns3.IsObjectOn(self) {
+		for {
+			if ns3.GetCaller() == 0 || (ns3.HasClass(other, "IMMOBILE") && !ns3.HasClass(other, "DOOR") && !ns3.HasClass(other, "TRIGGER")) && !ns3.HasClass(other, "DANGEROUS") {
+				ns3.MoveWaypoint(2, ns3.GetObjectX(self), ns3.GetObjectY(self))
+				ns3.AudioEvent("FleshHitStone", 2)
+
+				ns3.Enchant(self, "ENCHANT_HELD", 2.0)
+			} else if ns3.CurrentHealth(other) != 0 {
+				if ns3.IsAttackedBy(self, other) {
+					ns3.MoveWaypoint(2, ns3.GetObjectX(self), ns3.GetObjectY(self))
+					ns3.AudioEvent("FleshHitFlesh", 2)
+					ns3.Damage(other, self, 100, 2)
+				} else {
+					break
+				}
+			} else {
+				break
+			}
+			ns3.LookWithAngle(ns3.GetLastItem(self), 1)
+			break
+		}
+	}
+	war.unit.Hunt()
+	ns3.SecondTimer(10, war.BerserkerChargeCooldownReset)
+}
+func (war *Warrior) NullCollide() {
+}
+func (war *Warrior) BerserkerChargeCooldownReset() {
+	if !RespawnCooldownDelay {
+		BerserkerChargeCooldown = false
+	}
+}
+func (war *Warrior) GlobalCooldownReset() {
+	GlobalCooldown = false
 }

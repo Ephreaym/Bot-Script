@@ -1,4 +1,5 @@
 [CAPTURE_THE_FLAG]
+set spell "SPELL_ANCHOR" off
 set spell "SPELL_CONFUSE" off
 set spell "SPELL_LOCK" off
 set spell "SPELL_MARK_1" off

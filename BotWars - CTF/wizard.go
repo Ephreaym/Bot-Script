@@ -1,6 +1,7 @@
 package BotWars
 
 import (
+	"fmt"
 	"image/color"
 
 	"github.com/noxworld-dev/noxscript/ns/v4"
@@ -55,6 +56,7 @@ type Wizard struct {
 		focussed          bool
 		IsCastinDrainMana bool
 		Busy              bool
+		AntiStuck         bool
 	}
 	reactionTime int
 	audio        struct {
@@ -86,6 +88,7 @@ func (wiz *Wizard) init() {
 	wiz.spells.InvisibilityReady = true
 	// Behaviour
 	wiz.behaviour.IsCastinDrainMana = false
+	wiz.behaviour.AntiStuck = true
 	// Create WizBot3.
 	wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -149,12 +152,14 @@ func (wiz *Wizard) init() {
 	wiz.LookForWeapon()
 }
 
-//func (wiz *Wizard) onChat() {
-//	ns.OnChat(func(t ns.Team, pl ns.Player, obj ns.Obj, msg string) string {
-//		fmt.Printf("wizard %p heard message: team=%v, player=%v, obj=%v, msg=%s\n", wiz, t, pl, obj, msg)
-//		return msg // pass message to the chat
-//	})
-//}
+func (wiz *Wizard) onChat() {
+	ns.OnChat(func(t ns.Team, pl ns.Player, obj ns.Obj, msg string) string {
+		fmt.Printf("wizard %p heard message: team=%v, player=%v, obj=%v, msg=%s\n", wiz, t, pl, obj, msg)
+		wiz.unit.Follow(ns.GetHost())
+		wiz.unit.Chat("Con03B.scr:Worker1ChatA")
+		return msg // pass message to the chat
+	})
+}
 
 func (wiz *Wizard) onHit() {
 	if wiz.mana <= 49 {
@@ -342,7 +347,9 @@ func (wiz *Wizard) Update() {
 
 func (wiz *Wizard) LookForWeapon() {
 	ItemLocation := ns.FindClosestObject(wiz.unit, ns.HasTypeName{"FireStormWand", "LesserFireballWand", "ForceWand"})
-	wiz.unit.WalkTo(ItemLocation.Pos())
+	if ItemLocation != nil {
+		wiz.unit.WalkTo(ItemLocation.Pos())
+	}
 }
 
 func (wiz *Wizard) LookForNearbyItems() {
@@ -359,6 +366,16 @@ func (wiz *Wizard) LookForNearbyItems() {
 			}
 		}
 	}
+	ns.NewTimer(ns.Seconds(5), func() {
+		// prevent bots getting stuck to stay in loop.
+		if wiz.behaviour.AntiStuck {
+			wiz.behaviour.AntiStuck = false
+			wiz.team.CheckAttackOrDefend(wiz.unit)
+			ns.NewTimer(ns.Seconds(6), func() {
+				wiz.behaviour.AntiStuck = true
+			})
+		}
+	})
 }
 
 func (wiz *Wizard) findLoot() {
@@ -378,7 +395,8 @@ func (wiz *Wizard) findLoot() {
 	)
 	for _, item := range weapons {
 		if wiz.unit.CanSee(item) {
-			wiz.unit.Equip(item)
+			wiz.unit.Pickup(item)
+			wiz.unit.Equip(wiz.unit.GetLastItem())
 		}
 	}
 
@@ -393,7 +411,8 @@ func (wiz *Wizard) findLoot() {
 	)
 	for _, item := range armor {
 		if wiz.unit.CanSee(item) {
-			wiz.unit.Equip(item)
+			wiz.unit.Pickup(item)
+			wiz.unit.Equip(wiz.unit.GetLastItem())
 		}
 	}
 

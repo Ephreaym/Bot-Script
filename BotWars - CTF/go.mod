@@ -8,6 +8,7 @@ require (
 )
 
 require (
+	github.com/noxworld-dev/noxscript/ns/v3 v3.3.0
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
