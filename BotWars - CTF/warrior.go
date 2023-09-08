@@ -4,6 +4,7 @@ import (
 	"image/color"
 
 	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
+
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
@@ -149,7 +150,7 @@ func (war *Warrior) onEnemyHeard() {
 	//if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
 	//war.unit.Chat("onEnemyHeard")
 	//war.behaviour.attacking = true
-	//war.WarBotDetectEnemy() TEMP DISABLE
+	war.WarBotDetectEnemy()
 	//if war.behaviour.listening {
 	//	war.behaviour.listening = false
 	//	war.unit.Chat("Wiz06a:Guard2Listen")
@@ -159,7 +160,9 @@ func (war *Warrior) onEnemyHeard() {
 	//	})
 	//}
 	//}
-	war.ThrowChakram()
+
+	// WORKING SCRIPT. TEMP DISABLE.
+	//war.ThrowChakram()
 }
 
 func (war *Warrior) onCollide() {
@@ -186,11 +189,13 @@ func (war *Warrior) onCollide() {
 
 func (war *Warrior) onEnemySighted() {
 	war.target = ns.GetCaller()
-	//war.WarBotDetectEnemy()
-	if !war.behaviour.lookingForHealing {
-		war.useWarCry()
-	}
-	war.ThrowChakram()
+	war.WarBotDetectEnemy()
+
+	// WORKING SCRIPT TEMP DISABLE.
+	//if !war.behaviour.lookingForHealing {
+	//	war.useWarCry()
+	//}
+	//war.ThrowChakram()
 }
 
 func (war *Warrior) onRetreat() {
@@ -497,7 +502,7 @@ func (war *Warrior) findLoot() {
 }
 
 func (war *Warrior) useWarCry() {
-	// Check if cooldown is ready.
+	// Check if cooldown is war.abilities.Ready.
 	if war.abilities.WarCryReady && !war.behaviour.charging {
 		// Trigger global cooldown.
 		war.abilities.Ready = false
@@ -561,7 +566,7 @@ func (war *Warrior) useWarCry() {
 }
 
 func (war *Warrior) useEyeOfTheWolf() {
-	// Check if cooldown is ready.
+	// Check if cooldown is war.abilities.Ready.
 	if war.abilities.EyeOfTheWolfReady {
 		// Trigger cooldown.
 		war.abilities.EyeOfTheWolfReady = false
@@ -577,7 +582,6 @@ func (war *Warrior) useEyeOfTheWolf() {
 	}
 }
 
-////////// ------------------------ BERSERK SCRIPT MIGHT BUG ------------------------ ////////
 // --------------------------------------------------------- //
 
 var (
