@@ -9,8 +9,8 @@ import (
 )
 
 var (
-	Red  = NewTeam("Red")
-	Blue = NewTeam("Blue")
+	Red  = NewTeam(0, "Red")
+	Blue = NewTeam(1, "Blue")
 )
 
 func init() {
@@ -18,26 +18,24 @@ func init() {
 	Blue.Enemy = Red
 }
 
-func NewTeam(name string) *Team {
-	return &Team{Name: name}
+func NewTeam(ind int, name string) *Team {
+	return &Team{team: ns.Teams()[ind], Name: name}
 }
 
 type Team struct {
+	team            ns.Team
 	Name            string
 	Enemy           *Team
 	Flag            ns.Obj
 	FlagStart       ns.WaypointObj
 	FlagIsAtBase    bool
 	FlagInteraction bool
-	TeamObj         ns.Obj
 	TeamBase        ns.Obj
 	TeamTank        ns.Obj
 	spawns          []ns.Obj
-	var1            ns.Team
 }
 
-// SpawnPoint selects a random PlayerStart for the bot to spawn on.
-func (t *Team) SpawnPoint() ns.Pointf {
+func (t *Team) Spawns() []ns.Obj {
 	if t.spawns == nil {
 		// Filter to only select PlayStart objects that are owned by the team.
 		//filter := ns.HasTypeName{"PlayerStart"}
@@ -49,23 +47,33 @@ func (t *Team) SpawnPoint() ns.Pointf {
 		//})
 		t.spawns = ns.FindAllObjects(
 			ns.HasTypeName{"PlayerStart"},
-			ns.HasTeam{t.TeamObj.Team()}) // <---- Use this when no teams are used.
+			ns.HasTeam{t.Team()},
+		) // <---- Use this when no teams are used.
 	}
 	if len(t.spawns) == 0 {
-		return ns.GetHost().Pos()
+		return []ns.Obj{ns.GetHost()}
 	}
-	i := ns.Random(0, len(t.spawns)-1)
-	pick := t.spawns[i]
+	return t.spawns
+}
+
+// SpawnPoint selects a random PlayerStart for the bot to spawn on.
+func (t *Team) SpawnPoint() ns.Pointf {
+	spawns := t.Spawns()
+	i := ns.Random(0, len(spawns)-1)
+	pick := spawns[i]
 	return pick.Pos()
+}
+
+func (t *Team) Team() ns.Team {
+	return t.team
 }
 
 func (t *Team) init() {
 }
 
 func (t *Team) lateInit() {
-	t.TeamObj = ns.Object("Team" + t.Name)
 	t.TeamBase = ns.Object(t.Name + "Base")
-	t.TeamTank = t.TeamObj
+	t.TeamTank = t.Spawns()[0]
 	t.Flag = ns.Object(t.Name + "Flag")
 	t.FlagStart = ns.NewWaypoint(t.Name+"FlagStart", t.Flag.Pos())
 	t.FlagIsAtBase = true
@@ -158,10 +166,9 @@ func (t *Team) CheckCaptureEnemyFlag(flag, u ns.Obj) {
 		for i := 0; i < len(soundToAllPlayers2); i++ {
 			ns.AudioEvent(audio.FlagCapture, soundToAllPlayers2[i].Unit())
 		}
-		t.TeamTank = t.TeamObj
+		t.TeamTank = t.Spawns()[0]
 		// new code
-		t.var1 = t.TeamObj.Team()
-		t.var1.ChangeScore(+1)
+		t.Team().ChangeScore(+1)
 		//
 		t.Enemy.FlagInteraction = false
 		t.FlagReset()
@@ -197,7 +204,7 @@ func (t *Team) DropEnemyFlag(u ns.Obj) {
 			ns.AudioEvent(audio.FlagDrop, soundToAllPlayers4[i].Unit())
 		}
 		t.Enemy.Flag.Enable(true)
-		t.TeamTank = t.TeamObj
+		t.TeamTank = t.Spawns()[0]
 		ns.PrintStrToAll(fmt.Sprintf("Team %s has dropped the %s flag!", t.Name, t.Enemy.Name))
 		ns.NewTimer(ns.Seconds(30), func() {
 			if t.Enemy.Flag.IsEnabled() && t.Enemy.FlagInteraction {

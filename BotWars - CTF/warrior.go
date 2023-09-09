@@ -1,8 +1,6 @@
 package BotWars
 
 import (
-	"image/color"
-
 	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
 
 	"github.com/noxworld-dev/noxscript/ns/v4"
@@ -80,15 +78,11 @@ func (war *Warrior) init() {
 	war.unit.SetStrength(125)
 	war.unit.SetBaseSpeed(100)
 	// Set Team.
-	war.unit.SetOwner(war.team.TeamObj)
-	war.unit.SetTeam(war.team.TeamObj.Team())
-	if war.team.TeamObj.HasTeam(ns.Teams()[0]) {
-		war.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-	} else {
-		war.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-	}
+	war.unit.SetOwner(war.team.Spawns()[0])
+	war.unit.SetTeam(war.team.Team())
+	war.unit.SetColor(0, war.team.Team().Color())
 	// Create WarBot mouse cursor.
-	war.target = war.team.Enemy.TeamObj
+	war.target = war.team.Enemy.Spawns()[0]
 	war.cursor = war.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	war.reactionTime = 15
@@ -524,7 +518,7 @@ func (war *Warrior) useWarCry() {
 					},
 					ns.InCirclef{Center: war.unit, R: 300},
 					ns.HasClass(object.ClassPlayer),
-					ns.HasTeam{war.team.Enemy.TeamObj.Team()},
+					ns.HasTeam{war.team.Enemy.Team()},
 				)
 				// Select target.
 				// Target enemy bots.
@@ -538,7 +532,7 @@ func (war *Warrior) useWarCry() {
 					},
 					ns.InCirclef{Center: war.unit, R: 300},
 					ns.HasTypeName{"NPC"},
-					ns.HasTeam{war.team.Enemy.TeamObj.Team()},
+					ns.HasTeam{war.team.Enemy.Team()},
 				)
 				//Target enemy monsters small.
 				//	ns.FindObjects(
