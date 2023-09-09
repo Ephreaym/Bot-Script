@@ -1,7 +1,7 @@
 package BotWars
 
 import (
-	"fmt"
+	"image/color"
 
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
@@ -56,6 +56,7 @@ type Wizard struct {
 		IsCastinDrainMana bool
 		Busy              bool
 		AntiStuck         bool
+		SwitchMainWeapon  bool
 	}
 	reactionTime int
 	audio        struct {
@@ -88,6 +89,7 @@ func (wiz *Wizard) init() {
 	// Behaviour
 	wiz.behaviour.IsCastinDrainMana = false
 	wiz.behaviour.AntiStuck = true
+	wiz.behaviour.SwitchMainWeapon = false
 	// Create WizBot3.
 	wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -100,7 +102,21 @@ func (wiz *Wizard) init() {
 	// Set Team.
 	wiz.unit.SetOwner(wiz.team.Spawns()[0])
 	wiz.unit.SetTeam(wiz.team.Team())
-	wiz.unit.SetColor(0, wiz.team.Team().Color())
+	if wiz.unit.HasTeam(ns.Teams()[0]) {
+		wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		wiz.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		wiz.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		wiz.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		wiz.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		wiz.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	} else {
+		wiz.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		wiz.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		wiz.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		wiz.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		wiz.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		wiz.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+	}
 	// Create WizBot3 mouse cursor.
 	wiz.target = wiz.team.Enemy.Spawns()[0]
 	wiz.cursor = wiz.target.Pos()
@@ -145,16 +161,44 @@ func (wiz *Wizard) init() {
 	wiz.unit.OnEvent(ns.EventIsHit, wiz.onHit)
 	//wiz.onChat()
 	wiz.LookForWeapon()
+	wiz.WeaponPreference()
 }
 
-func (wiz *Wizard) onChat() {
-	ns.OnChat(func(t ns.Team, pl ns.Player, obj ns.Obj, msg string) string {
-		fmt.Printf("wizard %p heard message: team=%v, player=%v, obj=%v, msg=%s\n", wiz, t, pl, obj, msg)
-		wiz.unit.Follow(ns.GetHost())
-		wiz.unit.Chat("Con03B.scr:Worker1ChatA")
-		return msg // pass message to the chat
+func (wiz *Wizard) WeaponPreference() {
+	// Priority list to get the prefered weapon.
+	// TODO: Add stun and range conditions.
+	if wiz.unit.InItems().FindObjects(nil, ns.HasTypeName{"FireStormWand"}) != 0 && wiz.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"FireStormWand"}) == 0 {
+		wiz.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				wiz.unit.Equip(it)
+				//war.unit.Chat("I swapped to my GreatSword!")
+				return true
+			},
+			ns.HasTypeName{"FireStormWand"},
+		)
+	} else if wiz.unit.InItems().FindObjects(nil, ns.HasTypeName{"ForceWand"}) != 0 && wiz.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"ForceWand"}) == 0 {
+		wiz.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				wiz.unit.Equip(it)
+				//war.unit.Chat("I swapped to my WarHammer!")
+				return true
+			},
+			ns.HasTypeName{"ForceWand"},
+		)
+	}
+	ns.NewTimer(ns.Seconds(10), func() {
+		wiz.WeaponPreference()
 	})
 }
+
+//func (wiz *Wizard) onChat() {
+//	ns.OnChat(func(t ns.Team, pl ns.Player, obj ns.Obj, msg string) string {
+//		fmt.Printf("wizard %p heard message: team=%v, player=%v, obj=%v, msg=%s\n", wiz, t, pl, obj, msg)
+//		wiz.unit.Follow(ns.GetHost())
+//		wiz.unit.Chat("Con03B.scr:Worker1ChatA")
+//		return msg // pass message to the chat
+//	})
+//}
 
 func (wiz *Wizard) onHit() {
 	if wiz.mana <= 49 {
@@ -281,16 +325,40 @@ func (wiz *Wizard) RestoreMana() {
 
 func (wiz *Wizard) RestoreManaWithDrainMana() {
 	if wiz.mana < 150 && wiz.behaviour.IsCastinDrainMana {
-		ManaSource := ns.FindAllObjects(
+		ManaSourceObelisk := ns.FindAllObjects(
 			ns.HasTypeName{
 				"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
 			},
 			ns.InCirclef{Center: wiz.unit, R: 200},
 		)
-		for i := 0; i < len(ManaSource); i++ {
-			if ManaSource[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSource[i]) {
+		for i := 0; i < len(ManaSourceObelisk); i++ {
+			if ManaSourceObelisk[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceObelisk[i]) {
 				wiz.mana = wiz.mana + 1
-				ManaSource[i].SetMana(ManaSource[i].CurrentMana() - 1)
+				ManaSourceObelisk[i].SetMana(ManaSourceObelisk[i].CurrentMana() - 1)
+				wiz.RestoreManaSound()
+			}
+		}
+		ManaSourceEnemyPlayer := ns.FindAllObjects(
+			ns.HasClass(object.ClassPlayer),
+			ns.HasTeam{wiz.team.Enemy.Team()},
+			ns.InCirclef{Center: wiz.unit, R: 200},
+		)
+		for i := 0; i < len(ManaSourceEnemyPlayer); i++ {
+			if ManaSourceEnemyPlayer[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceEnemyPlayer[i]) && ManaSourceEnemyPlayer[i].MaxHealth() <= 100 {
+				wiz.mana = wiz.mana + 1
+				ManaSourceEnemyPlayer[i].SetMana(ManaSourceEnemyPlayer[i].CurrentMana() - 1)
+				wiz.RestoreManaSound()
+			}
+		}
+		ManaSourceEnemyNPC := ns.FindAllObjects(
+			ns.HasTypeName{"NPC"},
+			ns.HasTeam{wiz.team.Enemy.Team()},
+			ns.InCirclef{Center: wiz.unit, R: 200},
+		)
+		for i := 0; i < len(ManaSourceEnemyNPC); i++ {
+			if ManaSourceEnemyNPC[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceEnemyNPC[i]) && ManaSourceEnemyNPC[i].MaxHealth() <= 100 {
+				wiz.mana = wiz.mana + 1
+				ManaSourceEnemyNPC[i].SetMana(ManaSourceEnemyNPC[i].CurrentMana() - 1)
 				wiz.RestoreManaSound()
 			}
 		}
@@ -328,7 +396,9 @@ func (wiz *Wizard) Update() {
 		wiz.castFireball()
 		wiz.castSlow()
 		wiz.castEnergyBolt()
-		//wiz.castMissilesOfMagic()
+		if wiz.target.MaxHealth() == 75 || wiz.target.MaxHealth() == 100 && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
+			wiz.castDrainMana()
+		} //wiz.castMissilesOfMagic()
 		wiz.castForceField()
 		wiz.castShock()
 	}
@@ -700,37 +770,37 @@ func (wiz *Wizard) castBlink() {
 	}
 }
 
-func (wiz *Wizard) castMissilesOfMagic() {
-	// Check if cooldowns are ready.
-	if wiz.mana >= 15 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
-		// Select target.
-		// Trigger cooldown.
-		wiz.spells.Ready = false
-		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
-			// Check for War Cry before chant.
-			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
-					// Check for War Cry before spell release.
-					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						// Aim.
-						wiz.unit.LookAtObject(wiz.target)
-						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
-						wiz.spells.MagicMissilesReady = false
-						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
-						wiz.mana = wiz.mana - 15
-						// Global cooldown.
-						wiz.spells.Ready = true
-						// Missiles Of Magic cooldown.
-						ns.NewTimer(ns.Seconds(5), func() {
-							wiz.spells.MagicMissilesReady = true
-						})
-					}
-				})
-			}
-		})
-	}
-}
+//func (wiz *Wizard) castMissilesOfMagic() {
+//	// Check if cooldowns are ready.
+//	if wiz.mana >= 15 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready {
+//		// Select target.
+//		// Trigger cooldown.
+//		wiz.spells.Ready = false
+//		// Check reaction time based on difficulty setting.
+//		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+//			// Check for War Cry before chant.
+//			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+//				castPhonemes(wiz.unit, []audio.Name{PhLeft, PhUp, PhRight, PhUp}, func() {
+//					// Check for War Cry before spell release.
+//					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+//						// Aim.
+//						wiz.unit.LookAtObject(wiz.target)
+//						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+//						wiz.spells.MagicMissilesReady = false
+//						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
+//						wiz.mana = wiz.mana - 15
+//						// Global cooldown.
+//						wiz.spells.Ready = true
+//						// Missiles Of Magic cooldown.
+//						ns.NewTimer(ns.Seconds(5), func() {
+//							wiz.spells.MagicMissilesReady = true
+//						})
+//					}
+//				})
+//			}
+//		})
+//	}
+//}
 
 func (wiz *Wizard) castSlow() {
 	// Check if cooldowns are ready.
@@ -766,7 +836,7 @@ func (wiz *Wizard) castSlow() {
 
 func (wiz *Wizard) castDrainMana() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.DrainManaReady {
+	if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.DrainManaReady {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -778,17 +848,16 @@ func (wiz *Wizard) castDrainMana() {
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.DrainManaReady = false
 						wiz.behaviour.IsCastinDrainMana = true
-						ManaSource := ns.FindAllObjects(
+						ManaSource := ns.FindClosestObject(wiz.unit,
 							ns.HasTypeName{
-								"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
+								"NewPlayer", "NPC", "ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
 							},
 							ns.InCirclef{Center: wiz.unit, R: 200})
-
 						ns.NewTimer(ns.Frames(30), func() {
 							wiz.behaviour.IsCastinDrainMana = false
 						})
 						ns.CastSpell(spell.DRAIN_MANA, wiz.unit, wiz.unit.Pos())
-						wiz.unit.LookAtObject(ManaSource[0])
+						wiz.unit.LookAtObject(ManaSource)
 						wiz.unit.Pause(ns.Frames(30))
 						// Global cooldown.
 						wiz.spells.Ready = true

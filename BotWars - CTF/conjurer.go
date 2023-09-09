@@ -1,6 +1,8 @@
 package BotWars
 
 import (
+	"image/color"
+
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
@@ -96,7 +98,21 @@ func (con *Conjurer) init() {
 	// Set Team.
 	con.unit.SetOwner(con.team.Spawns()[0])
 	con.unit.SetTeam(con.team.Team())
-	con.unit.SetColor(0, con.team.Team().Color())
+	if con.unit.HasTeam(ns.Teams()[0]) {
+		con.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		con.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		con.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		con.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		con.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		con.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	} else {
+		con.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		con.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		con.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		con.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		con.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		con.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+	}
 	// Create ConBot mouse cursor.
 	con.target = con.team.Enemy.Spawns()[0]
 	con.cursor = con.target.Pos()
@@ -140,6 +156,7 @@ func (con *Conjurer) init() {
 	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
 	con.PassiveManaRegen()
 	con.LookForWeapon()
+	con.WeaponPreference()
 }
 
 func (con *Conjurer) onEndOfWaypoint() {
@@ -348,6 +365,33 @@ func (con *Conjurer) LookForNearbyItems() {
 				con.behaviour.AntiStuck = true
 			})
 		}
+	})
+}
+
+func (con *Conjurer) WeaponPreference() {
+	// Priority list to get the prefered weapon.
+	// TODO: Add stun and range conditions.
+	if con.unit.InItems().FindObjects(nil, ns.HasTypeName{"CrossBow"}) != 0 && con.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"CrossBow"}) == 0 {
+		con.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				con.unit.Equip(it)
+				//war.unit.Chat("I swapped to my GreatSword!")
+				return true
+			},
+			ns.HasTypeName{"FireStormWand"},
+		)
+	} else if con.unit.InItems().FindObjects(nil, ns.HasTypeName{"InfinitePainWand"}) != 0 && con.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"InfinitePainWand"}) == 0 {
+		con.unit.InItems().FindObjects(
+			func(it ns.Obj) bool {
+				con.unit.Equip(it)
+				//war.unit.Chat("I swapped to my WarHammer!")
+				return true
+			},
+			ns.HasTypeName{"ForceWand"},
+		)
+	}
+	ns.NewTimer(ns.Seconds(10), func() {
+		con.WeaponPreference()
 	})
 }
 
@@ -856,8 +900,8 @@ func (con *Conjurer) summonBomber1() {
 		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
 			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				// Stun chant.
-				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				// Slow chant.
+				castPhonemes(con.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
@@ -890,8 +934,11 @@ func (con *Conjurer) summonBomber1() {
 																})
 															})
 															con.bomber1.Follow(con.unit)
-															con.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.SLOW)
 															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber1.Attack(con.target)
+															})
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemyHeard), func() {
 																con.bomber1.Attack(con.target)
 															})
 															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
@@ -924,8 +971,8 @@ func (con *Conjurer) summonBomber2() {
 		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
 			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				// Stun chant.
-				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+				// Slow chant.
+				castPhonemes(con.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Pause for concentration.
 					ns.NewTimer(ns.Frames(3), func() {
 						// Check for War Cry before chant.
@@ -959,8 +1006,11 @@ func (con *Conjurer) summonBomber2() {
 																})
 															})
 															con.bomber2.Follow(con.unit)
-															con.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.SLOW)
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber2.Attack(con.target)
+															})
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemyHeard), func() {
 																con.bomber2.Attack(con.target)
 															})
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {

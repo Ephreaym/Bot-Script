@@ -1,6 +1,8 @@
 package BotWars
 
 import (
+	"image/color"
+
 	ns3 "github.com/noxworld-dev/noxscript/ns/v3"
 
 	"github.com/noxworld-dev/noxscript/ns/v4"
@@ -48,6 +50,7 @@ type Warrior struct {
 		attacking         bool
 		lookingForTarget  bool
 		AntiStuck         bool
+		SwitchMainWeapon  bool
 	}
 	reactionTime int
 }
@@ -60,6 +63,7 @@ func (war *Warrior) init() {
 	war.behaviour.charging = false
 	war.behaviour.lookingForTarget = true
 	war.behaviour.AntiStuck = true
+	war.behaviour.SwitchMainWeapon = false
 	// Inventory
 	// Reset abilities WarBot.
 	war.abilities.isAlive = true
@@ -80,7 +84,21 @@ func (war *Warrior) init() {
 	// Set Team.
 	war.unit.SetOwner(war.team.Spawns()[0])
 	war.unit.SetTeam(war.team.Team())
-	war.unit.SetColor(0, war.team.Team().Color())
+	if war.unit.HasTeam(ns.Teams()[0]) {
+		war.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		war.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		war.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		war.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		war.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		war.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	} else {
+		war.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		war.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		war.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		war.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		war.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		war.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+	}
 	// Create WarBot mouse cursor.
 	war.target = war.team.Enemy.Spawns()[0]
 	war.cursor = war.target.Pos()
@@ -125,12 +143,14 @@ func (war *Warrior) init() {
 	// On death.
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 	war.LookForWeapon()
+	war.WeaponPreference()
 }
 
 func (war *Warrior) onChangeFocus() {
 	//if !war.behaviour.lookingForHealing {
 	//war.unit.Chat("onChangeFocus")
 	//}
+	war.useWarCry()
 }
 
 func (war *Warrior) onLookingForEnemy() {
@@ -144,7 +164,7 @@ func (war *Warrior) onEnemyHeard() {
 	//if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
 	//war.unit.Chat("onEnemyHeard")
 	//war.behaviour.attacking = true
-	war.WarBotDetectEnemy()
+	//war.WarBotDetectEnemy()
 	//if war.behaviour.listening {
 	//	war.behaviour.listening = false
 	//	war.unit.Chat("Wiz06a:Guard2Listen")
@@ -156,7 +176,7 @@ func (war *Warrior) onEnemyHeard() {
 	//}
 
 	// WORKING SCRIPT. TEMP DISABLE.
-	//war.ThrowChakram()
+	war.ThrowChakram()
 }
 
 func (war *Warrior) onCollide() {
@@ -183,13 +203,13 @@ func (war *Warrior) onCollide() {
 
 func (war *Warrior) onEnemySighted() {
 	war.target = ns.GetCaller()
-	war.WarBotDetectEnemy()
+	//war.WarBotDetectEnemy()
 
 	// WORKING SCRIPT TEMP DISABLE.
 	//if !war.behaviour.lookingForHealing {
-	//	war.useWarCry()
+	war.useWarCry()
 	//}
-	//war.ThrowChakram()
+	war.ThrowChakram()
 }
 
 func (war *Warrior) onRetreat() {
@@ -260,16 +280,16 @@ func (war *Warrior) onEndOfWaypoint() {
 	war.LookForNearbyItems()
 }
 
-func (war *Warrior) lookForRedPotion() {
-	//if war.inventory.redPotionInInventory >= 1 {
-	//	war.onEndOfWaypoint()
-	//} else {
-	//	war.behaviour.lookingForHealing = true
-	//	war.unit.AggressionLevel(0.16)
-	//	war.unit.WalkTo(war.targetPotion.Pos())
-	//}
+//func (war *Warrior) lookForRedPotion() {
+//if war.inventory.redPotionInInventory >= 1 {
+//	war.onEndOfWaypoint()
+//} else {
+//	war.behaviour.lookingForHealing = true
+//	war.unit.AggressionLevel(0.16)
+//	war.unit.WalkTo(war.targetPotion.Pos())
+//}
 
-}
+//}
 
 func (war *Warrior) onDeath() {
 	war.abilities.isAlive = false
@@ -396,7 +416,7 @@ func (war *Warrior) ThrowChakram() {
 func (war *Warrior) WeaponPreference() {
 	// Priority list to get the prefered weapon.
 	// TODO: Add stun and range conditions.
-	if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"GreatSword"}) != 0 {
+	if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"GreatSword"}) != 0 && war.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"GreatSword"}) == 0 {
 		war.unit.InItems().FindObjects(
 			func(it ns.Obj) bool {
 				war.unit.Equip(it)
@@ -405,7 +425,7 @@ func (war *Warrior) WeaponPreference() {
 			},
 			ns.HasTypeName{"GreatSword"},
 		)
-	} else if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"WarHammer"}) != 0 {
+	} else if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"WarHammer"}) != 0 && war.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"WarHammer"}) == 0 {
 		war.unit.InItems().FindObjects(
 			func(it ns.Obj) bool {
 				war.unit.Equip(it)
@@ -415,9 +435,14 @@ func (war *Warrior) WeaponPreference() {
 			ns.HasTypeName{"WarHammer"},
 		)
 	} else {
-		war.unit.Equip(war.startingEquipment.Longsword)
-		//war.unit.Chat("I swapped to my LongSword!")
+		if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"WarHammer", "GreatSword"}) == 0 {
+			war.unit.Equip(war.startingEquipment.Longsword)
+			//war.unit.Chat("I swapped to my LongSword!")
+		}
 	}
+	ns.NewTimer(ns.Seconds(10), func() {
+		war.WeaponPreference()
+	})
 }
 
 func (war *Warrior) findLoot() {
