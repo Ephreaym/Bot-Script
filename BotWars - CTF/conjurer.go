@@ -1,8 +1,6 @@
 package BotWars
 
 import (
-	"image/color"
-
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
@@ -96,15 +94,11 @@ func (con *Conjurer) init() {
 	con.spells.isAlive = true
 	con.mana = 125
 	// Set Team.
-	con.unit.SetOwner(con.team.TeamObj)
-	con.unit.SetTeam(con.team.TeamObj.Team())
-	if con.team.TeamObj.HasTeam(ns.Teams()[0]) {
-		con.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-	} else {
-		con.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-	}
+	con.unit.SetOwner(con.team.Spawns()[0])
+	con.unit.SetTeam(con.team.Team())
+	con.unit.SetColor(0, con.team.Team().Color())
 	// Create ConBot mouse cursor.
-	con.target = con.team.Enemy.TeamObj
+	con.target = con.team.Enemy.Spawns()[0]
 	con.cursor = con.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	con.reactionTime = 15
@@ -888,7 +882,7 @@ func (con *Conjurer) summonBomber1() {
 															con.bomber1 = ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", con.bomber1)
 															con.bomber1.SetOwner(con.unit)
-															con.bomber1.SetTeam(con.team.TeamObj.Team())
+															con.bomber1.SetTeam(con.team.Team())
 															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
@@ -957,7 +951,7 @@ func (con *Conjurer) summonBomber2() {
 															con.mana = con.mana - 80
 															ns.AudioEvent("BomberSummon", con.bomber2)
 															con.bomber2.SetOwner(con.unit)
-															con.bomber2.SetTeam(con.team.TeamObj.Team())
+															con.bomber2.SetTeam(con.team.Team())
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {

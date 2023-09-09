@@ -2,7 +2,6 @@ package BotWars
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
@@ -99,15 +98,11 @@ func (wiz *Wizard) init() {
 	wiz.mana = 150
 	wiz.PassiveManaRegen()
 	// Set Team.
-	wiz.unit.SetOwner(wiz.team.TeamObj)
-	wiz.unit.SetTeam(wiz.team.TeamObj.Team())
-	if wiz.team.TeamObj.HasTeam(ns.Teams()[0]) {
-		wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-	} else {
-		wiz.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-	}
+	wiz.unit.SetOwner(wiz.team.Spawns()[0])
+	wiz.unit.SetTeam(wiz.team.Team())
+	wiz.unit.SetColor(0, wiz.team.Team().Color())
 	// Create WizBot3 mouse cursor.
-	wiz.target = wiz.team.Enemy.TeamObj
+	wiz.target = wiz.team.Enemy.Spawns()[0]
 	wiz.cursor = wiz.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	wiz.reactionTime = 15
