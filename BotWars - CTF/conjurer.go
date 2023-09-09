@@ -150,6 +150,7 @@ func (con *Conjurer) init() {
 	con.unit.OnEvent(ns.EventDeath, con.onDeath)
 	// On heard.
 	con.unit.OnEvent(ns.EventEnemyHeard, con.onEnemyHeard)
+	con.unit.OnEvent(ns.EventIsHit, con.onHit)
 	// Looking for enemies.
 	con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
 	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
@@ -159,8 +160,19 @@ func (con *Conjurer) init() {
 	con.WeaponPreference()
 }
 
+func (con *Conjurer) onHit() {
+	if con.mana <= 49 {
+		con.GoToManaObelisk()
+	}
+}
+
 func (con *Conjurer) onEndOfWaypoint() {
-	con.team.CheckAttackOrDefend(con.unit)
+	if con.mana <= 49 {
+		con.GoToManaObelisk()
+	} else {
+		con.team.CheckAttackOrDefend(con.unit)
+	}
+
 	con.LookForNearbyItems()
 }
 
