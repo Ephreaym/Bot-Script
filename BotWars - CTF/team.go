@@ -79,6 +79,22 @@ func (t *Team) lateInit() {
 	t.FlagIsAtBase = true
 	t.FlagInteraction = false
 	ns.NewWaypoint(t.Name+"FlagWaypoint", t.Flag.Pos())
+
+	// Need to add these to the map and implement them in the script.
+	//BlueBase := ns.CreateObject("ExtentBoxSmall", ns.Waypoint("BlueFlagWaypoint"))
+	//BlueBase.FlagsEnable(object.FlagNoCollide)
+	//BlueBase.FlagsEnable(object.FlagNoPushCharacters)
+	//RedBase := ns.CreateObject("ExtentBoxSmall", ns.Waypoint("RedFlagWaypoint"))
+	//RedBase.FlagsEnable(object.FlagNoCollide)
+	//RedBase.FlagsEnable(object.FlagNoPushCharacters)
+	//RedFlag := ns.FindAllObjects(
+	//	ns.HasTypeName{"Flag"},
+	//	ns.HasTeam{ns.Teams()[0]},
+	//)
+	//BlueFlag := ns.FindAllObjects(
+	//	ns.HasTypeName{"Flag"},
+	//	ns.HasTeam{ns.Teams()[1]},
+	//)
 }
 
 func (t *Team) FlagStartF() ns.WaypointObj {
