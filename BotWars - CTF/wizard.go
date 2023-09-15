@@ -90,6 +90,7 @@ func (wiz *Wizard) init() {
 	wiz.behaviour.IsCastinDrainMana = false
 	wiz.behaviour.AntiStuck = true
 	wiz.behaviour.SwitchMainWeapon = false
+	wiz.behaviour.Busy = false
 	// Create WizBot3.
 	wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -100,7 +101,9 @@ func (wiz *Wizard) init() {
 	wiz.mana = 150
 	wiz.PassiveManaRegen()
 	// Set Team.
-	wiz.unit.SetOwner(wiz.team.Spawns()[0])
+	if GameModeIsCTF {
+		wiz.unit.SetOwner(wiz.team.Spawns()[0])
+	}
 	wiz.unit.SetTeam(wiz.team.Team())
 	if wiz.unit.HasTeam(ns.Teams()[0]) {
 		wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
@@ -201,7 +204,8 @@ func (wiz *Wizard) WeaponPreference() {
 //}
 
 func (wiz *Wizard) onHit() {
-	if wiz.mana <= 49 {
+	if wiz.mana <= 49 && !wiz.behaviour.Busy {
+		wiz.behaviour.Busy = true
 		wiz.GoToManaObelisk()
 	}
 }
@@ -222,10 +226,15 @@ func (wiz *Wizard) UsePotions() {
 }
 
 func (wiz *Wizard) onEndOfWaypoint() {
+	wiz.behaviour.Busy = false
 	if wiz.mana <= 49 {
 		wiz.GoToManaObelisk()
 	} else {
-		wiz.team.CheckAttackOrDefend(wiz.unit)
+		if GameModeIsCTF {
+			wiz.team.CheckAttackOrDefend(wiz.unit)
+		} else {
+			wiz.unit.Hunt()
+		}
 	}
 	wiz.LookForNearbyItems()
 }
@@ -244,7 +253,9 @@ func (wiz *Wizard) onEnemyHeard() {
 
 func (wiz *Wizard) onEnemySighted() {
 	wiz.target = ns.GetCaller()
-	wiz.castSlow()
+	if !wiz.unit.HasEnchant(enchant.INVISIBLE) {
+		wiz.castSlow()
+	}
 }
 
 func (wiz *Wizard) onCollide() {
@@ -252,9 +263,11 @@ func (wiz *Wizard) onCollide() {
 	//wiz.castMissilesOfMagic()
 	if wiz.spells.isAlive {
 		caller := ns.GetCaller()
-		wiz.team.CheckPickUpEnemyFlag(caller, wiz.unit)
-		wiz.team.CheckCaptureEnemyFlag(caller, wiz.unit)
-		wiz.team.CheckRetrievedOwnFlag(caller, wiz.unit)
+		if GameModeIsCTF {
+			wiz.team.CheckPickUpEnemyFlag(caller, wiz.unit)
+			wiz.team.CheckCaptureEnemyFlag(caller, wiz.unit)
+			wiz.team.CheckRetrievedOwnFlag(caller, wiz.unit)
+		}
 	}
 }
 
@@ -264,17 +277,27 @@ func (wiz *Wizard) onRetreat() {
 
 func (wiz *Wizard) onLostEnemy() {
 	wiz.castTrap()
-	wiz.team.WalkToOwnFlag(wiz.unit)
+	if GameModeIsCTF {
+		wiz.team.WalkToOwnFlag(wiz.unit)
+	}
 }
 
 func (wiz *Wizard) onDeath() {
 	wiz.spells.isAlive = false
 	wiz.spells.Ready = false
+	wiz.unit.FlagsEnable(object.FlagNoCollide)
 	wiz.team.DropEnemyFlag(wiz.unit)
 	wiz.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, wiz.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
+	if !GameModeIsCTF {
+		if wiz.unit.HasTeam(ns.Teams()[0]) {
+			ns.Teams()[1].ChangeScore(+1)
+		} else {
+			ns.Teams()[0].ChangeScore(+1)
+		}
+	}
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, wiz.unit)
 		wiz.unit.Delete()
@@ -387,26 +410,32 @@ func (wiz *Wizard) Update() {
 	if wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		wiz.spells.Ready = true
 	}
-	if wiz.target.HasEnchant(enchant.HELD) || wiz.target.HasEnchant(enchant.SLOWED) {
+	if wiz.target.HasEnchant(enchant.HELD) || wiz.target.HasEnchant(enchant.SLOWED) || wiz.unit.HasEnchant(enchant.INVISIBLE) {
 		if wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
 			wiz.castDeathRay()
 		}
 	}
 	if wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
 		wiz.castFireball()
-		wiz.castSlow()
-		wiz.castEnergyBolt()
+		if !wiz.unit.HasEnchant(enchant.INVISIBLE) {
+			wiz.castSlow()
+			wiz.castEnergyBolt()
+		}
 		if wiz.target.MaxHealth() == 75 || wiz.target.MaxHealth() == 100 && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
 			wiz.castDrainMana()
 		} //wiz.castMissilesOfMagic()
-		wiz.castForceField()
-		wiz.castShock()
+		if !wiz.unit.HasEnchant(enchant.INVISIBLE) {
+			wiz.castForceField()
+			wiz.castShock()
+		}
 	}
 	if !wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
-		wiz.castHaste()
-		wiz.castProtectionFromShock()
-		wiz.castProtectionFromFire()
-		wiz.castInvisibility()
+		if !wiz.unit.HasEnchant(enchant.INVISIBLE) {
+			wiz.castHaste()
+			wiz.castProtectionFromShock()
+			wiz.castProtectionFromFire()
+			wiz.castInvisibility()
+		}
 	}
 }
 
@@ -435,7 +464,12 @@ func (wiz *Wizard) LookForNearbyItems() {
 		// prevent bots getting stuck to stay in loop.
 		if wiz.behaviour.AntiStuck {
 			wiz.behaviour.AntiStuck = false
-			wiz.team.CheckAttackOrDefend(wiz.unit)
+			if GameModeIsCTF {
+				wiz.team.CheckAttackOrDefend(wiz.unit)
+			} else {
+				wiz.unit.Hunt()
+
+			}
 			ns.NewTimer(ns.Seconds(6), func() {
 				wiz.behaviour.AntiStuck = true
 			})
@@ -469,7 +503,8 @@ func (wiz *Wizard) findLoot() {
 		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
 			// Armor.
-			"WizardHelm", "WizardRobe",
+			//"WizardHelm",
+			"WizardRobe",
 			// Cloth armor.
 			"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
 		},

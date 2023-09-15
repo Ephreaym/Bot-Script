@@ -5,11 +5,18 @@ import (
 )
 
 var InitLoadComplete bool
+var GameModeIsCTF bool
+var GameModeIsTeamArena bool
 
 func init() {
 	InitLoadComplete = false
-	Red.init()
-	Blue.init()
+	ns.NewTimer(ns.Frames(10), func() {
+		CheckIfGameModeIsCTF()
+	})
+	ns.NewTimer(ns.Frames(20), func() {
+		Red.init()
+		Blue.init()
+	})
 	ns.NewTimer(ns.Frames(60), func() {
 		Red.lateInit()
 		Blue.lateInit()
@@ -26,6 +33,19 @@ func OnFrame() {
 	UpdateBots()
 	Red.PostUpdate()
 	Blue.PostUpdate()
+}
+
+func CheckIfGameModeIsCTF() {
+	Flags := ns.FindAllObjects(ns.HasTypeName{"Flag"})
+	if Flags != nil {
+		GameModeIsCTF = true
+		GameModeIsTeamArena = false
+		ns.PrintStrToAll("Gamemode: Capture The Flag!")
+	} else {
+		GameModeIsCTF = false
+		GameModeIsTeamArena = true
+		ns.PrintStrToAll("Gamemode: Arena!")
+	}
 }
 
 // Dialog options

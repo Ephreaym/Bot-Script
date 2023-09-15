@@ -36,22 +36,42 @@ type Team struct {
 }
 
 func (t *Team) Spawns() []ns.Obj {
-	if t.spawns == nil {
-		// Filter to only select PlayStart objects that are owned by the team.
-		//filter := ns.HasTypeName{"PlayerStart"}
-		//ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
-		//	if filter.Matches(it) {
-		//		t.spawns = append(t.spawns, it)
-		//	}
-		//	return true // keep iterating in any case
-		//})
-		t.spawns = ns.FindAllObjects(
-			ns.HasTypeName{"PlayerStart"},
-			ns.HasTeam{t.Team()},
-		) // <---- Use this when no teams are used.
-	}
-	if len(t.spawns) == 0 {
-		return []ns.Obj{ns.GetHost()}
+	if GameModeIsCTF {
+		if t.spawns == nil {
+			// Filter to only select PlayStart objects that are owned by the team.
+			//filter := ns.HasTypeName{"PlayerStart"}
+			//ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
+			//	if filter.Matches(it) {
+			//		t.spawns = append(t.spawns, it)
+			//	}
+			//	return true // keep iterating in any case
+			//})
+			t.spawns = ns.FindAllObjects(
+				ns.HasTypeName{"PlayerStart"},
+				ns.HasTeam{t.Team()},
+			) // <---- Use this when no teams are used.
+		}
+		if len(t.spawns) == 0 {
+			return []ns.Obj{ns.GetHost()}
+		}
+	} else {
+		if t.spawns == nil {
+			// Filter to only select PlayStart objects that are owned by the team.
+			//filter := ns.HasTypeName{"PlayerStart"}
+			//ns.ObjectGroup("Team"+t.Name).EachObject(true, func(it ns.Obj) bool {
+			//	if filter.Matches(it) {
+			//		t.spawns = append(t.spawns, it)
+			//	}
+			//	return true // keep iterating in any case
+			//})
+			t.spawns = ns.FindAllObjects(
+				ns.HasTypeName{"PlayerStart"},
+				//ns.HasTeam{t.Team()},
+			) // <---- Use this when no teams are used.
+		}
+		if len(t.spawns) == 0 {
+			return []ns.Obj{ns.GetHost()}
+		}
 	}
 	return t.spawns
 }
@@ -72,13 +92,15 @@ func (t *Team) init() {
 }
 
 func (t *Team) lateInit() {
-	t.TeamBase = ns.Object(t.Name + "Base")
-	t.TeamTank = t.Spawns()[0]
-	t.Flag = ns.Object(t.Name + "Flag")
-	t.FlagStart = ns.NewWaypoint(t.Name+"FlagStart", t.Flag.Pos())
-	t.FlagIsAtBase = true
-	t.FlagInteraction = false
-	ns.NewWaypoint(t.Name+"FlagWaypoint", t.Flag.Pos())
+	if GameModeIsCTF {
+		t.TeamBase = ns.Object(t.Name + "Base")
+		t.TeamTank = t.Spawns()[0]
+		t.Flag = ns.Object(t.Name + "Flag")
+		t.FlagStart = ns.NewWaypoint(t.Name+"FlagStart", t.Flag.Pos())
+		t.FlagIsAtBase = true
+		t.FlagInteraction = false
+		ns.NewWaypoint(t.Name+"FlagWaypoint", t.Flag.Pos())
+	}
 
 	// Need to add these to the map and implement them in the script.
 	//BlueBase := ns.CreateObject("ExtentBoxSmall", ns.Waypoint("BlueFlagWaypoint"))
@@ -102,53 +124,67 @@ func (t *Team) FlagStartF() ns.WaypointObj {
 }
 
 func (t *Team) FlagReset() {
-	t.Flag.SetPos(t.FlagStart.Pos())
-	t.Flag.Enable(true)
+	if GameModeIsCTF {
+		t.Flag.SetPos(t.FlagStart.Pos())
+		t.Flag.Enable(true)
+	}
 }
 
 func (t *Team) PreUpdate() {
-	// Script for bots that moves the flag towards them each frame.
-	t.MoveEquipedFlagWithBot()
-	t.SetBasePosition()
+	if GameModeIsCTF {
+		// Script for bots that moves the flag towards them each frame.
+		t.MoveEquipedFlagWithBot()
+		t.SetBasePosition()
+	}
 }
 
 func (t *Team) PostUpdate() {
-	t.CheckIfFlagsAreAtBase()
-	t.BotConditionsWhileCarryingTheFlag()
+	if GameModeIsCTF {
+		t.CheckIfFlagsAreAtBase()
+		t.BotConditionsWhileCarryingTheFlag()
+	}
 }
 
 func (t *Team) MoveEquipedFlagWithBot() {
-	if !t.Flag.IsEnabled() {
-		// Move the real flag out of the map.
-		// Move the fake flag on the bot.
-		t.Flag.SetPos(t.Enemy.TeamTank.Pos())
+	if GameModeIsCTF {
+		if !t.Flag.IsEnabled() {
+			// Move the real flag out of the map.
+			// Move the fake flag on the bot.
+			t.Flag.SetPos(t.Enemy.TeamTank.Pos())
+		}
 	}
 }
 
 func (t *Team) CheckIfFlagsAreAtBase() {
-	if (ns.InCirclef{Center: t.TeamBase, R: 20}).Matches(t.Flag) {
-		t.FlagIsAtBase = true
-	} else {
-		t.FlagIsAtBase = false
+	if GameModeIsCTF {
+		if (ns.InCirclef{Center: t.TeamBase, R: 20}).Matches(t.Flag) {
+			t.FlagIsAtBase = true
+		} else {
+			t.FlagIsAtBase = false
+		}
 	}
 }
 
 func (t *Team) SetBasePosition() {
-	if InitLoadComplete {
-		t.TeamBase.SetPos(t.Flag.Pos())
+	if GameModeIsCTF {
+		if InitLoadComplete {
+			t.TeamBase.SetPos(t.Flag.Pos())
+		}
 	}
 }
 
 func (t *Team) BotConditionsWhileCarryingTheFlag() {
-	// Remove buffs from bots that can't be active while carrying the flag.
-	if t.TeamTank.HasEnchant(enchant.INVISIBLE) {
-		t.TeamTank.EnchantOff(enchant.INVISIBLE)
-	}
-	if t.TeamTank.HasEnchant(enchant.INVULNERABLE) {
-		t.TeamTank.EnchantOff(enchant.INVULNERABLE)
-	}
-	if !t.TeamTank.HasEnchant(enchant.VILLAIN) {
-		t.TeamTank.Enchant(enchant.VILLAIN, ns.Seconds(60))
+	if GameModeIsCTF {
+		// Remove buffs from bots that can't be active while carrying the flag.
+		if t.TeamTank.HasEnchant(enchant.INVISIBLE) {
+			t.TeamTank.EnchantOff(enchant.INVISIBLE)
+		}
+		if t.TeamTank.HasEnchant(enchant.INVULNERABLE) {
+			t.TeamTank.EnchantOff(enchant.INVULNERABLE)
+		}
+		if !t.TeamTank.HasEnchant(enchant.VILLAIN) {
+			t.TeamTank.Enchant(enchant.VILLAIN, ns.Seconds(60))
+		}
 	}
 }
 

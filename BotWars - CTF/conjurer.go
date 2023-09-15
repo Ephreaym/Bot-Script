@@ -57,6 +57,7 @@ type Conjurer struct {
 	}
 	behaviour struct {
 		AntiStuck bool
+		Busy      bool
 	}
 	reactionTime int
 }
@@ -87,6 +88,7 @@ func (con *Conjurer) init() {
 	con.spells.ProtFromShockReady = true
 	// Behaviour.
 	con.behaviour.AntiStuck = true
+	con.behaviour.Busy = false
 	// Create ConBot.
 	con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
 	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -96,7 +98,9 @@ func (con *Conjurer) init() {
 	con.spells.isAlive = true
 	con.mana = 125
 	// Set Team.
-	con.unit.SetOwner(con.team.Spawns()[0])
+	if GameModeIsCTF {
+		con.unit.SetOwner(con.team.Spawns()[0])
+	}
 	con.unit.SetTeam(con.team.Team())
 	if con.unit.HasTeam(ns.Teams()[0]) {
 		con.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
@@ -161,16 +165,23 @@ func (con *Conjurer) init() {
 }
 
 func (con *Conjurer) onHit() {
-	if con.mana <= 49 {
+	if con.mana <= 49 && !con.behaviour.Busy {
+		con.behaviour.Busy = true
 		con.GoToManaObelisk()
 	}
 }
 
 func (con *Conjurer) onEndOfWaypoint() {
+	con.behaviour.Busy = false
 	if con.mana <= 49 {
 		con.GoToManaObelisk()
 	} else {
-		con.team.CheckAttackOrDefend(con.unit)
+		if GameModeIsCTF {
+			con.team.CheckAttackOrDefend(con.unit)
+		} else {
+			con.unit.Hunt()
+
+		}
 	}
 
 	con.LookForNearbyItems()
@@ -196,9 +207,11 @@ func (con *Conjurer) onEnemySighted() {
 func (con *Conjurer) onCollide() {
 	if con.spells.isAlive {
 		caller := ns.GetCaller()
-		con.team.CheckPickUpEnemyFlag(caller, con.unit)
-		con.team.CheckCaptureEnemyFlag(caller, con.unit)
-		con.team.CheckRetrievedOwnFlag(caller, con.unit)
+		if GameModeIsCTF {
+			con.team.CheckPickUpEnemyFlag(caller, con.unit)
+			con.team.CheckCaptureEnemyFlag(caller, con.unit)
+			con.team.CheckRetrievedOwnFlag(caller, con.unit)
+		}
 	}
 }
 
@@ -208,17 +221,27 @@ func (con *Conjurer) onRetreat() {
 
 func (con *Conjurer) onLostEnemy() {
 	con.castInfravision()
-	con.team.WalkToOwnFlag(con.unit)
+	if GameModeIsCTF {
+		con.team.WalkToOwnFlag(con.unit)
+	}
 }
 
 func (con *Conjurer) onDeath() {
 	con.spells.isAlive = false
 	con.spells.Ready = false
+	con.unit.FlagsEnable(object.FlagNoCollide)
 	con.team.DropEnemyFlag(con.unit)
 	con.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, con.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
+	if !GameModeIsCTF {
+		if con.unit.HasTeam(ns.Teams()[0]) {
+			ns.Teams()[1].ChangeScore(+1)
+		} else {
+			ns.Teams()[0].ChangeScore(+1)
+		}
+	}
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, con.unit)
 		con.unit.Delete()
@@ -308,7 +331,9 @@ func (con *Conjurer) Update() {
 		}
 	}
 	if con.spells.Ready && con.unit.CanSee(con.target) {
-		//con.castStun()
+		if !GameModeIsCTF {
+			con.castStun()
+		}
 		con.castPixieSwarm()
 		con.castToxicCloud()
 		con.castSlow()
@@ -372,7 +397,11 @@ func (con *Conjurer) LookForNearbyItems() {
 		// prevent bots getting stuck to stay in loop.
 		if con.behaviour.AntiStuck {
 			con.behaviour.AntiStuck = false
-			con.team.CheckAttackOrDefend(con.unit)
+			if GameModeIsCTF {
+				con.team.CheckAttackOrDefend(con.unit)
+			} else {
+				con.unit.Hunt()
+			}
 			ns.NewTimer(ns.Seconds(6), func() {
 				con.behaviour.AntiStuck = true
 			})
@@ -449,11 +478,11 @@ func (con *Conjurer) findLoot() {
 		ns.InCirclef{Center: con.unit, R: dist},
 		ns.HasTypeName{
 			// BlueConjurer Helm.
-			"ConjurerHelm",
+			//"ConjurerHelm",
 
 			// Leather armor.
 			"LeatherArmoredBoots", "LeatherArmor",
-			"LeatherHelm",
+			//"LeatherHelm",
 			"LeatherLeggings", "LeatherArmbands",
 
 			// Cloth armor.
@@ -719,36 +748,36 @@ func (con *Conjurer) castBlink() {
 	}
 }
 
-//func (con *Conjurer) castStun() {
-//	// Check if cooldowns are ready.
-//	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready {
-//		// Select target.
-//		// Trigger cooldown.
-//		con.spells.Ready = false
-//		// Check reaction time based on difficulty setting.
-//		ns.NewTimer(ns.Frames(con.reactionTime), func() {
-//			// Check for War Cry before chant.
-//			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-//				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
-//					// Check for War Cry before spell release.
-//					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-//						// Aim.
-//						con.unit.LookAtObject(con.target)
-//						con.unit.Pause(ns.Frames(con.reactionTime))
-//						con.spells.StunReady = false
-//						ns.CastSpell(spell.STUN, con.unit, con.target)
-//						// Global cooldown.
-//						con.spells.Ready = true
-//						ns.NewTimer(ns.Seconds(5), func() {
-//							// Stun cooldown.
-//							con.spells.StunReady = true
-//						})
-//					}
-//				})
-//			}
-//		})
-//	}
-//}
+func (con *Conjurer) castStun() {
+	// Check if cooldowns are ready.
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready {
+		// Select target.
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						// Aim.
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.StunReady = false
+						ns.CastSpell(spell.STUN, con.unit, con.target)
+						// Global cooldown.
+						con.spells.Ready = true
+						ns.NewTimer(ns.Seconds(5), func() {
+							// Stun cooldown.
+							con.spells.StunReady = true
+						})
+					}
+				})
+			}
+		})
+	}
+}
 
 func (con *Conjurer) castToxicCloud() {
 	// Check if cooldowns are ready.
@@ -911,7 +940,7 @@ func (con *Conjurer) summonBomber1() {
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && GameModeIsCTF {
 				// Slow chant.
 				castPhonemes(con.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Pause for concentration.
@@ -969,6 +998,64 @@ func (con *Conjurer) summonBomber1() {
 						}
 					})
 				})
+			} else if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !GameModeIsCTF {
+				// Stun chant.
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+					// Pause for concentration.
+					ns.NewTimer(ns.Frames(3), func() {
+						// Check for War Cry before chant.
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+							// Poison chant.
+							castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
+								// Pause for concentration.
+								ns.NewTimer(ns.Frames(3), func() {
+									// Check for War Cry before chant.
+									if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+										// Fist Of Vengeance chant.
+										castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+											// Pause for concentration.
+											ns.NewTimer(ns.Frames(3), func() {
+												// Check for War Cry before chant.
+												if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+													// Glyph chant.
+													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+														// Check for War Cry before spell release.
+														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.spells.SummonBomber1Ready = false
+															con.bomber1 = ns.CreateObject("Bomber", con.unit)
+															ns.AudioEvent("BomberSummon", con.bomber1)
+															con.bomber1.SetOwner(con.unit)
+															con.bomber1.SetTeam(con.team.Team())
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
+																// Summon Bomber cooldown.
+																ns.NewTimer(ns.Seconds(10), func() {
+																	con.spells.SummonBomber1Ready = true
+																})
+															})
+															con.bomber1.Follow(con.unit)
+															con.bomber1.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber1.Attack(con.target)
+															})
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventEnemyHeard), func() {
+																con.bomber1.Attack(con.target)
+															})
+															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
+																con.bomber1.Follow(con.unit)
+															})
+															// Global cooldown.
+															con.spells.Ready = true
+														}
+													})
+												}
+											})
+										})
+									}
+								})
+							})
+						}
+					})
+				})
 			}
 		})
 	}
@@ -976,13 +1063,13 @@ func (con *Conjurer) summonBomber1() {
 
 func (con *Conjurer) summonBomber2() {
 	// Check if cooldowns are ready.
-	if con.mana >= 80 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
-			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && GameModeIsCTF {
 				// Slow chant.
 				castPhonemes(con.unit, []audio.Name{PhDown, PhDown, PhDown}, func() {
 					// Pause for concentration.
@@ -1007,7 +1094,6 @@ func (con *Conjurer) summonBomber2() {
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 															con.spells.SummonBomber2Ready = false
 															con.bomber2 = ns.CreateObject("Bomber", con.unit)
-															con.mana = con.mana - 80
 															ns.AudioEvent("BomberSummon", con.bomber2)
 															con.bomber2.SetOwner(con.unit)
 															con.bomber2.SetTeam(con.team.Team())
@@ -1019,6 +1105,64 @@ func (con *Conjurer) summonBomber2() {
 															})
 															con.bomber2.Follow(con.unit)
 															con.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.SLOW)
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
+																con.bomber2.Attack(con.target)
+															})
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemyHeard), func() {
+																con.bomber2.Attack(con.target)
+															})
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventLostEnemy), func() {
+																con.bomber2.Follow(con.unit)
+															})
+															// Global cooldown.
+															con.spells.Ready = true
+														}
+													})
+												}
+											})
+										})
+									}
+								})
+							})
+						}
+					})
+				})
+			} else if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !GameModeIsCTF {
+				// Stun chant.
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDown}, func() {
+					// Pause for concentration.
+					ns.NewTimer(ns.Frames(3), func() {
+						// Check for War Cry before chant.
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+							// Poison chant.
+							castPhonemes(con.unit, []audio.Name{PhUpRight, PhDownLeft}, func() {
+								// Pause for concentration.
+								ns.NewTimer(ns.Frames(3), func() {
+									// Check for War Cry before chant.
+									if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+										// Fist Of Vengeance chant.
+										castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+											// Pause for concentration.
+											ns.NewTimer(ns.Frames(3), func() {
+												// Check for War Cry before chant.
+												if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+													// Glyph chant.
+													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
+														// Check for War Cry before spell release.
+														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.spells.SummonBomber2Ready = false
+															con.bomber2 = ns.CreateObject("Bomber", con.unit)
+															ns.AudioEvent("BomberSummon", con.bomber2)
+															con.bomber2.SetOwner(con.unit)
+															con.bomber2.SetTeam(con.team.Team())
+															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
+																// Summon Bomber cooldown.
+																ns.NewTimer(ns.Seconds(10), func() {
+																	con.spells.SummonBomber2Ready = true
+																})
+															})
+															con.bomber2.Follow(con.unit)
+															con.bomber2.TrapSpells(spell.POISON, spell.FIST, spell.STUN)
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventEnemySighted), func() {
 																con.bomber2.Attack(con.target)
 															})
