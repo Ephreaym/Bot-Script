@@ -118,7 +118,7 @@ func (war *Warrior) init() {
 	war.cursor = war.target.Pos()
 	war.berserkcursor = war.target
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
-	war.reactionTime = 15
+	war.reactionTime = BotDifficulty
 	// Set WarBot properties.
 	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
@@ -159,6 +159,7 @@ func (war *Warrior) init() {
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 	war.LookForWeapon()
 	war.WeaponPreference()
+
 }
 
 func (war *Warrior) onChangeFocus() {
@@ -203,20 +204,20 @@ func (war *Warrior) onCollide() {
 			war.team.CheckCaptureEnemyFlag(caller, war.unit)
 			war.team.CheckRetrievedOwnFlag(caller, war.unit)
 		}
-		if caller != nil && ns.GetCaller().HasSubclass(subclass.BOMBER) && ns.GetCaller().HasTeam(war.team.Enemy.team) {
+		if ns.GetCaller() != nil && ns.GetCaller().HasSubclass(subclass.BOMBER) && ns.GetCaller().HasTeam(war.team.Enemy.team) {
 			war.abilities.BomberStunActive = true
 			ns.NewTimer(ns.Seconds(2), func() {
 				war.abilities.BomberStunActive = false
 			})
 		}
 		if war.abilities.BerserkerChargeActive && war.abilities.isAlive {
-			if caller != nil && war.abilities.isAlive && ns.GetCaller().HasClass(class.PLAYER) || ns.GetCaller().HasClass(class.MONSTER) {
+			if ns.GetCaller() != nil && war.abilities.isAlive && ns.GetCaller().HasClass(class.PLAYER) || ns.GetCaller().HasClass(class.MONSTER) {
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
 				ns.AudioEvent(audio.FleshHitFlesh, war.unit)
 				ns.GetCaller().Damage(war.unit, 150, 2)
 				war.StopBerserkLoop()
 			}
-			if caller != nil && war.abilities.isAlive && ns.GetCaller().HasClass(class.IMMOBILE) && !ns.GetCaller().HasClass(class.DOOR) && !ns.GetCaller().HasClass(class.FIRE) {
+			if ns.GetCaller() != nil && war.abilities.isAlive && ns.GetCaller().HasClass(class.IMMOBILE) && !ns.GetCaller().HasClass(class.DOOR) && !ns.GetCaller().HasClass(class.FIRE) {
 				war.abilities.BerserkerStunActive = true
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
 				ns.AudioEvent(audio.FleshHitStone, war.unit)
@@ -349,7 +350,9 @@ func (war *Warrior) onDeath() {
 		war.unit.Delete()
 		war.startingEquipment.StreetPants.Delete()
 		war.startingEquipment.StreetSneakers.Delete()
-		war.init()
+		if BotRespawn {
+			war.init()
+		}
 	})
 }
 

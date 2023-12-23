@@ -2,13 +2,19 @@ package BotWars
 
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
+	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 )
 
 var InitLoadComplete bool
 var GameModeIsCTF bool
 var GameModeIsTeamArena bool
+var BotDifficulty int
+var BotRespawn bool
+var BotMana bool
 
 func init() {
+	BotRespawn = true
+	BotMana = true
 	InitLoadComplete = false
 	ns.NewTimer(ns.Frames(10), func() {
 		CheckIfGameModeIsCTF()
@@ -22,6 +28,170 @@ func init() {
 		Blue.lateInit()
 		InitLoadComplete = true
 	})
+	ns.OnChat(onCommand)
+}
+
+// Server Commands.
+func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
+	if p != nil {
+		switch msg {
+		// Spawn commands red bots.
+		case "server spawn red war":
+			bots = append(bots, NewWarrior(Red))
+			ns.PrintStrToAll("A Warrior bot has joined team Red!")
+		case "server spawn red con":
+			bots = append(bots, NewConjurer(Red))
+			ns.PrintStrToAll("A Conjurer bot has joined team Red!")
+		case "server spawn red wiz":
+			bots = append(bots, NewWizard(Red))
+			ns.PrintStrToAll("A Wizard bot has joined team Red!")
+			// Spawn commands blue bots.
+		case "server spawn blue war":
+			bots = append(bots, NewWarrior(Blue))
+			ns.PrintStrToAll("A Warrior bot has joined team Blue!")
+		case "server spawn blue con":
+			bots = append(bots, NewConjurer(Blue))
+			ns.PrintStrToAll("A Conjurer bot has joined team Blue!")
+		case "server spawn blue wiz":
+			bots = append(bots, NewWizard(Blue))
+			ns.PrintStrToAll("A Wizard bot has joined team Blue!")
+		case "server spawn bots 3v3":
+			bots = append(bots, NewWarrior(Red))
+			bots = append(bots, NewConjurer(Red))
+			bots = append(bots, NewWizard(Red))
+			bots = append(bots, NewWarrior(Blue))
+			bots = append(bots, NewConjurer(Blue))
+			bots = append(bots, NewWizard(Blue))
+			ns.PrintStrToAll("Both the Red and Blue team now have 3 bots active!")
+			// Remove all bots.
+		case "server remove all bots":
+			ns.PrintStrToAll("All bots have been removed from the game.")
+			ns.FindObjects(
+				func(it ns.Obj) bool {
+					//BotRespawn = false
+					ns.PrintStrToAll("Bot removal not yet implemented!")
+					return true
+				},
+				ns.HasTypeName{"NPC"},
+			)
+			// Set bot difficulty.
+		case "server hardcore bots":
+			BotDifficulty = 0
+			BotMana = false
+			ns.PrintStrToAll("Bots difficulty set to hardcore.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
+		case "server hard bots":
+			BotDifficulty = 15
+			BotMana = true
+			ns.PrintStrToAll("Bots difficulty set to hard.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
+		case "server normal bots":
+			BotDifficulty = 30
+			BotMana = true
+			ns.PrintStrToAll("Bots difficulty set to normal.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
+		case "server easy bots":
+			BotDifficulty = 45
+			BotMana = true
+			ns.PrintStrToAll("Bots difficulty set to easy.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
+		case "server beginner bots":
+			BotDifficulty = 60
+			BotMana = true
+			ns.PrintStrToAll("Bots difficulty set to beginner.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
+		// Bot commands.
+		case "help", "Help", "Follow", "follow", "escort", "Escort", "come", "Come":
+			ns.FindObjects(
+				func(it ns.Obj) bool {
+					if it.CanSee(p.Unit()) {
+						it.Follow(p.Unit())
+						random := ns.Random(1, 4)
+						if random == 1 {
+							it.ChatStr("I'll follow you.")
+						}
+						if random == 2 {
+							it.ChatStr("Let's go.")
+						}
+						if random == 3 {
+							it.ChatStr("I'll help.")
+						}
+						if random == 4 {
+							it.ChatStr("Sure thing.")
+						}
+					}
+					return true
+				},
+				ns.HasTypeName{"NPC"},
+				ns.HasTeam{p.Team()},
+			)
+		case "guard", "stay", "Guard", "Stay":
+			ns.FindObjects(
+				func(it ns.Obj) bool {
+					if it.CanSee(p.Unit()) {
+						it.Guard(it.Pos(), it.Pos(), 300)
+						random1 := ns.Random(1, 4)
+						if random1 == 1 {
+							it.ChatStr("I'll guard this place.")
+						}
+						if random1 == 2 {
+							it.ChatStr("No problem.")
+						}
+						if random1 == 3 {
+							it.ChatStr("I'll stay.")
+						}
+						if random1 == 4 {
+							it.ChatStr("I'll hold.")
+						}
+					}
+					return true
+				},
+				ns.HasTypeName{"NPC"},
+				ns.HasTeam{p.Team()},
+				ns.InCirclef{Center: p.Unit(), R: 100},
+			)
+		case "Attack", "Go", "go", "attack":
+			ns.FindObjects(
+				func(it ns.Obj) bool {
+					if it.CanSee(p.Unit()) {
+						it.Hunt()
+						random2 := ns.Random(1, 4)
+						if random2 == 1 {
+							it.ChatStr("I'll get them.")
+						}
+						if random2 == 2 {
+							it.ChatStr("Time to shine.")
+						}
+						if random2 == 3 {
+							it.ChatStr("On the offense.")
+						}
+						if random2 == 4 {
+							it.ChatStr("Time to hunt.")
+						}
+					}
+					return true
+				},
+				ns.HasTypeName{"NPC"},
+				ns.HasTeam{p.Team()},
+			)
+		}
+	}
+	return msg
 }
 
 func OnFrame() {

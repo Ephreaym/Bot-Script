@@ -121,7 +121,7 @@ func (con *Conjurer) init() {
 	con.target = con.team.Enemy.Spawns()[0]
 	con.cursor = con.target.Pos()
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
-	con.reactionTime = 15
+	con.reactionTime = BotDifficulty
 	// Set ConBot properties.
 	con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
 	con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
@@ -162,6 +162,7 @@ func (con *Conjurer) init() {
 	con.PassiveManaRegen()
 	con.LookForWeapon()
 	con.WeaponPreference()
+	ns.OnChat(con.onConCommand)
 }
 
 func (con *Conjurer) onHit() {
@@ -248,7 +249,9 @@ func (con *Conjurer) onDeath() {
 		con.startingEquipment.StreetPants.Delete()
 		con.startingEquipment.StreetShirt.Delete()
 		con.startingEquipment.StreetSneakers.Delete()
-		con.init()
+		if BotRespawn {
+			con.init()
+		}
 	})
 }
 
@@ -256,6 +259,9 @@ func (con *Conjurer) PassiveManaRegen() {
 	if con.spells.isAlive {
 		ns.NewTimer(ns.Seconds(2), func() {
 			if con.mana < 125 {
+				if !BotMana {
+					con.mana = con.mana + 300
+				}
 				con.mana = con.mana + 1
 			}
 			con.PassiveManaRegen()
@@ -1193,3 +1199,62 @@ func (con *Conjurer) summonBomber2() {
 // ------------------------------------------------------------------------------------------------------------------------------------ //
 // ---------------------------------------------------------------- SPELL BOOK -------------------------------------------------------- //
 // ------------------------------------------------------------------------------------------------------------------------------------ //
+
+func (con *Conjurer) onConCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
+	if p != nil {
+		switch msg {
+		// Spawn commands red bots.
+		case "vamp", "Vamp", "Vampirism", "vampirism":
+			if con.unit.CanSee(p.Unit()) && con.unit.HasTeam(p.Unit().Team()) {
+				if con.mana >= 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready {
+					// Trigger cooldown.
+					con.spells.Ready = false
+					// Check reaction time based on difficulty setting.
+					ns.NewTimer(ns.Frames(con.reactionTime), func() {
+						// Check for War Cry before chant.
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+							castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+								// Check for War Cry before spell release.
+								if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									con.spells.VampirismReady = false
+									con.mana = con.mana - 20
+									ns.CastSpell(spell.VAMPIRISM, con.unit, p.Unit())
+									// Global cooldown.
+									con.spells.Ready = true
+									// Vampirism cooldown.
+									ns.NewTimer(ns.Seconds(30), func() {
+										con.spells.VampirismReady = true
+									})
+								}
+							})
+						}
+					})
+				}
+			}
+			if con.mana < 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready {
+				// Trigger cooldown.
+				con.spells.Ready = false
+				// Check reaction time based on difficulty setting.
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					// Check for War Cry before chant.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+							// Check for War Cry before spell release.
+							if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+								con.spells.VampirismReady = false
+								ns.AudioEvent(audio.ManaEmpty, con.unit)
+								// Global cooldown.
+								con.spells.Ready = true
+								// Vampirism cooldown.
+								ns.NewTimer(ns.Seconds(30), func() {
+									con.spells.VampirismReady = true
+								})
+							}
+						})
+					}
+				})
+			}
+		}
+	}
+	return msg
+}
