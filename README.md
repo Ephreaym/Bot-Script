@@ -7,6 +7,8 @@ The Nox bot project is a work in progress. Here's an installation guide in case 
 
 3.) You can now host a game with bots enabled! Make sure to either host a CTF map or enable teams for arena. The game will crash without teams enabled.
 
+4.) If installed properly the game will give you this message on map launch: "Bot script installed successfully!"
+
 You can change settings in game through chat (altering the settings in the code directly is not advised).
 
 Some basic server settings:
