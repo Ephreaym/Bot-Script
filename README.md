@@ -9,6 +9,7 @@ The Nox bot project is a work in progress. Here's an installation guide in case 
 
 You can change settings in game through chat (altering the settings in the code directly is not advised).
 
+Some basic server settings:
 server spawn red/blue war/con/wiz
 
 server hardcore/hard/normal/easy/beginner bots
