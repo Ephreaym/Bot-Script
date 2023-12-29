@@ -7,7 +7,7 @@ The Nox bot project is a work in progress. Here's an installation guide in case 
 
 3.) You can now host a game with bots enabled! Make sure to either host a CTF map or enable teams for arena. The game will crash without teams enabled.
 
-You can change settings in game (altering the settings in the code directly is not advised).
+You can change settings in game through chat (altering the settings in the code directly is not advised).
 
 server spawn red/blue war/con/wiz
 
