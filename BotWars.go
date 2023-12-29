@@ -252,6 +252,7 @@ func CheckIfGameModeIsCTF() {
 		GameModeIsTeamArena = true
 		ns.PrintStrToAll("Gamemode: Arena!")
 	}
+	ns.PrintStrToAll("Bot script installed successfully!")
 }
 
 // Dialog options
