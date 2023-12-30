@@ -1,4 +1,5 @@
 The Nox bot project is a work in progress. Here's an installation guide in case you'd like to try it out for yourself.
+
 IMPORTANT: GAME WILL CRASH WITHOUT TEAMS ENABLED!
 
 1.) Make sure you host with OpenNox. Get the latest release from here: https://github.com/noxworld-dev/opennox/releases
