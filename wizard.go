@@ -34,26 +34,26 @@ type Wizard struct {
 	}
 	spells struct {
 		isAlive             bool
-		Ready               bool // Duration unknown.
+		Ready               bool
+		BlinkReady          bool
+		BurnReady           bool
+		CounterspellReady   bool
+		DeathRayReady       bool
 		DrainManaReady      bool
-		DeathRayReady       bool // No cooldown, 60 mana.
-		MagicMissilesReady  bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
-		ForceFieldReady     bool // Duration unknown.
-		ShockReady          bool // Duration is 20 seconds.
-		SlowReady           bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
-		TrapReady           bool // Only one trap is placed per life.
-		EnergyBoltReady     bool // No real cooldown, mana cost *.
-		FireballReady       bool // No real cooldown, mana cost 30.
-		ProtFromFireReady   bool // Duration is 60 seconds.
+		EnergyBoltReady     bool
+		FireballReady       bool
+		ForceFieldReady     bool
+		HasteReady          bool
+		InvisibilityReady   bool
+		LesserHealReady     bool
+		MagicMissilesReady  bool
+		ProtFromFireReady   bool
 		ProtFromPoisonReady bool
 		ProtFromShockReady  bool
-		BlinkReady          bool
-		HasteReady          bool // Duration is 20 seconds
-		InvisibilityReady   bool // Duration is 60 seconds, 30 mana.
-		LesserHealReady     bool
-		BurnReady           bool
 		RingOfFireReady     bool
-		CounterspellReady   bool
+		ShockReady          bool
+		SlowReady           bool
+		TrapReady           bool
 	}
 	behaviour struct {
 		focussed          bool
@@ -61,6 +61,7 @@ type Wizard struct {
 		Busy              bool
 		AntiStuck         bool
 		SwitchMainWeapon  bool
+		useWand           bool
 	}
 	reactionTime int
 	audio        struct {
@@ -99,6 +100,7 @@ func (wiz *Wizard) init() {
 	wiz.behaviour.AntiStuck = true
 	wiz.behaviour.SwitchMainWeapon = false
 	wiz.behaviour.Busy = false
+	wiz.behaviour.useWand = false
 	// Create WizBot3.
 	wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -170,10 +172,12 @@ func (wiz *Wizard) init() {
 	wiz.unit.OnEvent(ns.EventLookingForEnemy, wiz.onLookingForTarget)
 	wiz.unit.OnEvent(ns.EventEndOfWaypoint, wiz.onEndOfWaypoint)
 	wiz.unit.OnEvent(ns.EventIsHit, wiz.onHit)
-	//wiz.onChat()
 	wiz.LookForWeapon()
 	wiz.WeaponPreference()
 	ns.OnChat(wiz.onWizCommand)
+	// CODE FOR NEW TESTING //!!!! ONWAND
+	//wiz.unit.MonsterStatusEnable(object.MonsterStatus(object.MonsterImmuneFear))
+	//ns.CreateObject("FireStormWand", wiz.unit.Pos())
 }
 
 func (wiz *Wizard) WeaponPreference() {
@@ -347,16 +351,10 @@ func (wiz *Wizard) GoToManaObelisk() {
 
 func (wiz *Wizard) RestoreMana() {
 	if wiz.mana < 150 {
-		ManaSource := ns.FindAllObjects(
-			ns.HasTypeName{
-				"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
-			},
-			ns.InCirclef{Center: wiz.unit, R: 50},
-		)
-		for i := 0; i < len(ManaSource); i++ {
-			if ManaSource[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSource[i]) {
+		for i := 0; i < len(AllManaObelisksOnMap); i++ {
+			if AllManaObelisksOnMap[i].CurrentMana() > 0 && wiz.unit.CanSee(AllManaObelisksOnMap[i]) && (ns.InCirclef{Center: wiz.unit, R: 50}).Matches(AllManaObelisksOnMap[i]) {
 				wiz.mana = wiz.mana + 1
-				ManaSource[i].SetMana(ManaSource[i].CurrentMana() - 1)
+				AllManaObelisksOnMap[i].SetMana(AllManaObelisksOnMap[i].CurrentMana() - 1)
 				wiz.RestoreManaSound()
 			}
 		}
@@ -365,16 +363,10 @@ func (wiz *Wizard) RestoreMana() {
 
 func (wiz *Wizard) RestoreManaWithDrainMana() {
 	if wiz.mana < 150 && wiz.behaviour.IsCastinDrainMana {
-		ManaSourceObelisk := ns.FindAllObjects(
-			ns.HasTypeName{
-				"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
-			},
-			ns.InCirclef{Center: wiz.unit, R: 200},
-		)
-		for i := 0; i < len(ManaSourceObelisk); i++ {
-			if ManaSourceObelisk[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceObelisk[i]) {
+		for i := 0; i < len(AllManaObelisksOnMap); i++ {
+			if AllManaObelisksOnMap[i].CurrentMana() > 0 && wiz.unit.CanSee(AllManaObelisksOnMap[i]) && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(AllManaObelisksOnMap[i]) {
 				wiz.mana = wiz.mana + 1
-				ManaSourceObelisk[i].SetMana(ManaSourceObelisk[i].CurrentMana() - 1)
+				AllManaObelisksOnMap[i].SetMana(AllManaObelisksOnMap[i].CurrentMana() - 1)
 				wiz.RestoreManaSound()
 			}
 		}
@@ -416,6 +408,26 @@ func (wiz *Wizard) RestoreManaSound() {
 	}
 }
 
+func (wiz *Wizard) useWand() {
+	if !wiz.behaviour.useWand {
+		wiz.behaviour.useWand = true
+		wiz.unit.ChatStr("Use Wand!")
+		{
+			wiz.unit.LookAtObject(wiz.target)
+			wiz.unit.Attack(wiz.target.Pos())
+			wiz.unit.Pause(ns.Frames(400))
+			wiz.unit.ChatStr("Don't move!")
+
+			wiz.unit.Attack(wiz.target)
+			ns.NewTimer(ns.Seconds(4), func() {
+				wiz.behaviour.Busy = false
+				wiz.spells.Ready = true
+				wiz.behaviour.useWand = false
+			})
+		}
+	}
+}
+
 func (wiz *Wizard) Update() {
 	wiz.findLoot()
 	wiz.UsePotions()
@@ -426,6 +438,7 @@ func (wiz *Wizard) Update() {
 	}
 	if wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		wiz.spells.Ready = true
+		//wiz.useWand()
 	}
 	if wiz.target.HasEnchant(enchant.HELD) || wiz.target.HasEnchant(enchant.SLOWED) || wiz.unit.HasEnchant(enchant.INVISIBLE) {
 		if wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
@@ -433,9 +446,6 @@ func (wiz *Wizard) Update() {
 		}
 	}
 	if wiz.unit.CanSee(wiz.target) && wiz.spells.Ready {
-		if BotDifficulty == 0 {
-			wiz.castDeathRay()
-		}
 		wiz.castFireball()
 		if !wiz.unit.HasEnchant(enchant.INVISIBLE) {
 			wiz.castBurn()
@@ -783,7 +793,7 @@ func (wiz *Wizard) castInvisibility() {
 
 func (wiz *Wizard) castEnergyBolt() {
 	// Check if cooldowns are ready.
-	if wiz.mana > 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready {
+	if wiz.mana > 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -796,7 +806,7 @@ func (wiz *Wizard) castEnergyBolt() {
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						wiz.unit.LookAtObject(wiz.target)
-						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.unit.Pause(ns.Frames(30))
 						wiz.spells.EnergyBoltReady = false
 						ns.CastSpell(spell.LIGHTNING, wiz.unit, wiz.target)
 						// Global cooldown.
