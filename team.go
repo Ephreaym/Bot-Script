@@ -6,6 +6,7 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
+	"github.com/noxworld-dev/opennox-lib/object"
 )
 
 var (
@@ -93,30 +94,23 @@ func (t *Team) init() {
 
 func (t *Team) lateInit() {
 	if GameModeIsCTF {
-		t.TeamBase = ns.Object(t.Name + "Base")
+		Red.Flag = ns.FindObject(ns.HasTypeName{"Flag"}, ns.HasTeam{ns.Teams()[0]})
+		Blue.Flag = ns.FindObject(ns.HasTypeName{"Flag"}, ns.HasTeam{ns.Teams()[1]})
+		BlueTeamBase = ns.CreateObject("ExtentBoxSmall", Blue.Flag)
+		BlueTeamBase.FlagsEnable(object.FlagNoCollide)
+		BlueTeamBase.FlagsEnable(object.FlagNoPushCharacters)
+		RedTeamBase = ns.CreateObject("ExtentBoxSmall", Red.Flag)
+		RedTeamBase.FlagsEnable(object.FlagNoCollide)
+		RedTeamBase.FlagsEnable(object.FlagNoPushCharacters)
+		//t.TeamBase = ns.Object(t.Name + "Base")
+		Red.TeamBase = RedTeamBase
+		Blue.TeamBase = BlueTeamBase
 		t.TeamTank = t.Spawns()[0]
-		t.Flag = ns.Object(t.Name + "Flag")
 		t.FlagStart = ns.NewWaypoint(t.Name+"FlagStart", t.Flag.Pos())
 		t.FlagIsAtBase = true
 		t.FlagInteraction = false
 		ns.NewWaypoint(t.Name+"FlagWaypoint", t.Flag.Pos())
 	}
-
-	// Need to add these to the map and implement them in the script.
-	//BlueBase := ns.CreateObject("ExtentBoxSmall", ns.Waypoint("BlueFlagWaypoint"))
-	//BlueBase.FlagsEnable(object.FlagNoCollide)
-	//BlueBase.FlagsEnable(object.FlagNoPushCharacters)
-	//RedBase := ns.CreateObject("ExtentBoxSmall", ns.Waypoint("RedFlagWaypoint"))
-	//RedBase.FlagsEnable(object.FlagNoCollide)
-	//RedBase.FlagsEnable(object.FlagNoPushCharacters)
-	//RedFlag := ns.FindAllObjects(
-	//	ns.HasTypeName{"Flag"},
-	//	ns.HasTeam{ns.Teams()[0]},
-	//)
-	//BlueFlag := ns.FindAllObjects(
-	//	ns.HasTypeName{"Flag"},
-	//	ns.HasTeam{ns.Teams()[1]},
-	//)
 }
 
 func (t *Team) FlagStartF() ns.WaypointObj {

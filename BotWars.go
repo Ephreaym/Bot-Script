@@ -13,6 +13,10 @@ var BotRespawn bool
 var BotMana bool
 var NoTarget ns.Obj
 var AllManaObelisksOnMap []ns.Obj
+var BlueTeamBase ns.Obj
+var RedTeamBase ns.Obj
+var BlueFlag ns.Obj
+var RedFlag ns.Obj
 
 func init() {
 	BotRespawn = true
