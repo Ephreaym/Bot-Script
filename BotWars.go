@@ -17,29 +17,46 @@ var BlueTeamBase ns.Obj
 var RedTeamBase ns.Obj
 var BlueFlag ns.Obj
 var RedFlag ns.Obj
+var TeamsEnabled bool
 
 func init() {
-	BotRespawn = true
-	BotMana = true
-	InitLoadComplete = false
+	checkTeams()
+	if TeamsEnabled {
+		BotRespawn = true
+		BotMana = true
+		InitLoadComplete = false
 
-	ns.NewTimer(ns.Frames(10), func() {
-		CheckIfGameModeIsCTF()
-		AllManaObelisksOnMap = ns.FindAllObjects(
-			ns.HasTypeName{"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12"},
-		)
-	})
-	ns.NewTimer(ns.Frames(20), func() {
-		Red.init()
-		Blue.init()
-	})
-	ns.NewTimer(ns.Frames(60), func() {
-		Red.lateInit()
-		Blue.lateInit()
-		InitLoadComplete = true
-	})
-	ns.OnChat(onCommand)
-	NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
+		ns.NewTimer(ns.Frames(10), func() {
+			CheckIfGameModeIsCTF()
+			AllManaObelisksOnMap = ns.FindAllObjects(
+				ns.HasTypeName{"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12"},
+			)
+		})
+		ns.NewTimer(ns.Frames(20), func() {
+			Red.init()
+			Blue.init()
+		})
+		ns.NewTimer(ns.Frames(60), func() {
+			Red.lateInit()
+			Blue.lateInit()
+			InitLoadComplete = true
+		})
+		ns.OnChat(onCommand)
+		NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
+	} else {
+		ns.PrintStrToAll("Bot script installed successfully!")
+		ns.PrintStrToAll("Bot script is disabled when playing without teams.")
+	}
+}
+
+func checkTeams() {
+	AllTeams := ns.Teams()
+	TeamsCheck := len(AllTeams)
+	if TeamsCheck == 0 {
+		TeamsEnabled = false
+	} else {
+		TeamsEnabled = true
+	}
 }
 
 // Server Commands.
