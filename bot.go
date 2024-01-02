@@ -40,7 +40,7 @@ func init() {
 			blueconjurers02 = 0
 			blueconjurers03 = 0
 			// Wizards.
-			bluewizards01 = 1
+			bluewizards01 = 0
 			bluewizards02 = 0
 			bluewizards03 = 0
 		)
