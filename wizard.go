@@ -44,6 +44,7 @@ type Wizard struct {
 		FireballReady       bool
 		ForceFieldReady     bool
 		HasteReady          bool
+		InversionReady      bool
 		InvisibilityReady   bool
 		LesserHealReady     bool
 		MagicMissilesReady  bool
@@ -85,6 +86,7 @@ func (wiz *Wizard) init() {
 	wiz.spells.RingOfFireReady = true
 	wiz.spells.CounterspellReady = true
 	// Defensive spells.
+	wiz.spells.InversionReady = true
 	wiz.spells.LesserHealReady = true
 	wiz.spells.BlinkReady = true
 	// Buff spells
@@ -428,7 +430,17 @@ func (wiz *Wizard) useWand() {
 	}
 }
 
+func (wiz *Wizard) checkForMissiles() {
+	if sp := ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassMissile), ns.InCirclef{Center: wiz.unit, R: 500}); sp != nil {
+		// Maybe need to add a ns.hasteam condition. Not sure yet.
+		if sp.HasOwner(wiz.target) {
+			wiz.castInversion()
+		}
+	}
+}
+
 func (wiz *Wizard) Update() {
+	wiz.checkForMissiles()
 	wiz.findLoot()
 	wiz.UsePotions()
 	wiz.RestoreMana()
@@ -625,7 +637,7 @@ func (wiz *Wizard) castTrap() {
 															wiz.trap = ns.NewTrap(wiz.unit, spell.CLEANSING_FLAME, spell.MAGIC_MISSILE, spell.SHOCK)
 															wiz.trap.SetOwner(wiz.unit)
 															// Global cooldown.
-															ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+															ns.NewTimer(ns.Frames(15), func() {
 																wiz.spells.Ready = true
 															})
 															// Trap cooldown.
@@ -668,7 +680,7 @@ func (wiz *Wizard) castShock() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.SHOCK, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Shock cooldown.
@@ -705,7 +717,7 @@ func (wiz *Wizard) castRingOfFire() {
 						wiz.mana = wiz.mana - 60
 						ns.CastSpell(spell.CLEANSING_FLAME, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Ring of Fire cooldown.
@@ -739,12 +751,46 @@ func (wiz *Wizard) castLesserHeal() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.LESSER_HEAL, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Shock cooldown.
 						ns.NewTimer(ns.Seconds(1), func() {
 							wiz.spells.LesserHealReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+					wiz.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (wiz *Wizard) castInversion() {
+	// Check if cooldowns are ready.
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.InversionReady {
+		// Trigger cooldown.
+		wiz.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+			// Check for War Cry before chant.
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhUpLeft, FPhUpRight}, func() {
+					// Check for War Cry before spell release.
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						wiz.spells.InversionReady = false
+						wiz.mana = wiz.mana - 10
+						ns.CastSpell(spell.INVERSION, wiz.unit, wiz.unit)
+						// Global cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							wiz.spells.Ready = true
+						})
+						// Inversion cooldown.
+						ns.NewTimer(ns.Seconds(1), func() {
+							wiz.spells.InversionReady = true
 						})
 					}
 				})
@@ -773,7 +819,7 @@ func (wiz *Wizard) castInvisibility() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.INVISIBILITY, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Invisibility cooldown.
@@ -810,7 +856,7 @@ func (wiz *Wizard) castEnergyBolt() {
 						wiz.spells.EnergyBoltReady = false
 						ns.CastSpell(spell.LIGHTNING, wiz.unit, wiz.target)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Energy Bolt cooldown.
@@ -849,7 +895,7 @@ func (wiz *Wizard) castDeathRay() {
 						ns.CastSpell(spell.DEATH_RAY, wiz.unit, wiz.cursor)
 						wiz.mana = wiz.mana - 60
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Death Ray cooldown.
@@ -888,7 +934,7 @@ func (wiz *Wizard) castBurn() {
 						ns.CastSpell(spell.BURN, wiz.unit, wiz.cursor)
 						wiz.mana = wiz.mana - 10
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Burn cooldown.
@@ -927,7 +973,7 @@ func (wiz *Wizard) castFireball() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.cursor)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Fireball cooldown.
@@ -965,7 +1011,7 @@ func (wiz *Wizard) castFireballAtHeard() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.target)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Fireball cooldown.
@@ -999,7 +1045,7 @@ func (wiz *Wizard) castBlink() {
 						wiz.mana = wiz.mana - 10
 						ns.NewTrap(wiz.unit, spell.BLINK)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Blink cooldown.
@@ -1037,7 +1083,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target.Pos())
 						wiz.mana = wiz.mana - 15
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Missiles Of Magic cooldown.
@@ -1075,7 +1121,7 @@ func (wiz *Wizard) castSlow() {
 						wiz.mana = wiz.mana - 10
 						ns.CastSpell(spell.SLOW, wiz.unit, wiz.target)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Slow cooldown.
@@ -1119,7 +1165,7 @@ func (wiz *Wizard) castDrainMana() {
 						wiz.unit.LookAtObject(ManaSource)
 						wiz.unit.Pause(ns.Frames(30))
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Haste cooldown.
@@ -1153,7 +1199,7 @@ func (wiz *Wizard) castHaste() {
 						wiz.mana = wiz.mana - 10
 						ns.CastSpell(spell.HASTE, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Haste cooldown.
@@ -1187,7 +1233,7 @@ func (wiz *Wizard) castCounterspell() {
 						wiz.mana = wiz.mana - 20
 						ns.CastSpell(spell.COUNTERSPELL, wiz.unit, wiz.unit.Pos())
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Haste cooldown.
@@ -1222,7 +1268,7 @@ func (wiz *Wizard) castForceField() {
 						wiz.mana = wiz.mana - 80
 						ns.CastSpell(spell.SHIELD, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Force Field cooldown.
@@ -1256,7 +1302,7 @@ func (wiz *Wizard) castProtectionFromFire() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_FIRE, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Protection From Fire cooldown.
@@ -1290,7 +1336,7 @@ func (wiz *Wizard) castProtectionFromShock() {
 						wiz.mana = wiz.mana - 30
 						ns.CastSpell(spell.PROTECTION_FROM_ELECTRICITY, wiz.unit, wiz.unit)
 						// Global cooldown.
-						ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true
 						})
 						// Protection From Shock cooldown.
