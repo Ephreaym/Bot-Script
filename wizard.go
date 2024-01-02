@@ -282,13 +282,10 @@ func (wiz *Wizard) onRetreat() {
 }
 
 func (wiz *Wizard) onLostEnemy() {
-	if !wiz.behaviour.Busy {
-		wiz.castTrap()
-		if GameModeIsCTF {
-			wiz.team.WalkToOwnFlag(wiz.unit)
-		}
-	}
 
+	if GameModeIsCTF {
+		wiz.team.WalkToOwnFlag(wiz.unit)
+	}
 }
 
 func (wiz *Wizard) onDeath() {
@@ -431,10 +428,24 @@ func (wiz *Wizard) useWand() {
 }
 
 func (wiz *Wizard) checkForMissiles() {
-	if sp := ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassMissile), ns.InCirclef{Center: wiz.unit, R: 500}); sp != nil {
-		// Maybe need to add a ns.hasteam condition. Not sure yet.
-		if sp.HasOwner(wiz.target) {
-			wiz.castInversion()
+	// Maybe need to add a ns.hasteam condition. Not sure yet.
+	if sp2 := ns.FindClosestObject(wiz.unit, ns.HasTypeName{"DeathBall"}, ns.InCirclef{Center: wiz.unit, R: 500}); sp2 != nil {
+		{
+			arr2 := ns.FindAllObjects(
+				ns.HasTypeName{"NewPlayer", "NPC"},
+				ns.HasTeam{wiz.team.Enemy.Team()},
+			)
+			for i := 0; i < len(arr2); i++ {
+				if sp2.HasOwner(arr2[i]) {
+					wiz.castCounterspellAtForceOfNature()
+				}
+			}
+		}
+	} else {
+		if sp := ns.FindClosestObject(wiz.unit, ns.HasClass(object.ClassMissile), ns.InCirclef{Center: wiz.unit, R: 500}); sp != nil {
+			if sp.HasOwner(wiz.target) {
+				wiz.castInversion()
+			}
 		}
 	}
 }
@@ -487,6 +498,7 @@ func (wiz *Wizard) Update() {
 				wiz.castProtectionFromShock()
 				wiz.castProtectionFromFire()
 				wiz.castInvisibility()
+				wiz.castTrap()
 			}
 		}
 	}
@@ -839,7 +851,7 @@ func (wiz *Wizard) castInvisibility() {
 
 func (wiz *Wizard) castEnergyBolt() {
 	// Check if cooldowns are ready.
-	if wiz.mana > 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
+	if wiz.mana > 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -938,7 +950,7 @@ func (wiz *Wizard) castBurn() {
 							wiz.spells.Ready = true
 						})
 						// Burn cooldown.
-						ns.NewTimer(ns.Seconds(1), func() {
+						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.BurnReady = true
 						})
 					}
@@ -1229,6 +1241,40 @@ func (wiz *Wizard) castCounterspell() {
 				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDownRight}, func() {
 					// Check for War Cry before spell release.
 					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) {
+						wiz.spells.CounterspellReady = false
+						wiz.mana = wiz.mana - 20
+						ns.CastSpell(spell.COUNTERSPELL, wiz.unit, wiz.unit.Pos())
+						// Global cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							wiz.spells.Ready = true
+						})
+						// Haste cooldown.
+						ns.NewTimer(ns.Seconds(20), func() {
+							wiz.spells.CounterspellReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+					wiz.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (wiz *Wizard) castCounterspellAtForceOfNature() {
+	// Check if cooldowns are ready.
+	if wiz.mana >= 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.CounterspellReady {
+		// Trigger cooldown.
+		wiz.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+			// Check for War Cry before chant.
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhDownRight}, func() {
+					// Check for War Cry before spell release.
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						wiz.spells.CounterspellReady = false
 						wiz.mana = wiz.mana - 20
 						ns.CastSpell(spell.COUNTERSPELL, wiz.unit, wiz.unit.Pos())
