@@ -18,9 +18,11 @@ var RedTeamBase ns.Obj
 var BlueFlag ns.Obj
 var RedFlag ns.Obj
 var TeamsEnabled bool
+var ItemDropEnabled bool
 
 func init() {
 	checkTeams()
+	ItemDropEnabled = true
 	if TeamsEnabled {
 		BotRespawn = true
 		BotMana = true
@@ -246,6 +248,20 @@ func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 					it.ChatStr("Good game!")
 				}
 			})
+		case "server disable drops":
+			ItemDropEnabled = false
+			ns.PrintStrToAll("Bots no longer drop items on death.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
+		case "server enable drops":
+			ItemDropEnabled = true
+			ns.PrintStrToAll("Bots drop items on death.")
+			serverSettingSoundToAllPlayers := ns.Players()
+			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
+				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
+			}
 		}
 	}
 	return msg

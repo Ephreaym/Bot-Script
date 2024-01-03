@@ -163,6 +163,7 @@ func (con *Conjurer) init() {
 	con.LookForWeapon()
 	con.WeaponPreference()
 	ns.OnChat(con.onConCommand)
+	con.findLoot()
 }
 
 func (con *Conjurer) onHit() {
@@ -243,12 +244,19 @@ func (con *Conjurer) onDeath() {
 			ns.Teams()[0].ChangeScore(+1)
 		}
 	}
-	ns.NewTimer(ns.Frames(60), func() {
-		ns.AudioEvent(audio.BlinkCast, con.unit)
-		con.unit.Delete()
+	if !ItemDropEnabled {
 		con.startingEquipment.StreetPants.Delete()
 		con.startingEquipment.StreetShirt.Delete()
 		con.startingEquipment.StreetSneakers.Delete()
+	}
+	ns.NewTimer(ns.Frames(60), func() {
+		ns.AudioEvent(audio.BlinkCast, con.unit)
+		con.unit.Delete()
+		if ItemDropEnabled {
+			con.startingEquipment.StreetPants.Delete()
+			con.startingEquipment.StreetShirt.Delete()
+			con.startingEquipment.StreetSneakers.Delete()
+		}
 		if BotRespawn {
 			con.init()
 		}
@@ -324,7 +332,6 @@ func (con *Conjurer) RestoreManaSound() {
 func (con *Conjurer) Update() {
 	con.UsePotions()
 	con.RestoreMana()
-	con.findLoot()
 	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		con.spells.Ready = true
 	}
@@ -515,6 +522,9 @@ func (con *Conjurer) findLoot() {
 			con.unit.Pickup(item)
 		}
 	}
+	ns.NewTimer(ns.Frames(15), func() {
+		con.findLoot()
+	})
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------ //

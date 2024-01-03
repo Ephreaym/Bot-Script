@@ -159,7 +159,7 @@ func (war *Warrior) init() {
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 	war.LookForWeapon()
 	war.WeaponPreference()
-
+	war.findLoot()
 }
 
 func (war *Warrior) onChangeFocus() {
@@ -345,11 +345,20 @@ func (war *Warrior) onDeath() {
 			ns.Teams()[0].ChangeScore(+1)
 		}
 	}
+	if !ItemDropEnabled {
+		war.startingEquipment.Longsword.Delete()
+		war.startingEquipment.WoodenShield.Delete()
+		war.startingEquipment.StreetPants.Delete()
+		war.startingEquipment.StreetSneakers.Delete()
+	}
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, war.unit)
 		war.unit.Delete()
-		war.startingEquipment.StreetPants.Delete()
-		war.startingEquipment.StreetSneakers.Delete()
+		if ItemDropEnabled {
+			war.startingEquipment.StreetPants.Delete()
+			war.startingEquipment.StreetSneakers.Delete()
+
+		}
 		if BotRespawn {
 			war.init()
 		}
@@ -372,9 +381,6 @@ func (war *Warrior) Update() {
 			ns.CastSpell(spell.SLOW, war.unit, war.unit)
 			war.unit.EnchantOff(enchant.HELD)
 		}
-		war.findLoot()
-		//war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
-		war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
 	}
 }
 
@@ -571,6 +577,11 @@ func (war *Warrior) findLoot() {
 			war.unit.Equip(war.unit.GetLastItem())
 		}
 	}
+	ns.NewTimer(ns.Frames(15), func() {
+		war.findLoot()
+		//war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
+		war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
+	})
 }
 
 // ------------------------------------------------------------- WARRIOR ABILITIES --------------------------------------------------------------- //

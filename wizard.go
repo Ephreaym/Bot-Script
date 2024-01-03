@@ -34,32 +34,33 @@ type Wizard struct {
 		WizardRobe     ns.Obj
 	}
 	spells struct {
-		isAlive             bool
-		AnchorReady         bool
-		Ready               bool
-		BlinkReady          bool
-		BurnReady           bool
-		ConfuseReady        bool
-		CounterspellReady   bool
-		DeathRayReady       bool
-		DrainManaReady      bool
-		EnergyBoltReady     bool
-		FireballReady       bool
-		ForceFieldReady     bool
-		FumbleReady         bool
-		HasteReady          bool
-		InversionReady      bool
-		InvisibilityReady   bool
-		LesserHealReady     bool
-		MagicMissilesReady  bool
-		ProtFromFireReady   bool
-		ProtFromPoisonReady bool
-		ProtFromShockReady  bool
-		RingOfFireReady     bool
-		RunReady            bool
-		ShockReady          bool
-		SlowReady           bool
-		TrapReady           bool
+		isAlive               bool
+		AnchorReady           bool
+		Ready                 bool
+		BlinkReady            bool
+		BurnReady             bool
+		ConfuseReady          bool
+		CounterspellReady     bool
+		DeathRayReady         bool
+		DrainManaReady        bool
+		EnergyBoltReady       bool
+		FireballReady         bool
+		ForceFieldReady       bool
+		FumbleReady           bool
+		HasteReady            bool
+		InversionReady        bool
+		InvisibilityReady     bool
+		LesserHealReady       bool
+		MagicMissilesReady    bool
+		ProtFromFireReady     bool
+		ProtFromPoisonReady   bool
+		ProtFromShockReady    bool
+		RingOfFireReady       bool
+		RunReady              bool
+		ShockReady            bool
+		SlowReady             bool
+		TeleportToTargetReady bool
+		TrapReady             bool
 	}
 	behaviour struct {
 		focussed          bool
@@ -106,6 +107,7 @@ func (wiz *Wizard) init() {
 	wiz.spells.HasteReady = true
 	wiz.spells.ForceFieldReady = true
 	wiz.spells.InvisibilityReady = true
+	wiz.spells.TeleportToTargetReady = true
 	// Behaviour
 	wiz.behaviour.IsCastinDrainMana = false
 	wiz.behaviour.AntiStuck = true
@@ -186,6 +188,7 @@ func (wiz *Wizard) init() {
 	wiz.LookForWeapon()
 	wiz.WeaponPreference()
 	ns.OnChat(wiz.onWizCommand)
+	wiz.findLoot()
 	// CODE FOR NEW TESTING //!!!! ONWAND
 	//wiz.unit.MonsterStatusEnable(object.MonsterStatus(object.MonsterImmuneFear))
 	//ns.CreateObject("FireStormWand", wiz.unit.Pos())
@@ -311,12 +314,21 @@ func (wiz *Wizard) onDeath() {
 			ns.Teams()[0].ChangeScore(+1)
 		}
 	}
-	ns.NewTimer(ns.Frames(60), func() {
-		ns.AudioEvent(audio.BlinkCast, wiz.unit)
-		wiz.unit.Delete()
+	if !ItemDropEnabled {
+		wiz.startingEquipment.WizardRobe.Delete()
 		wiz.startingEquipment.StreetPants.Delete()
 		wiz.startingEquipment.StreetSneakers.Delete()
 		wiz.startingEquipment.StreetShirt.Delete()
+	}
+	ns.NewTimer(ns.Frames(60), func() {
+		ns.AudioEvent(audio.BlinkCast, wiz.unit)
+		wiz.unit.Delete()
+		if ItemDropEnabled {
+			wiz.startingEquipment.StreetPants.Delete()
+			wiz.startingEquipment.StreetSneakers.Delete()
+			wiz.startingEquipment.StreetShirt.Delete()
+		}
+
 		if BotRespawn {
 			wiz.init()
 		}
@@ -461,7 +473,6 @@ func (wiz *Wizard) checkForMissiles() {
 
 func (wiz *Wizard) Update() {
 	wiz.checkForMissiles()
-	wiz.findLoot()
 	wiz.UsePotions()
 	wiz.RestoreMana()
 	wiz.RestoreManaWithDrainMana()
@@ -490,6 +501,7 @@ func (wiz *Wizard) Update() {
 			//wiz.castAnchor()
 			//wiz.castRun()
 			//wiz.castFumble()
+			//wiz.castTeleportToTarget()
 		}
 		if wiz.target.MaxHealth() == 75 || wiz.target.MaxHealth() == 100 && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
 			wiz.castDrainMana()
@@ -617,7 +629,9 @@ func (wiz *Wizard) findLoot() {
 			wiz.unit.Pickup(item)
 		}
 	}
-
+	ns.NewTimer(ns.Frames(15), func() {
+		wiz.findLoot()
+	})
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------ //
@@ -963,6 +977,45 @@ func (wiz *Wizard) castBurn() {
 						// Burn cooldown.
 						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.BurnReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+					wiz.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (wiz *Wizard) castTeleportToTarget() {
+	// Check if cooldowns are ready.
+	if wiz.mana >= 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.TeleportToTargetReady && wiz.spells.Ready {
+		// Select target.
+		wiz.cursor = wiz.target.Pos()
+		// Trigger cooldown.
+		wiz.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+			// Check for War Cry before chant.
+			if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(wiz.unit, []audio.Name{PhDown, PhUp, PhLeft, PhRight}, func() {
+					// Check for War Cry before spell release.
+					if wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) {
+						// Aim.
+						wiz.unit.LookAtObject(wiz.target)
+						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
+						wiz.spells.TeleportToTargetReady = false
+						ns.CastSpell(spell.TELEPORT_TO_TARGET, wiz.unit, wiz.cursor)
+						wiz.mana = wiz.mana - 20
+						// Global cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							wiz.spells.Ready = true
+						})
+						// Teleport To Target cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							wiz.spells.TeleportToTargetReady = true
 						})
 					}
 				})
