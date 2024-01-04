@@ -22,7 +22,7 @@ var ItemDropEnabled bool
 
 func init() {
 	checkTeams()
-	ItemDropEnabled = true
+	ItemDropEnabled = false
 	if TeamsEnabled {
 		BotRespawn = true
 		BotMana = true
@@ -107,8 +107,9 @@ func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 			// Set bot difficulty.
 		case "server hardcore bots":
 			BotDifficulty = 0
-			BotMana = false
-			ns.PrintStrToAll("Bots difficulty set to hardcore.")
+			//BotMana = false
+			//ns.PrintStrToAll("Bots difficulty set to hardcore.")
+			ns.PrintStrToAll("Hardcore mode is disabled this build due to instability.")
 			serverSettingSoundToAllPlayers := ns.Players()
 			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
 				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())

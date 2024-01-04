@@ -584,7 +584,7 @@ func (wiz *Wizard) findLoot() {
 		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
 			// Wands.
-			//"DeathRayWand",
+			"DeathRayWand",
 			"FireStormWand",
 			"LesserFireballWand",
 			"ForceWand",
@@ -596,7 +596,10 @@ func (wiz *Wizard) findLoot() {
 	for _, item := range weapons {
 		if wiz.unit.CanSee(item) {
 			wiz.unit.Pickup(item)
-			wiz.unit.Equip(wiz.unit.GetLastItem())
+			checkWand := wiz.unit.GetLastItem()
+			if !(ns.HasTypeName{"DeathRayWand"}.Matches(checkWand)) {
+				wiz.unit.Equip(wiz.unit.GetLastItem())
+			}
 		}
 	}
 

@@ -340,7 +340,7 @@ func (con *Conjurer) Update() {
 	}
 	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
 		if con.unit.CanSee(con.target) {
-			con.castFistOfVengeance()
+			//con.castFistOfVengeance()
 		}
 	}
 	if con.spells.Ready && con.unit.CanSee(con.target) {
@@ -358,8 +358,8 @@ func (con *Conjurer) Update() {
 		con.castProtectionFromShock()
 		con.castProtectionFromFire()
 		con.castProtectionFromPoison()
-		con.summonBomber1()
-		con.summonBomber2()
+		//con.summonBomber1()
+		//con.summonBomber2()
 	}
 }
 
