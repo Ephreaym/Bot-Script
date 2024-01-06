@@ -324,12 +324,14 @@ func (war *Warrior) GoToRedPotion() {
 		war.behaviour.Busy = true
 		war.unit.AggressionLevel(0.16)
 		NearestRedPotion := ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
-		if war.unit == war.team.TeamTank {
-			if war.unit.CanSee(NearestRedPotion) {
+		if NearestRedPotion != nil {
+			if war.unit == war.team.TeamTank {
+				if war.unit.CanSee(NearestRedPotion) {
+					war.unit.WalkTo(NearestRedPotion.Pos())
+				}
+			} else {
 				war.unit.WalkTo(NearestRedPotion.Pos())
 			}
-		} else {
-			war.unit.WalkTo(NearestRedPotion.Pos())
 		}
 	}
 }
