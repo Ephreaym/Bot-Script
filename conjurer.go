@@ -37,6 +37,7 @@ type Conjurer struct {
 		Ready                bool // Duration unknown.
 		InfravisionReady     bool // Duration is 30 seconds.
 		VampirismReady       bool // Duration is 30 seconds.
+		CounterspellReady    bool
 		BlinkReady           bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
 		FistOfVengeanceReady bool // No real cooldown, mana cost 60.
 		StunReady            bool // No real cooldown.
@@ -48,6 +49,7 @@ type Conjurer struct {
 		ProtFromShockReady   bool
 		PixieSwarmReady      bool
 		ForceOfNatureReady   bool
+		InversionReady       bool
 		ToxicCloudReady      bool // 60 mana.
 		SlowReady            bool
 		MeteorReady          bool
@@ -76,6 +78,8 @@ func (con *Conjurer) init() {
 	con.spells.ToxicCloudReady = true
 	// Defensive spells.
 	con.spells.BlinkReady = true
+	con.spells.CounterspellReady = true
+	con.spells.InversionReady = true
 	// Summons.
 	con.spells.SummonGhostReady = true
 	con.spells.SummonBomber1Ready = true
@@ -167,25 +171,26 @@ func (con *Conjurer) init() {
 }
 
 func (con *Conjurer) onHit() {
-	if con.mana <= 49 && !con.behaviour.Busy {
-		con.behaviour.Busy = true
+	if con.mana <= 20 && !con.behaviour.Busy {
 		con.GoToManaObelisk()
 	}
 }
 
 func (con *Conjurer) onEndOfWaypoint() {
 	con.behaviour.Busy = false
+	con.unit.AggressionLevel(0.83)
 	if con.mana <= 49 {
 		con.GoToManaObelisk()
 	} else {
 		if GameModeIsCTF {
 			con.team.CheckAttackOrDefend(con.unit)
 		} else {
-			con.unit.Hunt()
-
+			con.unit.WalkTo(con.target.Pos())
+			ns.NewTimer(ns.Seconds(2), func() {
+				con.unit.Hunt()
+			})
 		}
 	}
-
 	con.LookForNearbyItems()
 }
 
@@ -294,25 +299,31 @@ func (con *Conjurer) UsePotions() {
 }
 
 func (con *Conjurer) GoToManaObelisk() {
-	//wiz.unit.AggressionLevel(0.16)
-	ManaSource := ns.FindClosestObject(con.unit, ns.HasTypeName{
-		"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
-	})
-	con.unit.WalkTo(ManaSource.Pos())
+	if !con.behaviour.Busy {
+		con.behaviour.Busy = true
+		con.unit.AggressionLevel(0.16)
+		NearestObeliskWithMana := ns.FindClosestObjectIn(con.unit, ns.Objects(AllManaObelisksOnMap),
+			ns.ObjCondFunc(func(it ns.Obj) bool {
+				return it.CurrentMana() >= 10
+			}),
+		)
+
+		if con.unit == con.team.TeamTank {
+			if con.unit.CanSee(NearestObeliskWithMana) {
+				con.unit.WalkTo(NearestObeliskWithMana.Pos())
+			}
+		} else {
+			con.unit.WalkTo(NearestObeliskWithMana.Pos())
+		}
+	}
 }
 
 func (con *Conjurer) RestoreMana() {
-	if con.mana < 150 {
-		ManaSource := ns.FindAllObjects(
-			ns.HasTypeName{
-				"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12",
-			},
-			ns.InCirclef{Center: con.unit, R: 50},
-		)
-		for i := 0; i < len(ManaSource); i++ {
-			if ManaSource[i].CurrentMana() > 0 && con.unit.CanSee(ManaSource[i]) {
+	if con.mana < 125 {
+		for i := 0; i < len(AllManaObelisksOnMap); i++ {
+			if AllManaObelisksOnMap[i].CurrentMana() > 0 && con.unit.CanSee(AllManaObelisksOnMap[i]) && (ns.InCirclef{Center: con.unit, R: 50}).Matches(AllManaObelisksOnMap[i]) {
 				con.mana = con.mana + 1
-				ManaSource[i].SetMana(ManaSource[i].CurrentMana() - 1)
+				AllManaObelisksOnMap[i].SetMana(AllManaObelisksOnMap[i].CurrentMana() - 1)
 				con.RestoreManaSound()
 			}
 		}
@@ -329,7 +340,31 @@ func (con *Conjurer) RestoreManaSound() {
 	}
 }
 
+func (con *Conjurer) checkForMissiles() {
+	// Maybe need to add a ns.hasteam condition. Not sure yet.
+	if sp2 := ns.FindClosestObject(con.unit, ns.HasTypeName{"DeathBall"}, ns.InCirclef{Center: con.unit, R: 500}); sp2 != nil {
+		{
+			arr2 := ns.FindAllObjects(
+				ns.HasTypeName{"NewPlayer", "NPC"},
+				ns.HasTeam{con.team.Enemy.Team()},
+			)
+			for i := 0; i < len(arr2); i++ {
+				if sp2.HasOwner(arr2[i]) {
+					con.castCounterspellAtForceOfNature()
+				}
+			}
+		}
+	} else {
+		if sp := ns.FindClosestObject(con.unit, ns.HasClass(object.ClassMissile), ns.InCirclef{Center: con.unit, R: 500}); sp != nil {
+			if sp.HasOwner(con.target) {
+				con.castInversion()
+			}
+		}
+	}
+}
+
 func (con *Conjurer) Update() {
+	con.checkForMissiles()
 	con.UsePotions()
 	con.RestoreMana()
 	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
@@ -736,6 +771,40 @@ func (con *Conjurer) castForceOfNature() {
 	}
 }
 
+func (con *Conjurer) castInversion() {
+	// Check if cooldowns are ready.
+	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InversionReady {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, FPhUpRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.InversionReady = false
+						con.mana = con.mana - 10
+						ns.CastSpell(spell.INVERSION, con.unit, con.unit)
+						// Global cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							con.spells.Ready = true
+						})
+						// Inversion cooldown.
+						ns.NewTimer(ns.Seconds(1), func() {
+							con.spells.InversionReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
 func (con *Conjurer) castBlink() {
 	// Check if cooldowns are ready.
 	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != con.team.TeamTank {
@@ -1071,6 +1140,40 @@ func (con *Conjurer) summonBomber1() {
 							})
 						}
 					})
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castCounterspellAtForceOfNature() {
+	// Check if cooldowns are ready.
+	if con.mana >= 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.CounterspellReady {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhDown, PhDownRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.spells.CounterspellReady = false
+						con.mana = con.mana - 20
+						ns.CastSpell(spell.COUNTERSPELL, con.unit, con.unit.Pos())
+						// Global cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							con.spells.Ready = true
+						})
+						// Haste cooldown.
+						ns.NewTimer(ns.Seconds(20), func() {
+							con.spells.CounterspellReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
 				})
 			}
 		})

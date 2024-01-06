@@ -220,8 +220,7 @@ func (wiz *Wizard) WeaponPreference() {
 }
 
 func (wiz *Wizard) onHit() {
-	if wiz.mana <= 49 && !wiz.behaviour.Busy {
-		wiz.behaviour.Busy = true
+	if wiz.mana <= 20 && !wiz.behaviour.Busy {
 		wiz.GoToManaObelisk()
 	}
 }

@@ -46,7 +46,7 @@ func init() {
 		ns.OnChat(onCommand)
 		NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
 	} else {
-		ns.PrintStrToAll("Bot script installed successfully!")
+		ns.PrintStrToAll("Bot script installed successfully.")
 		ns.PrintStrToAll("Bot script is disabled when playing without teams.")
 	}
 }
@@ -284,13 +284,13 @@ func CheckIfGameModeIsCTF() {
 	if Flags != nil {
 		GameModeIsCTF = true
 		GameModeIsTeamArena = false
-		ns.PrintStrToAll("Gamemode: Capture The Flag!")
+		ns.PrintStrToAll("Gamemode: capture the flag.")
 	} else {
 		GameModeIsCTF = false
 		GameModeIsTeamArena = true
-		ns.PrintStrToAll("Gamemode: Arena!")
+		ns.PrintStrToAll("Gamemode: arena.")
 	}
-	ns.PrintStrToAll("Bot script installed successfully!")
+	ns.PrintStrToAll("Bot script installed successfully.")
 }
 
 // Dialog options
