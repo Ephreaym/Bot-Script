@@ -67,6 +67,9 @@ type Warrior struct {
 		SwitchMainWeapon  bool
 		Busy              bool
 	}
+	inventory struct {
+		crown bool
+	}
 	reactionTime int
 }
 
@@ -84,6 +87,7 @@ func (war *Warrior) init() {
 	war.abilities.BomberStunActive = false
 	war.behaviour.Busy = false
 	// Inventory
+	war.inventory.crown = false
 	// Reset abilities WarBot.
 	war.abilities.isAlive = true
 	war.abilities.Ready = true
@@ -174,40 +178,16 @@ func (war *Warrior) init() {
 }
 
 func (war *Warrior) onChangeFocus() {
-	//if !war.behaviour.lookingForHealing {
-	//war.unit.Chat("onChangeFocus")
-	//}
 	war.useHarpoon()
-	if !war.abilities.HarpoonFlying {
-		war.useBerserkerCharge()
-		war.useWarCry()
-	}
-
+	war.useBerserkerCharge()
+	war.useWarCry()
 }
 
 func (war *Warrior) onLookingForEnemy() {
-
-	//if !war.behaviour.lookingForHealing {
-	//war.unit.Chat("onLookingForEnemy")
-	//}
 }
 
 func (war *Warrior) onEnemyHeard() {
-	//if !war.behaviour.lookingForHealing && !war.behaviour.attacking {
-	//war.unit.Chat("onEnemyHeard")
-	//war.behaviour.attacking = true
-	//war.WarBotDetectEnemy()
-	//if war.behaviour.listening {
-	//	war.behaviour.listening = false
-	//	war.unit.Chat("Wiz06a:Guard2Listen")
-	//	war.unit.Guard(war.target.Pos(), war.target.Pos(), 300)
-	//	ns.NewTimer(ns.Seconds(10), func() {
-	//		war.behaviour.listening = true
-	//	})
-	//}
-	//}
 
-	// WORKING SCRIPT. TEMP DISABLE.
 	war.ThrowChakram()
 }
 
@@ -242,6 +222,15 @@ func (war *Warrior) onCollide() {
 				war.abilities.BomberStunActive = false
 			})
 		}
+
+		if ns.GetCaller() == war.target && !war.target.Flags().Has(object.FlagDead) {
+			targettime := ns.GetCaller()
+			ns.NewTimer(ns.Frames(war.reactionTime*2), func() {
+				if targettime == war.target && !war.target.Flags().Has(object.FlagDead) {
+					war.useBerserkerCharge()
+				}
+			})
+		}
 		if war.abilities.BerserkerChargeActive && war.abilities.isAlive && !ns.GetCaller().Flags().Has(object.FlagDead) {
 			if ns.GetCaller() != nil && !ns.GetCaller().Flags().Has(object.FlagDead) && war.abilities.isAlive && ns.GetCaller().HasClass(class.PLAYER) || ns.GetCaller().HasClass(class.MONSTER) {
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
@@ -257,7 +246,6 @@ func (war *Warrior) onCollide() {
 					war.abilities.BerserkerStunActive = false
 				})
 				war.StopBerserkLoop()
-			} else {
 			}
 		}
 	}
@@ -266,10 +254,8 @@ func (war *Warrior) onCollide() {
 func (war *Warrior) onEnemySighted() {
 	war.target = ns.GetCaller()
 	war.useHarpoon()
-	if !war.abilities.HarpoonFlying {
-		war.useBerserkerCharge()
-		war.useWarCry()
-	}
+	war.useBerserkerCharge()
+	war.useWarCry()
 	war.ThrowChakram()
 }
 
@@ -535,8 +521,34 @@ func (war *Warrior) WeaponPreference() {
 	})
 }
 
+func (war *Warrior) pickupCrown() {
+	war.inventory.crown = true
+	war.moveCrown()
+}
+
+func (war *Warrior) moveCrown() {
+	if war.inventory.crown {
+
+	}
+}
+
 func (war *Warrior) findLoot() {
 	const dist = 75
+	if GameModeIsTeamKOTR {
+		crown := ns.FindAllObjects(
+			ns.InCirclef{Center: war.unit, R: dist},
+			ns.HasTypeName{
+				"Crown",
+			},
+			ns.HasTeam{war.unit.Team()},
+		)
+		for _, item := range crown {
+			if war.unit.CanSee(item) {
+				war.pickupCrown()
+			}
+		}
+	}
+
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
@@ -622,28 +634,7 @@ func (war *Warrior) useBerserkerCharge() {
 	if !war.abilities.HarpoonFlying && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && war.unit != war.team.TeamTank && !war.target.HasEnchant(enchant.INVULNERABLE) {
 		// Select target.
 		war.cursor = war.target.Pos()
-
-		//
 		war.vec = war.unit.Pos().Sub(war.cursor).Normalize()
-
-		//
-
-		// new idea for war loop
-		//war.unit.LookAtObject(war.target)
-		//angle := war.unit.Direction()
-		//war.unit.Pos().Sub(RedBase.Pos()).Len() ????
-		//war.unit.PushTo(angle, -12) // I know I can't do this because angle isn't a proper location. But you get the idea.
-		//
-
-		//war.berserkcursor = ns.CreateObject("ArmBone", war.target.Pos())
-		//war.berserkcursor.FlagsEnable(object.FlagOwnerVisible)
-		//war.berserkcursor.SetOwner(war.unit)
-		//war.berserkcursor.FlagsEnable(object.FlagNoCollideOwner)
-		//war.berserkcursor.OnEvent(ns.EventCollision, func() {
-		//	if ns.GetCaller().HasClass(class.IMMOBILE) && !ns.GetCaller().HasClass(class.DOOR) && !ns.GetCaller().HasClass(class.FIRE) {
-		//		war.berserkcursor.Pause(ns.Seconds(3))
-		//	}
-		//})
 		// Trigger cooldown.
 		war.abilities.Ready = false
 		war.abilities.BerserkerChargeReady = false
@@ -701,11 +692,11 @@ func (war *Warrior) BerserkLoop() {
 
 func (war *Warrior) useWarCry() {
 	// Check if cooldown is war.abilities.Ready.
-	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive {
-		// Trigger global cooldown.
-		war.abilities.Ready = false
+	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive && !war.abilities.HarpoonFlying {
 		if war.target.MaxHealth() == 150 {
 		} else {
+			// Trigger global cooldown.
+			war.abilities.Ready = false
 			war.abilities.WarCryReady = false
 			// Check reaction time based on difficulty setting.
 			ns.NewTimer(ns.Frames(war.reactionTime), func() {
@@ -783,7 +774,7 @@ func (war *Warrior) useEyeOfTheWolf() {
 // ------------------ Harpoon ---------------- //
 
 func (war *Warrior) useHarpoon() {
-	if war.abilities.HarpoonReady {
+	if war.abilities.HarpoonReady && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.abilities.BerserkerChargeActive {
 		// Create objects, set properties and shoot harpoon.
 		war.abilities.HarpoonTarget = war.target
 		war.abilities.HarpoonReady = false

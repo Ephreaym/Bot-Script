@@ -220,8 +220,7 @@ func (wiz *Wizard) WeaponPreference() {
 }
 
 func (wiz *Wizard) onHit() {
-	if wiz.mana <= 49 && !wiz.behaviour.Busy {
-		wiz.behaviour.Busy = true
+	if wiz.mana <= 20 && !wiz.behaviour.Busy {
 		wiz.GoToManaObelisk()
 	}
 }
@@ -584,7 +583,7 @@ func (wiz *Wizard) findLoot() {
 		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
 			// Wands.
-			//"DeathRayWand",
+			"DeathRayWand",
 			"FireStormWand",
 			"LesserFireballWand",
 			"ForceWand",
@@ -597,6 +596,19 @@ func (wiz *Wizard) findLoot() {
 		if wiz.unit.CanSee(item) {
 			wiz.unit.Pickup(item)
 			wiz.unit.Equip(wiz.unit.GetLastItem())
+		}
+	}
+
+	DeathRayWand := ns.FindAllObjects(
+		ns.InCirclef{Center: wiz.unit, R: dist},
+		ns.HasTypeName{
+			// Wands.
+			"DeathRayWand",
+		},
+	)
+	for _, item := range DeathRayWand {
+		if wiz.unit.CanSee(item) {
+			wiz.unit.Pickup(item)
 		}
 	}
 

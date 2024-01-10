@@ -7,6 +7,7 @@ import (
 
 var InitLoadComplete bool
 var GameModeIsCTF bool
+var GameModeIsTeamKOTR bool
 var GameModeIsTeamArena bool
 var BotDifficulty int
 var BotRespawn bool
@@ -19,19 +20,22 @@ var BlueFlag ns.Obj
 var RedFlag ns.Obj
 var TeamsEnabled bool
 var ItemDropEnabled bool
+var Crowns []ns.Obj
+var CrownRed ns.Obj
+var CrownBlue ns.Obj
 
 func init() {
 	checkTeams()
-	ItemDropEnabled = false
+	ItemDropEnabled = true
 	if TeamsEnabled {
 		BotRespawn = true
 		BotMana = true
 		InitLoadComplete = false
 
 		ns.NewTimer(ns.Frames(10), func() {
-			CheckIfGameModeIsCTF()
+			getGameMode()
 			AllManaObelisksOnMap = ns.FindAllObjects(
-				ns.HasTypeName{"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12"},
+				ns.HasTypeName{"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12", "LOTDManaObelisk"},
 			)
 		})
 		ns.NewTimer(ns.Frames(20), func() {
@@ -46,7 +50,7 @@ func init() {
 		ns.OnChat(onCommand)
 		NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
 	} else {
-		ns.PrintStrToAll("Bot script installed successfully!")
+		ns.PrintStrToAll("Bot script installed successfully.")
 		ns.PrintStrToAll("Bot script is disabled when playing without teams.")
 	}
 }
@@ -107,8 +111,9 @@ func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 			// Set bot difficulty.
 		case "server hardcore bots":
 			BotDifficulty = 0
-			BotMana = false
-			ns.PrintStrToAll("Bots difficulty set to hardcore.")
+			//BotMana = false
+			//ns.PrintStrToAll("Bots difficulty set to hardcore.")
+			ns.PrintStrToAll("Hardcore mode is disabled this build due to instability.")
 			serverSettingSoundToAllPlayers := ns.Players()
 			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
 				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
@@ -278,18 +283,26 @@ func OnFrame() {
 	Blue.PostUpdate()
 }
 
-func CheckIfGameModeIsCTF() {
+func getGameMode() {
 	Flags := ns.FindAllObjects(ns.HasTypeName{"Flag"})
+	Crowns = ns.FindAllObjects(ns.HasTypeName{"Crown"})
 	if Flags != nil {
+		GameModeIsTeamKOTR = false
 		GameModeIsCTF = true
 		GameModeIsTeamArena = false
-		ns.PrintStrToAll("Gamemode: Capture The Flag!")
+		ns.PrintStrToAll("Gamemode: capture the flag.")
+	} else if Crowns != nil {
+		GameModeIsTeamKOTR = true
+		GameModeIsCTF = false
+		GameModeIsTeamArena = false
+		ns.PrintStrToAll("Gamemode: king of the realm.")
 	} else {
+		GameModeIsTeamKOTR = false
 		GameModeIsCTF = false
 		GameModeIsTeamArena = true
-		ns.PrintStrToAll("Gamemode: Arena!")
+		ns.PrintStrToAll("Gamemode: arena.")
 	}
-	ns.PrintStrToAll("Bot script installed successfully!")
+	ns.PrintStrToAll("Bot script installed successfully.")
 }
 
 // Dialog options
