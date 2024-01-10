@@ -18,29 +18,29 @@ func init() {
 		const (
 			// Team red.
 			// Warriors.
-			redwarriors01 = 0
+			redwarriors01 = 1
 			redwarriors02 = 0
 			redwarriors03 = 0
 			// Conjurers.
-			redconjurers01 = 0
+			redconjurers01 = 1
 			redconjurers02 = 0
 			redconjurers03 = 0
 			// Wizards.
-			redwizards01 = 0
+			redwizards01 = 1
 			redwizards02 = 0
 			redwizards03 = 0
 
 			// Team Blue.
 			// Warriors.
-			bluewarriors01 = 0
+			bluewarriors01 = 1
 			bluewarriors02 = 0
 			bluewarriors03 = 0
 			// Conjurers.
-			blueconjurers01 = 0
+			blueconjurers01 = 1
 			blueconjurers02 = 0
 			blueconjurers03 = 0
 			// Wizards.
-			bluewizards01 = 0
+			bluewizards01 = 1
 			bluewizards02 = 0
 			bluewizards03 = 0
 		)
