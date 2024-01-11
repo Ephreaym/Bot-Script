@@ -42,9 +42,6 @@ type Conjurer struct {
 		BlinkReady           bool // No real cooldown, "cooldown" implemented for balance reasons. TODO: Make random.
 		FistOfVengeanceReady bool // No real cooldown, mana cost 60.
 		StunReady            bool // No real cooldown.
-		SummonBomber1Ready   bool // No real cooldown.
-		SummonBomber2Ready   bool
-		SummonGhostReady     bool
 		ProtFromFireReady    bool // Duration is 60 seconds.
 		ProtFromPoisonReady  bool
 		ProtFromShockReady   bool
@@ -58,9 +55,9 @@ type Conjurer struct {
 		BurnReady            bool
 	}
 	summons struct {
-		CreatureCage  int
-		ExcludeSummon []ns.Obj
-		BomberCount   int
+		SummonCreatureReady bool
+		CreatureCage        int
+		BomberCount         int
 	}
 	audio struct {
 		ManaRestoreSound bool
@@ -91,11 +88,9 @@ func (con *Conjurer) init() {
 	con.spells.InversionReady = true
 	con.spells.LesserHealReady = true
 	// Summons.
+	con.summons.SummonCreatureReady = true
 	con.summons.CreatureCage = 0
 	con.summons.BomberCount = 0
-	con.spells.SummonGhostReady = true
-	con.spells.SummonBomber1Ready = true
-	con.spells.SummonBomber2Ready = true
 	// Buff spells.
 	con.spells.InfravisionReady = true
 	con.spells.VampirismReady = true
@@ -180,16 +175,6 @@ func (con *Conjurer) init() {
 	con.WeaponPreference()
 	ns.OnChat(con.onConCommand)
 	con.findLoot()
-	//
-	//con.checkSummonCount()
-	//con.summontest()
-}
-
-func (con *Conjurer) summontest() {
-	ns.CastSpell(spell.SUMMON_BAT, con.unit, con.unit)
-	ns.NewTimer(ns.Seconds(20), func() {
-		con.summontest()
-	})
 }
 
 func (con *Conjurer) onHit() {
@@ -199,59 +184,51 @@ func (con *Conjurer) onHit() {
 }
 
 // Checks the ammount of summons active for the Conjurer bot.
-func (con *Conjurer) checkSummonCount() {
+func (con *Conjurer) checkCreatureCage() {
 	// Get all active sommons that belong to the Conjuer bot.
-	allActiveSummons := ns.FindAllObjects(ns.HasClass(object.ClassMonster), ns.ObjCondFunc(func(it ns.Obj) bool {
-		return it.HasOwner(con.unit)
-	}))
-	for _, summon := range allActiveSummons {
-		if summon.HasSubclass(subclass.SMALL_MONSTER) {
-			// if summon != in ExcludeSummon[]{
-			// Add the summon to the Creature Cage.
-			con.summons.CreatureCage = con.summons.CreatureCage + 1
-			// Track if the summon is a bomber.
-			if summon.HasSubclass(subclass.BOMBER) {
-				con.summons.BomberCount = con.summons.BomberCount + 1
+	if con.summons.CreatureCage == 4 {
+	} else {
+		allActiveSummons := ns.FindAllObjects(ns.HasClass(object.ClassMonster), ns.ObjCondFunc(func(it ns.Obj) bool {
+			if it != con.unit || !it.HasTeam(con.unit.Team()) {
+				return it.HasOwner(con.unit)
+			} else {
+				return false
 			}
-			// Add summon to ExcludeSummon array to prevent it from getting counted twice.
-			con.summons.ExcludeSummon = append(con.summons.ExcludeSummon, summon)
-			ns.PrintStrToAll("+1 to CreatureCage")
-			summon.OnEvent(ns.EventDeath, func() {
-				// Remove summon from the Creature Cage on death.
-				ns.PrintStrToAll("-1 to CreatureCage")
-				con.summons.CreatureCage = con.summons.CreatureCage - 1
+		}))
+		con.summons.CreatureCage = 0
+		for _, summon := range allActiveSummons {
+			if summon.HasSubclass(subclass.SMALL_MONSTER) {
+				// Add the summon to the Creature Cage.
+				con.summons.CreatureCage = con.summons.CreatureCage + 1
 				// Track if the summon is a bomber.
 				if summon.HasSubclass(subclass.BOMBER) {
-					con.summons.BomberCount = con.summons.BomberCount + -1
+					con.summons.BomberCount = con.summons.BomberCount + 1
 				}
-			})
-			// }
-		}
-		if summon.HasSubclass(subclass.MEDIUM_MONSTER) {
-			// if summon != in ExcludeSummon[]{
-			con.summons.CreatureCage = con.summons.CreatureCage + 2
-			con.summons.ExcludeSummon = append(con.summons.ExcludeSummon, summon)
-			ns.PrintStrToAll("+2 to CreatureCage")
-			summon.OnEvent(ns.EventDeath, func() {
-				ns.PrintStrToAll("-2 to CreatureCage")
-				con.summons.CreatureCage = con.summons.CreatureCage - 2
-			})
-			// }
-		}
-		if summon.HasSubclass(subclass.LARGE_MONSTER) {
-			// if summon != in ExcludeSummon[]{
-			con.summons.CreatureCage = con.summons.CreatureCage + 4
-			con.summons.ExcludeSummon = append(con.summons.ExcludeSummon, summon)
-			ns.PrintStrToAll("+4 to CreatureCage")
-			summon.OnEvent(ns.EventDeath, func() {
-				ns.PrintStrToAll("-4 to CreatureCage")
-				con.summons.CreatureCage = con.summons.CreatureCage - 4
-			})
-			// }
+				summon.OnEvent(ns.EventDeath, func() {
+					// Remove summon from the Creature Cage on death.
+					con.summons.CreatureCage = con.summons.CreatureCage - 1
+					// Track if the summon is a bomber.
+					if summon.HasSubclass(subclass.BOMBER) {
+						con.summons.BomberCount = con.summons.BomberCount + -1
+					}
+				})
+			}
+			if summon.HasSubclass(subclass.MEDIUM_MONSTER) {
+				con.summons.CreatureCage = con.summons.CreatureCage + 2
+				summon.OnEvent(ns.EventDeath, func() {
+					con.summons.CreatureCage = con.summons.CreatureCage - 2
+				})
+			}
+			if summon.HasSubclass(subclass.LARGE_MONSTER) {
+				con.summons.CreatureCage = con.summons.CreatureCage + 4
+				summon.OnEvent(ns.EventDeath, func() {
+					con.summons.CreatureCage = con.summons.CreatureCage - 4
+				})
+			}
 		}
 	}
 	ns.NewTimer(ns.Seconds(1), func() {
-		con.checkSummonCount()
+		con.checkCreatureCage()
 	})
 }
 
@@ -470,11 +447,145 @@ func (con *Conjurer) Update() {
 	}
 	if !con.unit.CanSee(con.target) && con.spells.Ready {
 		con.castVampirism()
-		con.castProtectionFromShock()
-		con.castProtectionFromFire()
-		con.castProtectionFromPoison()
-		//con.summonBomber1()
-		//con.summonBomber2()
+		if con.mana >= 85 {
+			con.summonRandomCreature()
+			con.castProtectionFromShock()
+			con.castProtectionFromFire()
+			con.castProtectionFromPoison()
+		}
+	}
+	if !con.unit.HasEnchant(enchant.VAMPIRISM) || !con.unit.HasEnchant(enchant.PROTECT_FROM_POISON) || !con.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) || !con.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) {
+		con.GoToManaObelisk()
+	}
+}
+
+func (con *Conjurer) summonRandomCreature() {
+	random := ns.Random(1, 2)
+	if random == 1 {
+		con.summonRandomSmallCreature()
+	}
+	if random == 2 {
+		con.summonRandomMediumCreature()
+	}
+	if random == 3 {
+		con.summonRandomLargeCreature()
+	}
+}
+
+func (con *Conjurer) summonRandomLargeCreature() {
+	random := ns.Random(1, 6)
+	if random == 1 {
+		con.castSummonMechanicalGolem()
+	}
+	if random == 2 {
+		con.castSummonStoneGolem()
+	}
+	if random == 3 {
+		con.castSummonCarnivorousPlant()
+	}
+	if random == 4 {
+		con.castSummonWillOWisp()
+	}
+	if random == 5 {
+		con.castSummonMimic()
+	}
+	if random == 6 {
+		con.castSummonBeholder()
+	}
+}
+
+func (con *Conjurer) summonRandomMediumCreature() {
+	random := ns.Random(1, 20)
+	if random == 1 {
+		con.castSummonBlackBear()
+	}
+	if random == 2 {
+		con.castSummonOgre()
+	}
+	if random == 3 {
+		con.castSummonBlackWolf()
+	}
+	if random == 4 {
+		con.castSummonWhiteWolf()
+	}
+	if random == 5 {
+		con.castSummonWolf()
+	}
+	if random == 6 {
+		con.castSummonGargoyle()
+	}
+	if random == 7 {
+		con.castSummonOgress()
+	}
+	if random == 8 {
+		con.castSummonOgreLord()
+	}
+	if random == 9 {
+		con.castSummonZombie()
+	}
+	if random == 10 {
+		con.castSummonVileZombie()
+	}
+	if random == 11 {
+		con.castSummonEmberDemon()
+	}
+	if random == 12 {
+		con.castSummonShade()
+	}
+	if random == 13 {
+		con.castSummonLargeCaveSpider()
+	}
+	if random == 14 {
+		con.castSummonGrizzlyBear()
+	}
+	if random == 15 {
+		con.castSummonSkeleton()
+	}
+	if random == 16 {
+		con.castSummonSkeletonLord()
+	}
+	if random == 17 {
+		con.castSummonScorpion()
+	}
+	if random == 18 {
+		con.castSummonSpider()
+	}
+	if random == 19 {
+		con.castSummonSpittingSpider()
+	}
+	if random == 20 {
+		con.castSummonTroll()
+	}
+}
+
+func (con *Conjurer) summonRandomSmallCreature() {
+	random := ns.Random(1, 9)
+	if random == 1 {
+		con.castSummonWasp()
+	}
+	if random == 2 {
+		con.castSummonUrchin()
+	}
+	if random == 3 {
+		con.castSummonSmallSpider()
+	}
+	if random == 4 {
+		con.castSummonSmallCaveSpider()
+	}
+	if random == 5 {
+		con.castSummonMechanicalFlyer()
+	}
+	if random == 6 {
+		con.castSummonImp()
+	}
+	if random == 7 {
+		con.castSummonGiantLeech()
+	}
+	if random == 8 {
+		con.castSummonBat()
+	}
+	if random == 9 {
+		con.castSummonGhost()
 	}
 }
 
@@ -703,6 +814,10 @@ func (con *Conjurer) castVampirism() {
 						})
 					}
 				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
 			}
 		})
 	}
@@ -731,6 +846,10 @@ func (con *Conjurer) castProtectionFromPoison() {
 						})
 					}
 				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
 			}
 		})
 	}
@@ -758,6 +877,10 @@ func (con *Conjurer) castPixieSwarm() {
 							con.spells.PixieSwarmReady = true
 						})
 					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
 				})
 			}
 		})
@@ -792,6 +915,10 @@ func (con *Conjurer) castFistOfVengeance() {
 						})
 					}
 				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
 			}
 		})
 	}
@@ -815,7 +942,7 @@ func (con *Conjurer) castForceOfNature() {
 						con.unit.LookAtObject(con.target)
 						con.unit.Pause(ns.Frames(30))
 						con.mana = con.mana - 60
-						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target)
+						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target.Pos())
 						// Global cooldown.
 						con.spells.Ready = true
 						// Force of Nature cooldown.
@@ -823,6 +950,10 @@ func (con *Conjurer) castForceOfNature() {
 							con.spells.ForceOfNatureReady = true
 						})
 					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
 				})
 			}
 		})
@@ -1030,6 +1161,10 @@ func (con *Conjurer) castStun() {
 						})
 					}
 				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
 			}
 		})
 	}
@@ -1062,6 +1197,10 @@ func (con *Conjurer) castToxicCloud() {
 							con.spells.ToxicCloudReady = true
 						})
 					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
 				})
 			}
 		})
@@ -1168,6 +1307,10 @@ func (con *Conjurer) castMeteor() {
 						})
 					}
 				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
 			}
 		})
 	}
@@ -1196,41 +1339,18 @@ func (con *Conjurer) castInfravision() {
 						})
 					}
 				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
 			}
 		})
 	}
 }
 
-//func (con *Conjurer) summonGhost() {
-//	// Check if cooldowns are ready.
-//	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonGhostReady {
-//		// Trigger cooldown.
-//		con.spells.Ready = false
-//		// Check reaction time based on difficulty setting.
-//		ns.NewTimer(ns.Frames(con.reactionTime), func() {
-//			// Check for War Cry before chant.
-//			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-//				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
-//					// Check for War Cry before spell release.
-//					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-//						con.spells.SummonGhostReady = false
-//						ns.CastSpell(spell.SUMMON_GHOST, con.unit, con.unit)
-//						// Global cooldown.
-//						con.spells.Ready = true
-//						// Summon Ghost cooldown.
-//						ns.NewTimer(ns.Seconds(5), func() {
-//							con.spells.SummonGhostReady = true
-//						})
-//					}
-//				})
-//			}
-//		})
-//	}
-//}
-
 func (con *Conjurer) summonBomber1() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber1Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.BomberCount < 2 {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1259,7 +1379,6 @@ func (con *Conjurer) summonBomber1() {
 													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															con.spells.SummonBomber1Ready = false
 															con.bomber1 = ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", con.bomber1)
 															con.bomber1.SetOwner(con.unit)
@@ -1267,7 +1386,6 @@ func (con *Conjurer) summonBomber1() {
 															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	con.spells.SummonBomber1Ready = true
 																})
 															})
 															con.bomber1.Follow(con.unit)
@@ -1317,7 +1435,7 @@ func (con *Conjurer) summonBomber1() {
 													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															con.spells.SummonBomber1Ready = false
+
 															con.bomber1 = ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", con.bomber1)
 															con.bomber1.SetOwner(con.unit)
@@ -1325,7 +1443,7 @@ func (con *Conjurer) summonBomber1() {
 															con.bomber1.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	con.spells.SummonBomber1Ready = true
+
 																})
 															})
 															con.bomber1.Follow(con.unit)
@@ -1351,6 +1469,10 @@ func (con *Conjurer) summonBomber1() {
 							})
 						}
 					})
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
 				})
 			}
 		})
@@ -1393,7 +1515,7 @@ func (con *Conjurer) castCounterspellAtForceOfNature() {
 
 func (con *Conjurer) summonBomber2() {
 	// Check if cooldowns are ready.
-	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.SummonBomber2Ready {
+	if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.BomberCount < 2 {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1422,7 +1544,7 @@ func (con *Conjurer) summonBomber2() {
 													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															con.spells.SummonBomber2Ready = false
+
 															con.bomber2 = ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", con.bomber2)
 															con.bomber2.SetOwner(con.unit)
@@ -1430,7 +1552,7 @@ func (con *Conjurer) summonBomber2() {
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	con.spells.SummonBomber2Ready = true
+
 																})
 															})
 															con.bomber2.Follow(con.unit)
@@ -1480,7 +1602,7 @@ func (con *Conjurer) summonBomber2() {
 													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-															con.spells.SummonBomber2Ready = false
+
 															con.bomber2 = ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", con.bomber2)
 															con.bomber2.SetOwner(con.unit)
@@ -1488,7 +1610,7 @@ func (con *Conjurer) summonBomber2() {
 															con.bomber2.OnEvent(ns.ObjectEvent(ns.EventDeath), func() {
 																// Summon Bomber cooldown.
 																ns.NewTimer(ns.Seconds(10), func() {
-																	con.spells.SummonBomber2Ready = true
+
 																})
 															})
 															con.bomber2.Follow(con.unit)
@@ -1514,6 +1636,10 @@ func (con *Conjurer) summonBomber2() {
 							})
 						}
 					})
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
 				})
 			}
 		})
@@ -1551,7 +1677,12 @@ func (con *Conjurer) onConCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string
 									})
 								}
 							})
+						} else {
+							ns.NewTimer(ns.Frames(con.reactionTime), func() {
+								con.spells.Ready = true
+							})
 						}
+
 					})
 				}
 			}
@@ -1575,10 +1706,1171 @@ func (con *Conjurer) onConCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string
 								})
 							}
 						})
+					} else {
+						ns.NewTimer(ns.Frames(con.reactionTime), func() {
+							con.spells.Ready = true
+						})
 					}
 				})
 			}
 		}
 	}
 	return msg
+}
+
+// ---------------- summon creatures ----------------- //
+
+func (con *Conjurer) castSummonGhost() {
+	// Check if cooldowns are ready.
+	if con.mana >= 15 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_GHOST, con.unit, con.unit)
+						con.mana = con.mana - 15
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonBat() {
+	// Check if cooldowns are ready.
+	if con.mana >= 15 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDownLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_BAT, con.unit, con.unit)
+						con.mana = con.mana - 15
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonUrchin() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_URCHIN, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonGiantLeech() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_GIANT_LEECH, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonImp() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDownLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_IMP, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonMechanicalFlyer() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_MECHANICAL_FLYER, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonWasp() {
+	// Check if cooldowns are ready.
+	if con.mana >= 15 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDownRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_WASP, con.unit, con.unit)
+						con.mana = con.mana - 15
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonSmallSpider() {
+	// Check if cooldowns are ready.
+	if con.mana >= 15 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUpRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SMALL_SPIDER, con.unit, con.unit)
+						con.mana = con.mana - 15
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonSmallCaveSpider() {
+	// Check if cooldowns are ready.
+	if con.mana >= 15 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 3 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SMALL_ALBINO_SPIDER, con.unit, con.unit)
+						con.mana = con.mana - 15
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(2), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonVileZombie() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhUpLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_VILE_ZOMBIE, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonZombie() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhDownRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_ZOMBIE, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonWhiteWolf() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhLeft, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_WHITE_WOLF, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonWolf() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_WOLF, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonTroll() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhUpLeft, PhDownLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_TROLL, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonSpittingSpider() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUpLeft, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SPITTING_SPIDER, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonSpider() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUpLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SPIDER, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonSkeletonLord() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown, PhUpRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SKELETON_LORD, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonSkeleton() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SKELETON, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonShade() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SHADE, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonScorpion() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_SCORPION, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonOgress() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhUpLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_OGRE, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonOgreLord() {
+	// Check if cooldowns are ready.
+	if con.mana >= 85 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhUpLeft, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_OGRE_WARLORD, con.unit, con.unit)
+						con.mana = con.mana - 85
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonOgre() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDownLeft, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_OGRE_BRUTE, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonGrizzlyBear() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDownRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_BEAR, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonGargoyle() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDownLeft, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_EVIL_CHERUB, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonLargeCaveSpider() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhUpRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_ALBINO_SPIDER, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonBlackWolf() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhLeft, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_BLACK_WOLF, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonBlackBear() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDownRight, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_BLACK_BEAR, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonEmberDemon() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage <= 2 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown, PhUp}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_EMBER_DEMON, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(7), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonWillOWisp() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage == 0 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_WILLOWISP, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(13), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonMimic() {
+	// Check if cooldowns are ready.
+	if con.mana >= 85 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage == 0 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown, PhRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_MIMIC, con.unit, con.unit)
+						con.mana = con.mana - 85
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(13), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonMechanicalGolem() {
+	// Check if cooldowns are ready.
+	if con.mana >= 85 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage == 0 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown, PhLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_MECHANICAL_GOLEM, con.unit, con.unit)
+						con.mana = con.mana - 85
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(13), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonCarnivorousPlant() {
+	// Check if cooldowns are ready.
+	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage == 0 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhUp, PhRight}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_CARNIVOROUS_PLANT, con.unit, con.unit)
+						con.mana = con.mana - 30
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(13), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonStoneGolem() {
+	// Check if cooldowns are ready.
+	if con.mana >= 85 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage == 0 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhDown, PhDownLeft}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_STONE_GOLEM, con.unit, con.unit)
+						con.mana = con.mana - 85
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(13), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
+
+func (con *Conjurer) castSummonBeholder() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.SummonCreatureReady && con.summons.CreatureCage == 0 {
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpLeft, PhDownRight, PhUpRight, PhDownLeft, PhRight, PhDownRight, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						con.summons.SummonCreatureReady = false
+						ns.CastSpell(spell.SUMMON_BEHOLDER, con.unit, con.unit)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						con.spells.Ready = true
+						// Summon Ghost cooldown.
+						ns.NewTimer(ns.Seconds(13), func() {
+							con.checkCreatureCage()
+							con.summons.SummonCreatureReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
 }

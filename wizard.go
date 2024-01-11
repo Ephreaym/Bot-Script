@@ -1814,11 +1814,11 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 									})
 								}
 							})
+						} else {
+							ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
+								wiz.spells.Ready = true
+							})
 						}
-					})
-				} else {
-					ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
-						wiz.spells.Ready = true
 					})
 				}
 			}
