@@ -22,7 +22,7 @@ func init() {
 			redwarriors02 = 0
 			redwarriors03 = 0
 			// Conjurers.
-			redconjurers01 = 1
+			redconjurers01 = 0
 			redconjurers02 = 0
 			redconjurers03 = 0
 			// Wizards.
