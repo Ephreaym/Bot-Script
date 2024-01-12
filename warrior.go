@@ -37,25 +37,27 @@ type Warrior struct {
 		StreetPants    ns.Obj
 	}
 	abilities struct {
-		BerserkerChargeIsEnabled bool
-		isAlive                  bool
-		Ready                    bool // Global cooldown.
-		BerserkerChargeReady     bool // Cooldown is 10 seconds.
-		BerserkerTarget          bool
-		BerserkerChargeActive    bool
-		BerserkerStunActive      bool
-		BomberStunActive         bool
-		WarCryReady              bool // Cooldown is 10 seconds.
-		WarCryActive             bool
-		Harpoon                  ns.Obj
-		HarpoonMask              ns.Obj
-		HarpoonTarget            ns.Obj
-		HarpoonReady             bool
-		HarpoonFlying            bool
-		HarpoonAttached          bool
-		EyeOfTheWolfReady        bool // Cooldown is 20 seconds.
-		TreadLightlyReady        bool
-		RoundChackramReady       bool // for now cooldown 10 seconds.
+		BerserkerChargeIsEnabled    bool
+		isAlive                     bool
+		Ready                       bool // Global cooldown.
+		BerserkerChargeReady        bool // Cooldown is 10 seconds.
+		BerserkerTarget             bool
+		BerserkerChargeActive       bool
+		BerserkerStunActive         bool
+		BerserkerChargeResetOnKill  bool
+		BerserkerChareCooldownTimer int
+		BomberStunActive            bool
+		WarCryReady                 bool // Cooldown is 10 seconds.
+		WarCryActive                bool
+		Harpoon                     ns.Obj
+		HarpoonMask                 ns.Obj
+		HarpoonTarget               ns.Obj
+		HarpoonReady                bool
+		HarpoonFlying               bool
+		HarpoonAttached             bool
+		EyeOfTheWolfReady           bool // Cooldown is 20 seconds.
+		TreadLightlyReady           bool
+		RoundChackramReady          bool // for now cooldown 10 seconds.
 	}
 	behaviour struct {
 		listening         bool
@@ -91,9 +93,11 @@ func (war *Warrior) init() {
 	// Reset abilities WarBot.
 	war.abilities.isAlive = true
 	war.abilities.Ready = true
+	war.abilities.BerserkerChareCooldownTimer = 0
 	war.abilities.BerserkerChargeReady = true
 	war.abilities.BerserkerChargeActive = false
 	war.abilities.BerserkerStunActive = false
+	war.abilities.BerserkerChargeResetOnKill = false
 	war.abilities.WarCryReady = true
 	war.abilities.HarpoonReady = true
 	war.abilities.EyeOfTheWolfReady = true
@@ -236,6 +240,12 @@ func (war *Warrior) onCollide() {
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
 				ns.AudioEvent(audio.FleshHitFlesh, war.unit)
 				ns.GetCaller().Damage(war.unit, 150, 2)
+				if ns.GetCaller().Flags().Has(object.FlagDead) {
+					war.abilities.BerserkerChargeResetOnKill = true
+					ns.NewTimer(ns.Frames(war.reactionTime+3), func() {
+						war.abilities.BerserkerChargeReady = true
+					})
+				}
 				war.StopBerserkLoop()
 			} else if ns.GetCaller() != nil && war.abilities.isAlive && ns.GetCaller().HasClass(class.IMMOBILE) && !ns.GetCaller().HasClass(class.DOOR) && !ns.GetCaller().HasClass(class.FIRE) && !ns.GetCaller().HasClass(class.MISSILE) && !ns.GetCaller().Flags().Has(object.FlagDead) {
 				war.abilities.BerserkerStunActive = true
@@ -654,17 +664,31 @@ func (war *Warrior) useBerserkerCharge() {
 				war.abilities.Ready = true
 			}
 		})
-		ns.NewTimer(ns.Seconds(10), func() {
-			if war.abilities.isAlive {
-				war.abilities.BerserkerChargeReady = true
-			}
-		})
 		// Stop berserk if no object is hit/max range berserk.
 		ns.NewTimer(ns.Frames(96), func() {
 			if war.abilities.BerserkerChargeActive {
 				war.StopBerserkLoop()
 			}
 		})
+		war.abilities.BerserkerChareCooldownTimer = 10
+		war.abilities.BerserkerChargeResetOnKill = false
+		war.BerserkerChargeCooldownManager()
+	}
+}
+
+func (war *Warrior) BerserkerChargeCooldownManager() {
+	if !war.abilities.BerserkerChargeResetOnKill {
+		if war.abilities.BerserkerChareCooldownTimer == 0 {
+			war.abilities.BerserkerChargeReady = true
+			war.abilities.BerserkerChargeResetOnKill = false
+		} else {
+			ns.NewTimer(ns.Seconds(1), func() {
+				war.abilities.BerserkerChareCooldownTimer = war.abilities.BerserkerChareCooldownTimer - 1
+				war.BerserkerChargeCooldownManager()
+			})
+		}
+	} else {
+		return
 	}
 }
 

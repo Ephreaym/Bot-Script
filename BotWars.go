@@ -3,6 +3,7 @@ package BotWars
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
+	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
 )
 
 var InitLoadComplete bool
@@ -55,6 +56,11 @@ func init() {
 	}
 }
 
+func observerBots() {
+	ns.GetHost().ChatStr("detecting")
+	ns.GetHost().Enchant(enchant.DETECTING, ns.Seconds(20))
+}
+
 func checkTeams() {
 	AllTeams := ns.Teams()
 	TeamsCheck := len(AllTeams)
@@ -69,6 +75,8 @@ func checkTeams() {
 func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 	if p != nil {
 		switch msg {
+		case "host obs":
+			observerBots()
 		// Spawn commands red bots.
 		case "server spawn red war":
 			bots = append(bots, NewWarrior(Red))
