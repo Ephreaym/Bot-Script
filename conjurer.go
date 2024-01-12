@@ -423,8 +423,13 @@ func (con *Conjurer) Update() {
 	con.checkForMissiles()
 	con.UsePotions()
 	con.RestoreMana()
+	if con.mana > 125 {
+		con.mana = 125
+	}
 	if con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 		con.spells.Ready = true
+		// Add in response to warcry.
+		// Use weapon.
 	}
 	if con.unit.HasEnchant(enchant.HELD) || con.unit.HasEnchant(enchant.SLOWED) {
 		con.castBlink()
@@ -433,8 +438,8 @@ func (con *Conjurer) Update() {
 		if con.unit.CanSee(con.target) {
 			//con.castFistOfVengeance()
 			con.castMeteor()
-			con.castBurn()
 			con.castToxicCloud()
+			con.castBurn()
 		}
 	}
 	if con.spells.Ready && con.unit.CanSee(con.target) {
@@ -460,7 +465,7 @@ func (con *Conjurer) Update() {
 }
 
 func (con *Conjurer) summonRandomCreature() {
-	random := ns.Random(1, 2)
+	random := ns.Random(1, 3)
 	if random == 1 {
 		con.summonRandomSmallCreature()
 	}
