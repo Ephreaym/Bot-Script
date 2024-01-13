@@ -56,8 +56,9 @@ type Conjurer struct {
 		ManaRestoreSound bool
 	}
 	behaviour struct {
-		AntiStuck bool
-		Busy      bool
+		AntiStuck      bool
+		Busy           bool
+		ManaOfInterest ns.Obj
 	}
 	reactionTime int
 }
@@ -215,6 +216,16 @@ func (con *Conjurer) onCollide() {
 			con.team.CheckCaptureEnemyFlag(caller, con.unit)
 			con.team.CheckRetrievedOwnFlag(caller, con.unit)
 		}
+		if caller == con.behaviour.ManaOfInterest {
+			ns.NewTimer(ns.Seconds(1), func() {
+				if con.mana > 110 {
+					con.onEndOfWaypoint()
+				} else {
+					con.GoToManaObelisk()
+				}
+
+			})
+		}
 	}
 }
 
@@ -280,17 +291,19 @@ func (con *Conjurer) PassiveManaRegen() {
 }
 
 func (con *Conjurer) UsePotions() {
-	if con.unit.CurrentHealth() <= 25 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
-		ns.AudioEvent(audio.LesserHealEffect, con.unit)
-		RedPotion := con.unit.Items(ns.HasTypeName{"RedPotion"})
-		con.unit.SetHealth(con.unit.CurrentHealth() + 50)
-		RedPotion[0].Delete()
-	}
-	if con.mana <= 100 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"BluePotion"}) != 0 {
-		con.mana = con.mana + 50
-		ns.AudioEvent(audio.RestoreMana, con.unit)
-		BluePotion := con.unit.Items(ns.HasTypeName{"BluePotion"})
-		BluePotion[0].Delete()
+	if con.unit.CanSee(con.target) {
+		if con.unit.CurrentHealth() <= 25 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
+			ns.AudioEvent(audio.LesserHealEffect, con.unit)
+			RedPotion := con.unit.Items(ns.HasTypeName{"RedPotion"})
+			con.unit.SetHealth(con.unit.CurrentHealth() + 50)
+			RedPotion[0].Delete()
+		}
+		if con.mana <= 100 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"BluePotion"}) != 0 {
+			con.mana = con.mana + 50
+			ns.AudioEvent(audio.RestoreMana, con.unit)
+			BluePotion := con.unit.Items(ns.HasTypeName{"BluePotion"})
+			BluePotion[0].Delete()
+		}
 	}
 }
 
@@ -303,7 +316,7 @@ func (con *Conjurer) GoToManaObelisk() {
 				return it.CurrentMana() >= 10
 			}),
 		)
-
+		con.behaviour.ManaOfInterest = NearestObeliskWithMana
 		if con.unit == con.team.TeamTank {
 			if con.unit.CanSee(NearestObeliskWithMana) {
 				con.unit.WalkTo(NearestObeliskWithMana.Pos())
