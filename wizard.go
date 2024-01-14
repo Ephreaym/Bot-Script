@@ -1130,7 +1130,7 @@ func (wiz *Wizard) castFireballAtHeard() {
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.FireballReady = false
 						wiz.mana = wiz.mana - 30
-						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.target)
+						ns.CastSpell(spell.FIREBALL, wiz.unit, wiz.target.Pos())
 						// Global cooldown.
 						ns.NewTimer(ns.Frames(3), func() {
 							wiz.spells.Ready = true

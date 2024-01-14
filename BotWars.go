@@ -3,7 +3,6 @@ package BotWars
 import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
-	"github.com/noxworld-dev/noxscript/ns/v4/enchant"
 )
 
 var InitLoadComplete bool
@@ -57,8 +56,7 @@ func init() {
 }
 
 func observerBots() {
-	ns.GetHost().ChatStr("detecting")
-	ns.GetHost().Enchant(enchant.DETECTING, ns.Seconds(20))
+	ns.PrintStrToAll("obs")
 }
 
 func checkTeams() {

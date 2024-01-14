@@ -191,12 +191,12 @@ func (war *Warrior) onLookingForEnemy() {
 }
 
 func (war *Warrior) onEnemyHeard() {
-
 	war.ThrowChakram()
 }
 
 func (war *Warrior) onCollide() {
 	if war.abilities.isAlive {
+		// When the Warriors hits a wall with Berserker Charge.
 		if ns.GetCaller() == nil {
 			if war.abilities.BerserkerChargeActive && war.abilities.isAlive {
 				war.abilities.BerserkerStunActive = true
@@ -209,24 +209,26 @@ func (war *Warrior) onCollide() {
 				war.StopBerserkLoop()
 			}
 		}
-		// When the Warrior has drawn the target close.
+		// When the Warrior has drawn the target nearby with Harpoon.
 		if ns.GetCaller() == war.abilities.HarpoonTarget && war.abilities.HarpoonAttached {
 			war.abilities.HarpoonAttached = false
 			war.abilities.HarpoonMask.Delete()
 		}
+		// CTF mechanics for flag collision.
 		caller := ns.GetCaller()
 		if GameModeIsCTF {
 			war.team.CheckPickUpEnemyFlag(caller, war.unit)
 			war.team.CheckCaptureEnemyFlag(caller, war.unit)
 			war.team.CheckRetrievedOwnFlag(caller, war.unit)
 		}
+		// Fix to enable stun when a Warrior is hit by a Bomber.
 		if ns.GetCaller() != nil && ns.GetCaller().HasSubclass(subclass.BOMBER) && ns.GetCaller().HasTeam(war.team.Enemy.team) {
 			war.abilities.BomberStunActive = true
 			ns.NewTimer(ns.Seconds(2), func() {
 				war.abilities.BomberStunActive = false
 			})
 		}
-
+		// Berserker Charge when nearby.
 		if ns.GetCaller() == war.target && !war.target.Flags().Has(object.FlagDead) {
 			targettime := ns.GetCaller()
 			ns.NewTimer(ns.Frames(war.reactionTime*2), func() {
@@ -235,6 +237,7 @@ func (war *Warrior) onCollide() {
 				}
 			})
 		}
+		// Berserker Charge damage and cooldown reset after a kill with Berserker Charge.
 		if war.abilities.BerserkerChargeActive && war.abilities.isAlive && !ns.GetCaller().Flags().Has(object.FlagDead) {
 			if ns.GetCaller() != nil && !ns.GetCaller().Flags().Has(object.FlagDead) && war.abilities.isAlive && ns.GetCaller().HasClass(class.PLAYER) || ns.GetCaller().HasClass(class.MONSTER) {
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
@@ -270,21 +273,6 @@ func (war *Warrior) onEnemySighted() {
 }
 
 func (war *Warrior) onRetreat() {
-	//war.unit.Chat("onRetreat")
-	// TODO: FIX IT!
-	//if war.behaviour.lookForHealth {
-	//	war.behaviour.listening = false
-	//	war.behaviour.lookForHealth = false
-	//	war.unit.Chat("Con02A:NecroTalk02")
-	//	// Walk to nearest RedPotion.
-	//	war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
-	//	war.unit.AggressionLevel(0.16)
-	//	war.unit.Guard(war.targetPotion.Pos().Pos(), war.targetPotion.Pos(), 50)
-	//	ns.NewTimer(ns.Seconds(10), func() {
-	//		war.behaviour.lookForHealth = true
-	//		war.behaviour.listening = true
-	//	})
-	//}
 }
 
 func (war *Warrior) onLostEnemy() {
@@ -303,24 +291,6 @@ func (war *Warrior) onHit() {
 func (war *Warrior) onEndOfWaypoint() {
 	war.behaviour.Busy = false
 	war.unit.AggressionLevel(0.83)
-	//if war.behaviour.lookingForHealing {
-	//	if war.unit.CurrentHealth() >= 140 {
-	//		//war.unit.Chat("onEndOfWaypoint")
-	//		war.unit.AggressionLevel(0.83)
-	//		war.unit.Hunt()
-	//		war.behaviour.lookingForHealing = false
-	//	} else {
-	//		//if war.inventory.redPotionInInventory <= 1 {
-	//		//	war.lookForRedPotion()
-	//		//}
-	//	}
-	//} else {
-	//	if !war.behaviour.lookingForTarget {
-	//		war.unit.Hunt()
-	//		war.unit.AggressionLevel(0.83)
-	//		war.behaviour.lookingForTarget = true
-	//	}
-	//}
 	if GameModeIsCTF {
 		war.team.CheckAttackOrDefend(war.unit)
 		war.LookForNearbyItems()
