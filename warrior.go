@@ -28,7 +28,6 @@ type Warrior struct {
 	target            ns.Obj
 	cursor            ns.Pointf
 	berserkcursor     ns.Obj
-	targetPotion      ns.Obj
 	vec               ns.Pointf
 	startingEquipment struct {
 		Longsword      ns.Obj
@@ -179,6 +178,13 @@ func (war *Warrior) init() {
 	war.LookForWeapon()
 	war.WeaponPreference()
 	war.findLoot()
+	//war.onSlowUpdate()
+}
+
+func (war *Warrior) onSlowUpdate() {
+	ns.NewTimer(ns.Seconds(1), func() {
+
+	})
 }
 
 func (war *Warrior) onChangeFocus() {
@@ -501,34 +507,8 @@ func (war *Warrior) WeaponPreference() {
 	})
 }
 
-func (war *Warrior) pickupCrown() {
-	war.inventory.crown = true
-	war.moveCrown()
-}
-
-func (war *Warrior) moveCrown() {
-	if war.inventory.crown {
-
-	}
-}
-
 func (war *Warrior) findLoot() {
 	const dist = 75
-	if GameModeIsTeamKOTR {
-		crown := ns.FindAllObjects(
-			ns.InCirclef{Center: war.unit, R: dist},
-			ns.HasTypeName{
-				"Crown",
-			},
-			ns.HasTeam{war.unit.Team()},
-		)
-		for _, item := range crown {
-			if war.unit.CanSee(item) {
-				war.pickupCrown()
-			}
-		}
-	}
-
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
@@ -602,8 +582,6 @@ func (war *Warrior) findLoot() {
 	}
 	ns.NewTimer(ns.Frames(15), func() {
 		war.findLoot()
-		//war.target = ns.FindClosestObject(war.unit, ns.HasClass(object.ClassPlayer))
-		war.targetPotion = ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
 	})
 }
 

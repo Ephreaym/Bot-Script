@@ -199,8 +199,10 @@ func (con *Conjurer) onLookingForTarget() {
 }
 
 func (con *Conjurer) onEnemyHeard() {
-	con.castForceOfNature()
-	con.castInfravision()
+	if !con.unit.CanSee(con.target) {
+		con.castForceOfNature()
+		con.castInfravision()
+	}
 }
 
 func (con *Conjurer) onEnemySighted() {
@@ -316,13 +318,15 @@ func (con *Conjurer) GoToManaObelisk() {
 				return it.CurrentMana() >= 10
 			}),
 		)
-		con.behaviour.ManaOfInterest = NearestObeliskWithMana
-		if con.unit == con.team.TeamTank {
-			if con.unit.CanSee(NearestObeliskWithMana) {
+		if NearestObeliskWithMana != nil {
+			con.behaviour.ManaOfInterest = NearestObeliskWithMana
+			if con.unit == con.team.TeamTank {
+				if con.unit.CanSee(NearestObeliskWithMana) {
+					con.unit.WalkTo(NearestObeliskWithMana.Pos())
+				}
+			} else {
 				con.unit.WalkTo(NearestObeliskWithMana.Pos())
 			}
-		} else {
-			con.unit.WalkTo(NearestObeliskWithMana.Pos())
 		}
 	}
 }
@@ -936,7 +940,7 @@ func (con *Conjurer) castFistOfVengeance() {
 						ns.NewTimer(ns.Frames(3), func() {
 							con.spells.Ready = true
 						})
-						ns.NewTimer(ns.Seconds(10), func() {
+						ns.NewTimer(ns.Seconds(5), func() {
 							// Fist Of Vengeance cooldown.
 							con.spells.FistOfVengeanceReady = true
 						})
@@ -975,7 +979,7 @@ func (con *Conjurer) castForceOfNature() {
 							con.spells.Ready = true
 						})
 						// Force of Nature cooldown.
-						ns.NewTimer(ns.Seconds(20), func() {
+						ns.NewTimer(ns.Seconds(5), func() {
 							con.spells.ForceOfNatureReady = true
 						})
 					}
@@ -1217,7 +1221,7 @@ func (con *Conjurer) castToxicCloud() {
 							con.spells.Ready = true
 						})
 						// Toxic Cloud cooldown.
-						ns.NewTimer(ns.Seconds(10), func() {
+						ns.NewTimer(ns.Seconds(5), func() {
 							con.spells.ToxicCloudReady = true
 						})
 					}
@@ -1289,7 +1293,7 @@ func (con *Conjurer) castCounterspell() {
 							con.spells.Ready = true
 						})
 						// Haste cooldown.
-						ns.NewTimer(ns.Seconds(20), func() {
+						ns.NewTimer(ns.Seconds(5), func() {
 							con.spells.CounterspellReady = true
 						})
 					}
@@ -1327,7 +1331,7 @@ func (con *Conjurer) castMeteor() {
 						ns.NewTimer(ns.Frames(3), func() {
 							con.spells.Ready = true
 						})
-						ns.NewTimer(ns.Seconds(10), func() {
+						ns.NewTimer(ns.Seconds(5), func() {
 							// Meteor cooldown.
 							con.spells.MeteorReady = true
 						})
@@ -1373,7 +1377,7 @@ func (con *Conjurer) castInfravision() {
 
 func (con *Conjurer) castBomber() {
 	// Check if cooldowns are ready.
-	if con.mana >= 80 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.BomberCount <= 1 && con.summons.CreatureCage <= 3 {
+	if con.mana >= 80 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.summons.BomberCount <= 1 && con.summons.CreatureCage <= 3 && con.summons.SummonCreatureReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1402,6 +1406,7 @@ func (con *Conjurer) castBomber() {
 													castPhonemes(con.unit, []audio.Name{PhUp, PhRight, PhLeft, PhDown}, func() {
 														// Check for War Cry before spell release.
 														if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+															con.summons.SummonCreatureReady = false
 															bomber := ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", bomber)
 															bomber.SetOwner(con.unit)
@@ -1422,6 +1427,7 @@ func (con *Conjurer) castBomber() {
 															ns.NewTimer(ns.Frames(3), func() {
 																con.checkCreatureCage()
 																con.spells.Ready = true
+																con.summons.SummonCreatureReady = true
 															})
 														}
 													})

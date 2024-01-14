@@ -269,8 +269,10 @@ func (wiz *Wizard) onLookingForTarget() {
 }
 
 func (wiz *Wizard) onEnemyHeard() {
-	wiz.castFireballAtHeard()
-	wiz.castInvisibility()
+	if !wiz.unit.CanSee(wiz.target) {
+		wiz.castFireballAtHeard()
+		wiz.castInvisibility()
+	}
 }
 
 func (wiz *Wizard) onEnemySighted() {
@@ -370,13 +372,15 @@ func (wiz *Wizard) GoToManaObelisk() {
 				return it.CurrentMana() >= 10
 			}),
 		)
-		wiz.behaviour.ManaOfInterest = NearestObeliskWithMana
-		if wiz.unit == wiz.team.TeamTank {
-			if wiz.unit.CanSee(NearestObeliskWithMana) {
+		if NearestObeliskWithMana != nil {
+			wiz.behaviour.ManaOfInterest = NearestObeliskWithMana
+			if wiz.unit == wiz.team.TeamTank {
+				if wiz.unit.CanSee(NearestObeliskWithMana) {
+					wiz.unit.WalkTo(NearestObeliskWithMana.Pos())
+				}
+			} else {
 				wiz.unit.WalkTo(NearestObeliskWithMana.Pos())
 			}
-		} else {
-			wiz.unit.WalkTo(NearestObeliskWithMana.Pos())
 		}
 	}
 }
