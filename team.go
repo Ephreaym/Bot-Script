@@ -20,7 +20,12 @@ func init() {
 }
 
 func NewTeam(ind int, name string) *Team {
-	return &Team{team: ns.Teams()[ind], Name: name}
+	checkTeams()
+	if TeamsEnabled {
+		return &Team{team: ns.Teams()[ind], Name: name}
+	} else {
+		return &Team{team: ns.GetHost().Team(), Name: name}
+	}
 }
 
 type Team struct {

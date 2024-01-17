@@ -11,6 +11,9 @@ type Bot interface {
 var bots []Bot // bots array; can contain any number of bots.
 
 func init() {
+	if !TeamsEnabled {
+		return
+	}
 	ns.NewTimer(ns.Frames(60), func() {
 		// Add this many bots on map launch.
 		// 1 = active bot.
