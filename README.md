@@ -15,6 +15,26 @@ The feedback will help improve the bots!
 You can change settings in game through chat (altering the settings in the code directly is not advised).
 
 Some basic server settings:
-server spawn red/blue war/con/wiz
 
-server hardcore/hard/normal/easy/beginner bots
+server spawn bots 3v3
+
+server spawn red war
+
+server spawn red con
+
+server spawn red wiz
+
+
+server spawn blue war
+
+server spawn blue con
+
+server spawn blue wiz
+
+server hard bots
+
+server normal bots
+
+server easy bots
+
+server beginner bots
