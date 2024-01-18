@@ -19,6 +19,13 @@ func NewWizard(t *Team) *Wizard {
 	return wiz
 }
 
+// Test idea not sure if this is the way to go.
+func NewWizardNoTeam() *Wizard {
+	wiz := &Wizard{}
+	wiz.init()
+	return wiz
+}
+
 // Wizard bot class.
 type Wizard struct {
 	team              *Team
@@ -116,7 +123,30 @@ func (wiz *Wizard) init() {
 	wiz.behaviour.Busy = false
 	wiz.behaviour.useWand = false
 	// Create WizBot3.
-	wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
+	if TeamsEnabled {
+		wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
+		if GameModeIsCTF {
+			wiz.unit.SetOwner(wiz.team.Spawns()[0])
+		}
+		wiz.unit.SetTeam(wiz.team.Team())
+		if wiz.unit.HasTeam(ns.Teams()[0]) {
+			wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		} else if wiz.unit.HasTeam(ns.Teams()[1]) {
+			wiz.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		}
+	} else {
+		wiz.unit = ns.CreateObject("NPC", ns.GetHost())
+	}
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	wiz.unit.SetMaxHealth(75)
 	wiz.unit.SetStrength(35)
@@ -124,26 +154,6 @@ func (wiz *Wizard) init() {
 	wiz.spells.isAlive = true
 	wiz.mana = 150
 	wiz.PassiveManaRegen()
-	// Set Team.
-	if GameModeIsCTF {
-		wiz.unit.SetOwner(wiz.team.Spawns()[0])
-	}
-	wiz.unit.SetTeam(wiz.team.Team())
-	if wiz.unit.HasTeam(ns.Teams()[0]) {
-		wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		wiz.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		wiz.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		wiz.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		wiz.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		wiz.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-	} else {
-		wiz.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		wiz.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		wiz.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		wiz.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		wiz.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		wiz.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-	}
 	// Create WizBot3 mouse cursor.
 	wiz.target = NoTarget
 	wiz.cursor = NoTarget.Pos()

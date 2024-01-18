@@ -50,13 +50,37 @@ func init() {
 		ns.OnChat(onCommand)
 		NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
 	} else {
+		BotRespawn = true
+		BotMana = true
+		InitLoadComplete = false
+
+		ns.NewTimer(ns.Frames(10), func() {
+			getGameMode()
+			AllManaObelisksOnMap = ns.FindAllObjects(
+				ns.HasTypeName{"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12", "LOTDManaObelisk"},
+			)
+		})
+		ns.NewTimer(ns.Frames(20), func() {
+			Red.init()
+			Blue.init()
+		})
+		ns.NewTimer(ns.Frames(60), func() {
+			Red.lateInit()
+			Blue.lateInit()
+			InitLoadComplete = true
+		})
+		ns.OnChat(onCommand)
+		NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
 		ns.PrintStrToAll("Bot script installed successfully.")
-		ns.PrintStrToAll("Bot script is disabled when playing without teams.")
+		ns.PrintStrToAll("WARNING: bots are unstable without teams enabled.")
 	}
 }
 
 func observerBots() {
 	ns.PrintStrToAll("obs")
+	ns.GetHost().SetMaxHealth(1000)
+	ns.GetHost().SetMaxMana(1000)
+	//NewWizardNoTeam()
 }
 
 func checkTeams() {

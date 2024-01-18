@@ -12,6 +12,7 @@ import (
 var (
 	Red  = NewTeam(0, "Red")
 	Blue = NewTeam(1, "Blue")
+	// add more for FFA?
 )
 
 func init() {

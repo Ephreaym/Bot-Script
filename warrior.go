@@ -59,14 +59,15 @@ type Warrior struct {
 		RoundChackramReady          bool // for now cooldown 10 seconds.
 	}
 	behaviour struct {
-		listening         bool
-		lookingForHealing bool
-		charging          bool
-		attacking         bool
-		lookingForTarget  bool
-		AntiStuck         bool
-		SwitchMainWeapon  bool
-		Busy              bool
+		listening          bool
+		lookingForHealing  bool
+		charging           bool
+		attacking          bool
+		lookingForTarget   bool
+		AntiStuck          bool
+		SwitchMainWeapon   bool
+		Busy               bool
+		targetTeleportWake ns.Obj
 	}
 	inventory struct {
 		crown bool
@@ -282,10 +283,28 @@ func (war *Warrior) onRetreat() {
 }
 
 func (war *Warrior) onLostEnemy() {
-	war.useEyeOfTheWolf()
-	if GameModeIsCTF {
-		war.team.WalkToOwnFlag(war.unit)
+	war.behaviour.targetTeleportWake = ns.FindClosestObject(war.unit, ns.HasTypeName{"TeleportWake"})
+	if war.behaviour.targetTeleportWake != nil {
+		war.onCheckBlinkWakeRange()
+		war.unit.WalkTo(war.behaviour.targetTeleportWake.Pos())
 	}
+	ns.NewTimer(ns.Frames(15), func() {
+		war.useEyeOfTheWolf()
+		if GameModeIsCTF {
+			war.team.WalkToOwnFlag(war.unit)
+		}
+	})
+}
+
+func (war *Warrior) onCheckBlinkWakeRange() {
+	if !(ns.InCirclef{Center: war.unit, R: 100}).Matches(war.behaviour.targetTeleportWake) {
+		war.unit.Attack(war.target)
+		war.unit.DestroyChat()
+		return
+	}
+	ns.NewTimer(ns.Frames(1), func() {
+		war.onCheckBlinkWakeRange()
+	})
 }
 
 func (war *Warrior) onHit() {
