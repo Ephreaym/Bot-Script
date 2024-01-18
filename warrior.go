@@ -92,7 +92,7 @@ func (war *Warrior) init() {
 	war.inventory.crown = false
 	// Reset abilities WarBot.
 	war.abilities.isAlive = true
-	war.abilities.Ready = true
+	war.abilities.Ready = false
 	war.abilities.BerserkerChareCooldownTimer = 0
 	war.abilities.BerserkerChargeReady = true
 	war.abilities.BerserkerChargeActive = false
@@ -180,6 +180,9 @@ func (war *Warrior) init() {
 	war.WeaponPreference()
 	war.findLoot()
 	//war.onSlowUpdate()
+	ns.NewTimer(ns.Frames(3+war.reactionTime), func() {
+		war.abilities.Ready = true
+	})
 }
 
 func (war *Warrior) onSlowUpdate() {
@@ -608,7 +611,7 @@ func (war *Warrior) findLoot() {
 
 func (war *Warrior) useBerserkerCharge() {
 	// Check if cooldowns are ready.
-	if !war.abilities.HarpoonFlying && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && war.unit != war.team.TeamTank && !war.target.HasEnchant(enchant.INVULNERABLE) {
+	if !war.abilities.HarpoonFlying && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && war.unit != war.team.TeamTank && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.target.Flags().Has(object.FlagDead) {
 		// Select target.
 		war.cursor = war.target.Pos()
 		war.vec = war.unit.Pos().Sub(war.cursor).Normalize()
