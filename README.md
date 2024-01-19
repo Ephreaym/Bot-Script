@@ -1,7 +1,7 @@
 # Elevate Your Nox Experience with the Bot Script!
 Unlock a new dimension of excitement in OpenNox with the cutting-edge Bot Script. Hosting a server has never been this thrilling! You can dive into the OpenNox server with any Nox client, including NoxReloaded, as OpenNox boasts seamless backward compatibility. For the ultimate experience, however, we recommend immersing yourself with OpenNox, where exclusive features await your discovery.
 
-**Why OpenNox with Bot Script?**
+**Why run OpenNox with Bot Script?**
 
 Embark on an unforgettable journey with our work-in-progress project. Encounter the exhilarating clash of Warriors, Conjurers, and Wizards in a realm where bugs may roam, and crashes might surprise you. Your feedback is a precious gem, shaping the future of the Bot Script. Share your experiences and report issues on our dedicated GitHub page: https://github.com/Ephreaym/Bot-Script/issues
 
