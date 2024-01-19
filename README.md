@@ -22,7 +22,7 @@ Seize the opportunity to be part of the Bot Script revolution. OpenNox awaits, a
 **1. Obtain OpenNox:** Host with the latest release of OpenNox, available at: https://github.com/noxworld-dev/opennox/releases
 
 **2. Download Bot Script:**
-Access the Bot Script files here: https://github.com/Ephreaym/Nox-AI-script/tree/main Place the files into your desired map folder, e.g., C:\Program Files (x86)\Nox\Maps\Estate.
+Access the Bot Script files here: https://github.com/Ephreaym/Bot-Script/tree/main/installation_files Place the files into your desired map folder, e.g., C:\Program Files (x86)\Nox\Maps\Estate.
 
 **3. Host a Game with Bots:**
 Launch OpenNox and host a map on which you have the bots installed. Confirm a successful installation with the message: "Bot script installed successfully!" Currently, bots are enabled for Capture the Flag and Team Arena.
