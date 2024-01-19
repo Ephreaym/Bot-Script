@@ -8,8 +8,9 @@ The Bot Script enables hosting a server with bots in OpenNox. You can join the O
 - Customizable ruleset for the bots.
 
 ## Planned Features
-- Play all game modes - Arena, Elimination, King of the Realm, Capture the Flag, Flagball and Quest - with bots, with or without teams.
+- Play all game modes with bots, with or without teams: Arena, Elimination, King of the Realm, Capture the Flag, Flagball and Quest 
 - Play the solo campaign with improved AI, enhanced spells and abilities for NPC's.
+- Enable Female bots. 
 
 ## Installation Guide
 1.) Make sure to host with with the latest release of OpenNox. You can get the latest release from: https://github.com/noxworld-dev/opennox/releases
