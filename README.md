@@ -21,8 +21,17 @@ The Bot Script enables hosting a server with bots in OpenNox. You can join the O
 
 You can change settings on demand in game through chat. Another possibility is editing the Bot Script files before launching the map, although this is not adviced. 
 
-**General Server Options**
+**Bot difficulty options:**
 - server hard bots
 - server normal bots
 - server easy bots
 - server beginner bots
+
+**Add bots:**
+- server spawn red war
+- server spawn red con
+- server spawn red wiz
+- server spawn blue war
+- server spawn blue con
+- server spawn blue wiz
+- server spawn bots 3v3
