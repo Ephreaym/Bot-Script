@@ -1,5 +1,5 @@
 # Elevate Your Nox Experience with the Bot Script!
-Unlock a new dimension of excitement in OpenNox with the cutting-edge Bot Script. Hosting a server has never been this thrilling! You can dive into the OpenNox server with any Nox client, including NoxReloaded, as OpenNox boasts seamless backward compatibility. For the ultimate experience, however, we recommend immersing yourself with OpenNox, where exclusive features await your discovery.
+Unlock a new dimension of excitement with OpenNox and the cutting-edge Bot Script. Hosting a Nox server has never been this thrilling! You can dive into the OpenNox server with any Nox client, including NoxReloaded, as OpenNox boasts seamless backward compatibility. For the ultimate experience, however, we recommend immersing yourself with OpenNox, where exclusive features await your discovery.
 
 **Why run OpenNox with Bot Script?**
 
