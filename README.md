@@ -29,7 +29,7 @@ Launch OpenNox and host a map on which you have the bots installed. Confirm a su
 
 ## Server commands
 
-You can change settings on demand in game through chat. Another possibility is editing the Bot Script files before launching the map, although this is not adviced.
+Adjust settings on demand through in-game chat or by editing Bot Script files (not recommended) before launching the map.
 
 **Bot difficulty options:**
 - server hard bots
