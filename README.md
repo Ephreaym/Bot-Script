@@ -1,5 +1,5 @@
 # Bot Script
-The Bot Script enables hosting a server with bots in OpenNox. You can join the OpenNox server with any Nox cliënt (for example NoxReloade) since OpenNox is backwars compatible. However, it's recommended to join with OpenNox since some features are OpenNox exclusive. The project is a work in progress. Bugs are present and crashes can occur. Your feedback is very valuable to improve the Bot Script. You can report issues here: https://github.com/Ephreaym/Bot-Script/issues
+The Bot Script enables hosting a server with bots in OpenNox. You can join the OpenNox server with any Nox cliënt (for example NoxReloaded) since OpenNox is backwards compatible. However, it's recommended to join with OpenNox since some features are OpenNox exclusive. The project is a work in progress. Bugs are present and crashes can occur. Your feedback is very valuable to improve the Bot Script. You can report issues here: https://github.com/Ephreaym/Bot-Script/issues
 
 ## Implemented Features
 - Play with Warrior, Conjurer and Wizard bots
