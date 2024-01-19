@@ -1,10 +1,15 @@
 # Bot Script
 The Bot Script enables hosting a server with bots in OpenNox. You can join the OpenNox server with any Nox cliënt (for example NoxReloade) since OpenNox is backwars compatible. However, it's recommended to join with OpenNox since some features are OpenNox exclusive. The project is a work in progress. Bugs are present and crashes can occur. Your feedback is very valuable to improve the Bot Script. You can report issues here: https://github.com/Ephreaym/Bot-Script/issues
 
-## Features
-- Warrior, Conjurer and Wizard bots that can play Team Arena and Capture the Flag.
+## Implemented Features
+- Warrior, Conjurer and Wizard bots
+- Play Team Arena and Capture the Flag with bots.
 - Flexible bot difficulty settings.
 - Customizable ruleset for the bots.
+
+## Planned Features
+- Play all game modes - Arena, Elimination, King of the Realm, Capture the Flag, Flagball and Quest - with bots, with or without teams.
+- Play the solo campaign with improved AI, enhanced spells and abilities for NPC's.
 
 ## Installation Guide
 1.) Make sure to host with with the latest release of OpenNox. You can get the latest release from: https://github.com/noxworld-dev/opennox/releases
