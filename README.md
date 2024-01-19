@@ -19,14 +19,10 @@ The Bot Script enables hosting a server with bots in OpenNox. You can join the O
 
 ## Server commands
 
-You can change settings in game through chat (altering the settings in the code directly is not advised).
+You can change settings on demand in game through chat. Another possibility is editing the Bot Script files before launching the map, although this is not adviced. 
 
-Some basic server settings:
-server spawn red/blue war/con/wiz
-
-server hardcore/hard/normal/easy/beginner bots
-
-## Expanding on the project
-
-- Play the solo campaign with improved AI, enhanced spells and abilities for NPC's.
-- Enable female bots. 
+### General Server Options
+- server hard bots
+- server normal bots
+- server easy bots
+- server beginner bots
