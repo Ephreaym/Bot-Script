@@ -3,9 +3,12 @@ The Bot Script enables hosting a server with bots in OpenNox. You can join the O
 
 ## Implemented Features
 - Play with Warrior, Conjurer and Wizard bots
-- Play Team Arena and Capture the Flag with bots.
+- Play team Arena and Capture the Flag with bots.
 - Flexible bot difficulty settings.
 - Customizable ruleset for the bots.
+
+## Planned Features
+- Play all game modes with bots, with or without teams: Arena, Elimination, King of the Realm, Capture the Flag, Flagball and Quest.
 
 ## Installation Guide
 1.) Make sure to host with with the latest release of OpenNox. You can get the latest release from: https://github.com/noxworld-dev/opennox/releases
@@ -23,7 +26,7 @@ server spawn red/blue war/con/wiz
 
 server hardcore/hard/normal/easy/beginner bots
 
-## Planned Features
-- Play all game modes with bots, with or without teams: Arena, Elimination, King of the Realm, Capture the Flag, Flagball and Quest
+## Expanding on the project
+
 - Play the solo campaign with improved AI, enhanced spells and abilities for NPC's.
 - Enable female bots. 
