@@ -19,15 +19,17 @@ The journey doesn't end here! Stay tuned for upcoming features that will elevate
 Seize the opportunity to be part of the Bot Script revolution. OpenNox awaits, and with your feedback, we'll continue crafting an unparalleled gaming adventure. Let the games begin! 
 
 ## Installation Guide
-1.) Make sure to host with with the latest release of OpenNox. You can get the latest release from: https://github.com/noxworld-dev/opennox/releases
+**1. Obtain OpenNox:** Host with the latest release of OpenNox, available at: https://github.com/noxworld-dev/opennox/releases
 
-2.) Download the Bot Script files from: https://github.com/Ephreaym/Nox-AI-script/tree/main Place the files into the map folder you'd like to host. For example: C:\Program Files (x86)\Nox\Maps\Estate\
+**2. Download Bot Script:**
+Access the Bot Script files here: https://github.com/Ephreaym/Nox-AI-script/tree/main Place the files into your desired map folder, e.g., C:\Program Files (x86)\Nox\Maps\Estate.
 
-3.) You can now host a game with bots enabled. If installed properly you'll get the following message on map launch: "Bot script installed succesfully!" Bots are currently only enabled for Capture the Flag and Team Arena. Bots are (for now) disabled in other game modes.
+**3. Host a Game with Bots:**
+Launch OpenNox and host a map on which you have the bots installed. Confirm a successful installation with the message: "Bot script installed successfully!" Currently, bots are enabled for Capture the Flag and Team Arena.
 
 ## Server commands
 
-You can change settings on demand in game through chat. Another possibility is editing the Bot Script files before launching the map, although this is not adviced. 
+You can change settings on demand in game through chat. Another possibility is editing the Bot Script files before launching the map, although this is not adviced.
 
 **Bot difficulty options:**
 - server hard bots
@@ -43,3 +45,5 @@ You can change settings on demand in game through chat. Another possibility is e
 - server spawn blue con
 - server spawn blue wiz
 - server spawn bots 3v3
+
+Your adventure in OpenNox with the Bot Script begins now! Embrace the challenge and immerse yourself in the next dimension of gaming.
