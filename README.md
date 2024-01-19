@@ -10,6 +10,7 @@ Embark on an unforgettable journey with our work-in-progress project. Encounter 
 - Immerse yourself in fully functional bot-driven Team Arena and Capture the Flag gameplay.
 - Tailor your experience with customizable rulesets, difficulty levels, and unique bot characteristics.
 - Rediscover the grandeur of large-scale Nox PvP, whether venturing solo or teaming up with friends.
+- Dive into battle with our responsive bots! Command them to aid you, defend key spots, attack foes, or boost your character, enhancing the tactical depth of the game. Take charge of the battlefield as you navigate alongside these adaptable companions, creating your unique combat narrative. 
 
 ## Planned Features
 The journey doesn't end here! Stay tuned for upcoming features that will elevate your gaming experience:
