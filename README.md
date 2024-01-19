@@ -1,14 +1,22 @@
-# Bot Script
-The Bot Script enables hosting a server with bots in OpenNox. You can join the OpenNox server with any Nox cliënt (for example NoxReloaded) since OpenNox is backwards compatible. However, it's recommended to join with OpenNox since some features are OpenNox exclusive. The project is a work in progress. Bugs are present and crashes can occur. Your feedback is very valuable to improve the Bot Script. You can report issues here: https://github.com/Ephreaym/Bot-Script/issues
+# Elevate Your Nox Experience with the Bot Script!
+Unlock a new dimension of excitement in OpenNox with the cutting-edge Bot Script. Hosting a server has never been this thrilling! You can dive into the OpenNox server with any Nox client, including NoxReloaded, as OpenNox boasts seamless backward compatibility. For the ultimate experience, however, we recommend immersing yourself with OpenNox, where exclusive features await your discovery.
+
+**Why OpenNox with Bot Script?**
+
+Embark on an unforgettable journey with our work-in-progress project. Encounter the exhilarating clash of Warriors, Conjurers, and Wizards in a realm where bugs may roam, and crashes might surprise you. Your feedback is a precious gem, shaping the future of the Bot Script. Share your experiences and report issues on our dedicated GitHub page: https://github.com/Ephreaym/Bot-Script/issues
 
 ## Implemented Features
-- Play with Warrior, Conjurer and Wizard bots
-- Play team Arena and Capture the Flag with bots.
-- Flexible bot difficulty settings.
-- Customizable ruleset for the bots.
+- Engage in battles alongside or against Warrior, Conjurer, and Wizard bots.
+- Immerse yourself in fully functional bot-driven Team Arena and Capture the Flag gameplay.
+- Tailor your experience with customizable rulesets, difficulty levels, and unique bot characteristics.
+- Rediscover the grandeur of large-scale Nox PvP, whether venturing solo or teaming up with friends.
 
 ## Planned Features
-- Play all game modes with bots, with or without teams: Arena, Elimination, King of the Realm, Capture the Flag, Flagball and Quest.
+The journey doesn't end here! Stay tuned for upcoming features that will elevate your gaming experience:
+
+- Unleash bots across all game modes, whether solo or team-based: Arena, Elimination, King of the Realm, Capture the Flag, Flagball, and even Quests.
+
+Seize the opportunity to be part of the Bot Script revolution. OpenNox awaits, and with your feedback, we'll continue crafting an unparalleled gaming adventure. Let the games begin! 
 
 ## Installation Guide
 1.) Make sure to host with with the latest release of OpenNox. You can get the latest release from: https://github.com/noxworld-dev/opennox/releases
