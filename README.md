@@ -47,4 +47,8 @@ Adjust settings on demand through in-game chat or by editing Bot Script files (n
 - server spawn blue wiz
 - server spawn bots 3v3
 
+**Server settings:**
+- server enable drops
+- server disabled drops 
+
 Your adventure in OpenNox with the Bot Script begins now! Embrace the challenge and immerse yourself in the next dimension of gaming.
