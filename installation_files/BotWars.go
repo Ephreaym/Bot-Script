@@ -78,9 +78,7 @@ func init() {
 
 func observerBots() {
 	ns.PrintStrToAll("obs")
-	ns.GetHost().SetMaxHealth(1000)
-	ns.GetHost().SetMaxMana(1000)
-	//NewWizardNoTeam()
+	NewWizardNoTeam()
 }
 
 func checkTeams() {
@@ -180,80 +178,6 @@ func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 			for i := 0; i < len(serverSettingSoundToAllPlayers); i++ {
 				ns.AudioEvent(audio.ServerOptionsChange, serverSettingSoundToAllPlayers[i].Unit())
 			}
-		// Bot commands.
-		case "help", "Help", "Follow", "follow", "escort", "Escort", "come", "Come":
-			ns.FindObjects(
-				func(it ns.Obj) bool {
-					if it.CanSee(p.Unit()) {
-						it.Follow(p.Unit())
-						random := ns.Random(1, 4)
-						if random == 1 {
-							it.ChatStr("I'll follow you.")
-						}
-						if random == 2 {
-							it.ChatStr("Let's go.")
-						}
-						if random == 3 {
-							it.ChatStr("I'll help.")
-						}
-						if random == 4 {
-							it.ChatStr("Sure thing.")
-						}
-					}
-					return true
-				},
-				ns.HasTypeName{"NPC"},
-				ns.HasTeam{p.Team()},
-			)
-		case "guard", "stay", "Guard", "Stay":
-			ns.FindObjects(
-				func(it ns.Obj) bool {
-					if it.CanSee(p.Unit()) {
-						it.Guard(it.Pos(), it.Pos(), 300)
-						random1 := ns.Random(1, 4)
-						if random1 == 1 {
-							it.ChatStr("I'll guard this place.")
-						}
-						if random1 == 2 {
-							it.ChatStr("No problem.")
-						}
-						if random1 == 3 {
-							it.ChatStr("I'll stay.")
-						}
-						if random1 == 4 {
-							it.ChatStr("I'll hold.")
-						}
-					}
-					return true
-				},
-				ns.HasTypeName{"NPC"},
-				ns.HasTeam{p.Team()},
-				ns.InCirclef{Center: p.Unit(), R: 100},
-			)
-		case "Attack", "Go", "go", "attack":
-			ns.FindObjects(
-				func(it ns.Obj) bool {
-					if it.CanSee(p.Unit()) {
-						it.Hunt()
-						random2 := ns.Random(1, 4)
-						if random2 == 1 {
-							it.ChatStr("I'll get them.")
-						}
-						if random2 == 2 {
-							it.ChatStr("Time to shine.")
-						}
-						if random2 == 3 {
-							it.ChatStr("On the offense.")
-						}
-						if random2 == 4 {
-							it.ChatStr("Time to hunt.")
-						}
-					}
-					return true
-				},
-				ns.HasTypeName{"NPC"},
-				ns.HasTeam{p.Team()},
-			)
 			// Bot chat responses.
 		case "hello", "Hello", "Yo", "yo", "what's up?", "What's up?", "hi", "Hi", "Hey", "hey", "sup", "Sup":
 			it := ns.FindClosestObject(p.Unit(), ns.HasTypeName{"NPC"})

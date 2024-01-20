@@ -56,9 +56,13 @@ type Conjurer struct {
 		ManaRestoreSound bool
 	}
 	behaviour struct {
-		AntiStuck      bool
-		Busy           bool
-		ManaOfInterest ns.Obj
+		AntiStuck       bool
+		Busy            bool
+		ManaOfInterest  ns.Obj
+		Escorting       bool
+		EscortingTarget ns.Obj
+		Guarding        bool
+		GuardingPos     ns.Pointf
 	}
 	reactionTime int
 }
@@ -88,6 +92,8 @@ func (con *Conjurer) init() {
 	// Behaviour.
 	con.behaviour.AntiStuck = true
 	con.behaviour.Busy = false
+	con.behaviour.Escorting = false
+	con.behaviour.Guarding = false
 	// Create ConBot.
 	con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
 	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
@@ -404,6 +410,7 @@ func (con *Conjurer) Update() {
 			con.castMeteor()
 			con.castToxicCloud()
 			con.castBurn()
+			con.castCounterspell()
 		}
 	}
 	if con.spells.Ready && con.unit.CanSee(con.target) {
@@ -916,44 +923,44 @@ func (con *Conjurer) castPixieSwarm() {
 	}
 }
 
-func (con *Conjurer) castFistOfVengeance() {
-	// Check if cooldowns are ready.
-	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
-		// Select target.
-		con.cursor = con.target.Pos()
-		// Trigger cooldown.
-		con.spells.Ready = false
-		// Check reaction time based on difficulty setting.
-		ns.NewTimer(ns.Frames(con.reactionTime), func() {
-			// Check for War Cry before chant.
-			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-				castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
-					// Check for War Cry before spell release.
-					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-						// Aim.
-						con.unit.LookAtObject(con.target)
-						con.unit.Pause(ns.Frames(con.reactionTime))
-						con.spells.FistOfVengeanceReady = false
-						ns.CastSpell(spell.FIST, con.unit, con.cursor)
-						con.mana = con.mana - 60
-						// Global cooldown.
-						ns.NewTimer(ns.Frames(3), func() {
-							con.spells.Ready = true
-						})
-						ns.NewTimer(ns.Seconds(5), func() {
-							// Fist Of Vengeance cooldown.
-							con.spells.FistOfVengeanceReady = true
-						})
-					}
-				})
-			} else {
-				ns.NewTimer(ns.Frames(con.reactionTime), func() {
-					con.spells.Ready = true
-				})
-			}
-		})
-	}
-}
+//func (con *Conjurer) castFistOfVengeance() {
+//	// Check if cooldowns are ready.
+//	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
+//		// Select target.
+//		con.cursor = con.target.Pos()
+//		// Trigger cooldown.
+//		con.spells.Ready = false
+//		// Check reaction time based on difficulty setting.
+//		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+//			// Check for War Cry before chant.
+//			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+//				castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+//					// Check for War Cry before spell release.
+//					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+//						// Aim.
+//						con.unit.LookAtObject(con.target)
+//						con.unit.Pause(ns.Frames(con.reactionTime))
+//						con.spells.FistOfVengeanceReady = false
+//						ns.CastSpell(spell.FIST, con.unit, con.cursor)
+//						con.mana = con.mana - 60
+//						// Global cooldown.
+//						ns.NewTimer(ns.Frames(3), func() {
+//							con.spells.Ready = true
+//						})
+//						ns.NewTimer(ns.Seconds(5), func() {
+//							// Fist Of Vengeance cooldown.
+//							con.spells.FistOfVengeanceReady = true
+//						})
+//					}
+//				})
+//			} else {
+//				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+//					con.spells.Ready = true
+//				})
+//			}
+//		})
+//	}
+//}
 
 func (con *Conjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
@@ -1490,9 +1497,119 @@ func (con *Conjurer) castCounterspellAtForceOfNature() {
 func (con *Conjurer) onConCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 	if p != nil {
 		switch msg {
-		// Spawn commands red bots.
+		// Bot commands.
+		case "help", "Help", "Follow", "follow", "escort", "Escort", "come", "Come":
+			if con.unit.CanSee(p.Unit()) && con.unit.Team() == p.Team() {
+				con.behaviour.Escorting = true
+				con.behaviour.EscortingTarget = p.Unit()
+				con.behaviour.Guarding = false
+				con.unit.Follow(p.Unit())
+				random := ns.Random(1, 4)
+				if random == 1 {
+					con.unit.ChatStr("I'll follow you.")
+				}
+				if random == 2 {
+					con.unit.ChatStr("Let's go.")
+				}
+				if random == 3 {
+					con.unit.ChatStr("I'll help.")
+				}
+				if random == 4 {
+					con.unit.ChatStr("Sure thing.")
+				}
+			}
+		case "Attack", "Go", "go", "attack":
+			if con.unit.CanSee(p.Unit()) && con.unit.Team() == p.Team() {
+				con.behaviour.Escorting = false
+				con.behaviour.Guarding = false
+				con.unit.Hunt()
+				random2 := ns.Random(1, 4)
+				if random2 == 1 {
+					con.unit.ChatStr("I'll get them.")
+				}
+				if random2 == 2 {
+					con.unit.ChatStr("Time to shine.")
+				}
+				if random2 == 3 {
+					con.unit.ChatStr("On the offense.")
+				}
+				if random2 == 4 {
+					con.unit.ChatStr("Time to hunt.")
+				}
+			}
+		case "guard", "stay", "Guard", "Stay":
+			if con.unit.CanSee(p.Unit()) && con.unit.Team() == p.Team() {
+				con.unit.Guard(con.unit.Pos(), con.unit.Pos(), 300)
+				con.behaviour.Escorting = false
+				con.behaviour.Guarding = true
+				con.behaviour.GuardingPos = con.unit.Pos()
+				random1 := ns.Random(1, 4)
+				if random1 == 1 {
+					con.unit.ChatStr("I'll guard this place.")
+				}
+				if random1 == 2 {
+					con.unit.ChatStr("No problem.")
+				}
+				if random1 == 3 {
+					con.unit.ChatStr("I'll stay.")
+				}
+				if random1 == 4 {
+					con.unit.ChatStr("I'll hold.")
+				}
+			}
 		case "vamp", "Vamp", "Vampirism", "vampirism":
-			con.unit.ChatStr("Buff commands disabled for now.")
+			if con.unit.CanSee(p.Unit()) && con.unit.HasTeam(p.Unit().Team()) {
+				if con.mana >= 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready {
+					// Trigger cooldown.
+					con.spells.Ready = false
+					// Check reaction time based on difficulty setting.
+					ns.NewTimer(ns.Frames(con.reactionTime), func() {
+						// Check for War Cry before chant.
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+							castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+								// Check for War Cry before spell release.
+								if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									con.mana = con.mana - 20
+									ns.CastSpell(spell.VAMPIRISM, con.unit, p.Unit())
+									// Global cooldown.
+									ns.NewTimer(ns.Frames(3), func() {
+										con.spells.Ready = true
+									})
+								}
+							})
+						} else {
+							ns.NewTimer(ns.Frames(con.reactionTime), func() {
+								con.spells.Ready = true
+							})
+						}
+					})
+				}
+				if con.mana < 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready {
+					// Trigger cooldown.
+					con.spells.Ready = false
+					// Check reaction time based on difficulty setting.
+					ns.NewTimer(ns.Frames(con.reactionTime), func() {
+						// Check for War Cry before chant.
+						if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+							castPhonemes(con.unit, []audio.Name{PhUp, PhDown, PhLeft, PhRight}, func() {
+								// Check for War Cry before spell release.
+								if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+									ns.AudioEvent(audio.ManaEmpty, con.unit)
+									// Global cooldown.
+									ns.NewTimer(ns.Frames(3), func() {
+										con.spells.Ready = true
+										con.unit.ChatStr("Not enough mana.")
+									})
+								}
+							})
+						} else {
+							ns.NewTimer(ns.Frames(con.reactionTime), func() {
+								con.spells.Ready = true
+							})
+						}
+					})
+				}
+			}
 		}
 	}
 	return msg
