@@ -32,12 +32,6 @@ Launch OpenNox and host a map on which you have the bots installed. Confirm a su
 
 Adjust settings on demand through in-game chat or by editing Bot Script files (not recommended) before launching the map.
 
-**Bot difficulty options:**
-- server hard bots
-- server normal bots
-- server easy bots
-- server beginner bots
-
 **Add bots:**
 - server spawn red war
 - server spawn red con
@@ -46,6 +40,12 @@ Adjust settings on demand through in-game chat or by editing Bot Script files (n
 - server spawn blue con
 - server spawn blue wiz
 - server spawn bots 3v3
+
+**Bot difficulty options:**
+- server hard bots
+- server normal bots
+- server easy bots
+- server beginner bots
 
 **Server settings:**
 - server enable drops
