@@ -80,6 +80,7 @@ type Wizard struct {
 		Guarding         bool
 		GuardingPos      ns.Pointf
 		EscortingTarget  ns.Obj
+		Chatting         bool
 	}
 	reactionTime int
 	audio        struct {
@@ -125,6 +126,7 @@ func (wiz *Wizard) init() {
 	wiz.behaviour.SwitchMainWeapon = false
 	wiz.behaviour.Busy = false
 	wiz.behaviour.useWand = false
+	wiz.behaviour.Chatting = false
 	// Create WizBot3.
 	if TeamsEnabled {
 		wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
@@ -208,6 +210,15 @@ func (wiz *Wizard) init() {
 	//ns.CreateObject("FireStormWand", wiz.unit.Pos())
 }
 
+func (wiz *Wizard) checkChatting() {
+	if !wiz.behaviour.Chatting {
+		wiz.behaviour.Chatting = true
+		ns.NewTimer(ns.Seconds(2), func() {
+			wiz.behaviour.Chatting = false
+		})
+	}
+}
+
 func (wiz *Wizard) WeaponPreference() {
 	// Priority list to get the prefered weapon.
 	// TODO: Add stun and range conditions.
@@ -272,6 +283,7 @@ func (wiz *Wizard) onEndOfWaypoint() {
 		}
 	}
 	wiz.LookForNearbyItems()
+
 }
 
 func (wiz *Wizard) buffInitial() {
@@ -557,7 +569,9 @@ func (wiz *Wizard) Update() {
 		wiz.castBlink()
 	}
 	if !wiz.unit.HasEnchant(enchant.SHIELD) || !wiz.unit.HasEnchant(enchant.HASTED) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) {
+
 		wiz.GoToManaObelisk()
+
 	}
 }
 
@@ -1692,18 +1706,21 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 				wiz.behaviour.EscortingTarget = p.Unit()
 				wiz.behaviour.Guarding = false
 				wiz.unit.Follow(p.Unit())
-				random := ns.Random(1, 4)
-				if random == 1 {
-					wiz.unit.ChatStr("I'll follow you.")
-				}
-				if random == 2 {
-					wiz.unit.ChatStr("Let's go.")
-				}
-				if random == 3 {
-					wiz.unit.ChatStr("I'll help.")
-				}
-				if random == 4 {
-					wiz.unit.ChatStr("Sure thing.")
+				if !wiz.behaviour.Chatting {
+					wiz.checkChatting()
+					random := ns.Random(1, 4)
+					if random == 1 {
+						wiz.unit.ChatStr("I'll follow you.")
+					}
+					if random == 2 {
+						wiz.unit.ChatStr("Let's go.")
+					}
+					if random == 3 {
+						wiz.unit.ChatStr("I'll help.")
+					}
+					if random == 4 {
+						wiz.unit.ChatStr("Sure thing.")
+					}
 				}
 			}
 		case "Attack", "Go", "go", "attack":
@@ -1711,18 +1728,21 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 				wiz.behaviour.Escorting = false
 				wiz.behaviour.Guarding = false
 				wiz.unit.Hunt()
-				random2 := ns.Random(1, 4)
-				if random2 == 1 {
-					wiz.unit.ChatStr("I'll get them.")
-				}
-				if random2 == 2 {
-					wiz.unit.ChatStr("Time to shine.")
-				}
-				if random2 == 3 {
-					wiz.unit.ChatStr("On the offense.")
-				}
-				if random2 == 4 {
-					wiz.unit.ChatStr("Time to hunt.")
+				if !wiz.behaviour.Chatting {
+					wiz.checkChatting()
+					random2 := ns.Random(1, 4)
+					if random2 == 1 {
+						wiz.unit.ChatStr("I'll get them.")
+					}
+					if random2 == 2 {
+						wiz.unit.ChatStr("Time to shine.")
+					}
+					if random2 == 3 {
+						wiz.unit.ChatStr("On the offense.")
+					}
+					if random2 == 4 {
+						wiz.unit.ChatStr("Time to hunt.")
+					}
 				}
 			}
 		case "guard", "stay", "Guard", "Stay":
@@ -1732,17 +1752,20 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 				wiz.behaviour.Guarding = true
 				wiz.behaviour.GuardingPos = wiz.unit.Pos()
 				random1 := ns.Random(1, 4)
-				if random1 == 1 {
-					wiz.unit.ChatStr("I'll guard this place.")
-				}
-				if random1 == 2 {
-					wiz.unit.ChatStr("No problem.")
-				}
-				if random1 == 3 {
-					wiz.unit.ChatStr("I'll stay.")
-				}
-				if random1 == 4 {
-					wiz.unit.ChatStr("I'll hold.")
+				if !wiz.behaviour.Chatting {
+					wiz.checkChatting()
+					if random1 == 1 {
+						wiz.unit.ChatStr("I'll guard this place.")
+					}
+					if random1 == 2 {
+						wiz.unit.ChatStr("No problem.")
+					}
+					if random1 == 3 {
+						wiz.unit.ChatStr("I'll stay.")
+					}
+					if random1 == 4 {
+						wiz.unit.ChatStr("I'll hold.")
+					}
 				}
 			}
 		case "force field", "Force Field", "Force field", "force Field", "Shield", "shield":
@@ -1786,7 +1809,10 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 									// Global cooldown.
 									ns.NewTimer(ns.Frames(3), func() {
 										wiz.spells.Ready = true
-										wiz.unit.ChatStr("Not enough mana.")
+										if !wiz.behaviour.Chatting {
+											wiz.checkChatting()
+											wiz.unit.ChatStr("Not enough mana.")
+										}
 									})
 
 								}
@@ -1849,7 +1875,10 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 						} else {
 							ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 								wiz.spells.Ready = true
-								wiz.unit.ChatStr("Not enough mana.")
+								if !wiz.behaviour.Chatting {
+									wiz.checkChatting()
+									wiz.unit.ChatStr("Not enough mana.")
+								}
 							})
 						}
 					})
@@ -1906,7 +1935,10 @@ func (wiz *Wizard) onWizCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) 
 						} else {
 							ns.NewTimer(ns.Frames(wiz.reactionTime), func() {
 								wiz.spells.Ready = true
-								wiz.unit.ChatStr("Not enough mana.")
+								if !wiz.behaviour.Chatting {
+									wiz.checkChatting()
+									wiz.unit.ChatStr("Not enough mana.")
+								}
 							})
 						}
 					})

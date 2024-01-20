@@ -5,24 +5,34 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4/audio"
 )
 
+// Global Bot Script variables
 var InitLoadComplete bool
-var GameModeIsCTF bool
-var GameModeIsTeamKOTR bool
-var GameModeIsTeamArena bool
-var BotDifficulty int
 var BotRespawn bool
-var BotMana bool
-var NoTarget ns.Obj
 var AllManaObelisksOnMap []ns.Obj
+var NoTarget ns.Obj
+var BotMana bool
+
+// Server settings
+var BotDifficulty int
+
+var TeamsEnabled bool
+var ItemDropEnabled bool
+
+// Capture the Flag
+var GameModeIsCTF bool
 var BlueTeamBase ns.Obj
 var RedTeamBase ns.Obj
 var BlueFlag ns.Obj
 var RedFlag ns.Obj
-var TeamsEnabled bool
-var ItemDropEnabled bool
+
+// King of the Realm
+var GameModeIsTeamKOTR bool
 var Crowns []ns.Obj
 var CrownRed ns.Obj
 var CrownBlue ns.Obj
+
+// Arena
+var GameModeIsTeamArena bool
 
 func init() {
 	checkTeams()

@@ -93,6 +93,7 @@ func (war *Warrior) init() {
 	war.behaviour.SwitchMainWeapon = false
 	war.abilities.BomberStunActive = false
 	war.behaviour.Busy = false
+	war.behaviour.Chatting = false
 	// Inventory
 	war.inventory.crown = false
 	// Reset abilities WarBot.
@@ -191,20 +192,12 @@ func (war *Warrior) init() {
 	})
 }
 
-func (war *Warrior) checkCurrentStatus() {
-	if war.behaviour.Escorting || war.behaviour.Guarding {
-		if war.behaviour.Escorting {
-			if war.behaviour.EscortingTarget.Flags().Has(object.FlagDead) {
-				war.behaviour.Escorting = false
-				war.onEndOfWaypoint()
-			} else {
-				war.unit.Follow(war.behaviour.EscortingTarget)
-			}
-		}
-		if war.behaviour.Guarding {
-			war.unit.Guard(war.behaviour.GuardingPos, war.behaviour.GuardingPos, 500)
-		}
-		return
+func (war *Warrior) checkChatting() {
+	if !war.behaviour.Chatting {
+		war.behaviour.Chatting = true
+		ns.NewTimer(ns.Seconds(2), func() {
+			war.behaviour.Chatting = false
+		})
 	}
 }
 
@@ -321,7 +314,6 @@ func (war *Warrior) onLostEnemy() {
 			war.team.WalkToOwnFlag(war.unit)
 		}
 	})
-	war.checkCurrentStatus()
 }
 
 func (war *Warrior) onCheckBlinkWakeRange() {
@@ -336,46 +328,29 @@ func (war *Warrior) onCheckBlinkWakeRange() {
 }
 
 func (war *Warrior) onHit() {
-	war.checkCurrentStatus()
+
 	if war.unit.CurrentHealth() < 100 && !war.behaviour.Busy {
 		war.GoToRedPotion()
 	}
 }
 
 func (war *Warrior) onEndOfWaypoint() {
-	war.checkCurrentStatus()
+
 	war.behaviour.Busy = false
 	war.unit.AggressionLevel(0.83)
 	if GameModeIsCTF {
 		war.team.CheckAttackOrDefend(war.unit)
 		war.LookForNearbyItems()
 	} else {
+
 		war.unit.Hunt()
 		war.LookForNearbyItems()
-	}
 
+	}
 }
 
 func (war *Warrior) GoToRedPotion() {
-	if war.behaviour.Escorting || war.behaviour.Guarding {
-		arr := ns.Random(1, 5)
-		if arr == 1 {
-			war.unit.ChatStr("My health is low.")
-		}
-		if arr == 2 {
-			war.unit.ChatStr("I'm out of health.")
-		}
-		if arr == 3 {
-			war.unit.ChatStr("I need healing.")
-		}
-		if arr == 4 {
-			war.unit.ChatStr("Could do with a potion.")
-		}
-		if arr == 5 {
-			war.unit.ChatStr("I'm hurt.")
-		}
-		return
-	} else if !war.behaviour.Busy {
+	if !war.behaviour.Busy {
 		NearestRedPotion := ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
 		if NearestRedPotion != nil {
 			war.behaviour.Busy = true
@@ -447,9 +422,7 @@ func (war *Warrior) Update() {
 }
 
 func (war *Warrior) LookForWeapon() {
-	if war.behaviour.Escorting || war.behaviour.Guarding {
-		return
-	} else if !war.behaviour.Busy {
+	if !war.behaviour.Busy {
 		war.behaviour.Busy = true
 		ItemLocation := ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
 		if ItemLocation != nil {
@@ -459,9 +432,7 @@ func (war *Warrior) LookForWeapon() {
 }
 
 func (war *Warrior) LookForNearbyItems() {
-	if war.behaviour.Escorting || war.behaviour.Guarding {
-		return
-	} else if !war.behaviour.Busy {
+	if !war.behaviour.Busy {
 		war.behaviour.Busy = true
 		if ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
 			//"LeatherHelm",
@@ -667,43 +638,50 @@ func (war *Warrior) onWarCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string)
 				war.behaviour.EscortingTarget = p.Unit()
 				war.behaviour.Guarding = false
 				war.unit.Follow(p.Unit())
-				random := ns.Random(1, 6)
-				if random == 1 {
-					war.unit.ChatStr("I'll follow you.")
+				if !war.behaviour.Chatting {
+					war.checkChatting()
+					random := ns.Random(1, 6)
+					if random == 1 {
+						war.unit.ChatStr("I'll follow you.")
+					}
+					if random == 2 {
+						war.unit.ChatStr("Let's go.")
+					}
+					if random == 3 {
+						war.unit.ChatStr("I'll help.")
+					}
+					if random == 4 {
+						war.unit.ChatStr("Sure thing.")
+					}
+					if random == 5 {
+						war.unit.ChatStr("Lead the way.")
+					}
+					if random == 6 {
+						war.unit.ChatStr("I'll escort you.")
+					}
 				}
-				if random == 2 {
-					war.unit.ChatStr("Let's go.")
-				}
-				if random == 3 {
-					war.unit.ChatStr("I'll help.")
-				}
-				if random == 4 {
-					war.unit.ChatStr("Sure thing.")
-				}
-				if random == 5 {
-					war.unit.ChatStr("Lead the way.")
-				}
-				if random == 6 {
-					war.unit.ChatStr("I'll escort you.")
-				}
+
 			}
 		case "Attack", "Go", "go", "attack":
 			if war.unit.CanSee(p.Unit()) && war.unit.Team() == p.Team() {
 				war.behaviour.Escorting = false
 				war.behaviour.Guarding = false
 				war.unit.Hunt()
-				random2 := ns.Random(1, 4)
-				if random2 == 1 {
-					war.unit.ChatStr("I'll get them.")
-				}
-				if random2 == 2 {
-					war.unit.ChatStr("Time to shine.")
-				}
-				if random2 == 3 {
-					war.unit.ChatStr("On the offense.")
-				}
-				if random2 == 4 {
-					war.unit.ChatStr("Time to hunt.")
+				if !war.behaviour.Chatting {
+					war.checkChatting()
+					random2 := ns.Random(1, 4)
+					if random2 == 1 {
+						war.unit.ChatStr("I'll get them.")
+					}
+					if random2 == 2 {
+						war.unit.ChatStr("Time to shine.")
+					}
+					if random2 == 3 {
+						war.unit.ChatStr("On the offense.")
+					}
+					if random2 == 4 {
+						war.unit.ChatStr("Time to hunt.")
+					}
 				}
 			}
 		case "guard", "stay", "Guard", "Stay":
@@ -712,18 +690,21 @@ func (war *Warrior) onWarCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string)
 				war.behaviour.Escorting = false
 				war.behaviour.Guarding = true
 				war.behaviour.GuardingPos = war.unit.Pos()
-				random1 := ns.Random(1, 4)
-				if random1 == 1 {
-					war.unit.ChatStr("I'll guard this place.")
-				}
-				if random1 == 2 {
-					war.unit.ChatStr("No problem.")
-				}
-				if random1 == 3 {
-					war.unit.ChatStr("I'll stay.")
-				}
-				if random1 == 4 {
-					war.unit.ChatStr("I'll hold.")
+				if !war.behaviour.Chatting {
+					war.checkChatting()
+					random1 := ns.Random(1, 4)
+					if random1 == 1 {
+						war.unit.ChatStr("I'll guard this place.")
+					}
+					if random1 == 2 {
+						war.unit.ChatStr("No problem.")
+					}
+					if random1 == 3 {
+						war.unit.ChatStr("I'll stay.")
+					}
+					if random1 == 4 {
+						war.unit.ChatStr("I'll hold.")
+					}
 				}
 			}
 		}
