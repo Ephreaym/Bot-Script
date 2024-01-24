@@ -978,7 +978,7 @@ func (con *Conjurer) castForceOfNature() {
 						// Aim.
 						con.spells.ForceOfNatureReady = false
 						con.unit.LookAtObject(con.target)
-						con.unit.Pause(ns.Frames(35))
+						con.unit.Pause(ns.Frames(36))
 						con.mana = con.mana - 60
 						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target.Pos())
 						// Global cooldown.

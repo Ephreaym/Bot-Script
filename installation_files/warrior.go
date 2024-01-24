@@ -73,6 +73,7 @@ type Warrior struct {
 		GuardingPos        ns.Pointf
 		EscortingTarget    ns.Obj
 		Chatting           bool
+		VocalReady         bool
 	}
 	inventory struct {
 		crown bool
@@ -197,6 +198,15 @@ func (war *Warrior) checkChatting() {
 		war.behaviour.Chatting = true
 		ns.NewTimer(ns.Seconds(2), func() {
 			war.behaviour.Chatting = false
+		})
+	}
+}
+
+func (war *Warrior) checkVocal() {
+	if !war.behaviour.VocalReady {
+		war.behaviour.VocalReady = true
+		ns.NewTimer(ns.Seconds(2), func() {
+			war.behaviour.VocalReady = false
 		})
 	}
 }

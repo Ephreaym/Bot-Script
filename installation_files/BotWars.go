@@ -11,10 +11,12 @@ var BotRespawn bool
 var AllManaObelisksOnMap []ns.Obj
 var NoTarget ns.Obj
 var BotMana bool
+var soloPlay bool
+var soloPlayer ns.Obj
+var soloPlayerHasFlag bool
 
 // Server settings
 var BotDifficulty int
-
 var TeamsEnabled bool
 var ItemDropEnabled bool
 
@@ -47,6 +49,7 @@ func init() {
 			AllManaObelisksOnMap = ns.FindAllObjects(
 				ns.HasTypeName{"ObeliskPrimitive", "Obelisk", "InvisibleObelisk", "InvisibleObeliskNWSE", "MineCrystal01", "MineCrystal02", "MineCrystal03", "MineCrystal04", "MineCrystal05", "MineCrystalDown01", "MineCrystalDown02", "MineCrystalDown03", "MineCrystalDown04", "MineCrystalDown05", "MineCrystalUp01", "MineCrystalUp02", "MineCrystalUp03", "MineCrystalUp04", "MineCrystalUp05", "MineManaCart1", "MineManaCart1", "MineManaCrystal1", "MineManaCrystal2", "MineManaCrystal3", "MineManaCrystal4", "MineManaCrystal5", "MineManaCrystal6", "MineManaCrystal7", "MineManaCrystal8", "MineManaCrystal9", "MineManaCrystal10", "MineManaCrystal11", "MineManaCrystal12", "LOTDManaObelisk"},
 			)
+			checkSolo()
 		})
 		ns.NewTimer(ns.Frames(20), func() {
 			Red.init()
@@ -59,6 +62,7 @@ func init() {
 		})
 		ns.OnChat(onCommand)
 		NoTarget = ns.CreateObject("InvisibleExitArea", ns.Ptf(150, 150))
+
 	} else {
 		BotRespawn = true
 		BotMana = true
@@ -86,11 +90,6 @@ func init() {
 	}
 }
 
-func observerBots() {
-	ns.PrintStrToAll("obs")
-	NewWizardNoTeam()
-}
-
 func checkTeams() {
 	AllTeams := ns.Teams()
 	TeamsCheck := len(AllTeams)
@@ -101,12 +100,28 @@ func checkTeams() {
 	}
 }
 
+func checkSolo() {
+	if len(ns.Players()) > 1 {
+		if soloPlay {
+			soloPlay = false
+			// Solo play disabled.
+		}
+	} else {
+		if !soloPlay {
+			// Solo play active.
+			soloPlay = true
+			soloPlayer = ns.Players()[0].Unit()
+		}
+	}
+	ns.NewTimer(ns.Seconds(2), func() {
+		checkSolo()
+	})
+}
+
 // Server Commands.
 func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 	if p != nil {
 		switch msg {
-		case "host obs":
-			observerBots()
 		// Spawn commands red bots.
 		case "server spawn red war":
 			bots = append(bots, NewWarrior(Red))
@@ -254,17 +269,17 @@ func getGameMode() {
 		GameModeIsTeamKOTR = false
 		GameModeIsCTF = true
 		GameModeIsTeamArena = false
-		ns.PrintStrToAll("Gamemode: capture the flag.")
+		RedFlag = ns.FindObject(ns.HasTypeName{"Flag"}, ns.HasTeam{ns.Teams()[0]})
+		BlueFlag = ns.FindObject(ns.HasTypeName{"Flag"}, ns.HasTeam{ns.Teams()[1]})
+
 	} else if Crowns != nil {
 		GameModeIsTeamKOTR = true
 		GameModeIsCTF = false
 		GameModeIsTeamArena = false
-		ns.PrintStrToAll("Gamemode: king of the realm.")
 	} else {
 		GameModeIsTeamKOTR = false
 		GameModeIsCTF = false
 		GameModeIsTeamArena = true
-		ns.PrintStrToAll("Gamemode: arena.")
 	}
 	ns.PrintStrToAll("Bot script installed successfully.")
 }

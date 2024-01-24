@@ -146,10 +146,52 @@ func (t *Team) PostUpdate() {
 }
 
 func (t *Team) MoveEquipedFlagWithBot() {
-	if GameModeIsCTF {
+	// Solo play CTF mechanics
+	if GameModeIsCTF && soloPlay {
+		// Move Flag.
 		if !t.Flag.IsEnabled() {
-			// Move the real flag out of the map.
-			// Move the fake flag on the bot.
+			t.Flag.SetPos(t.Enemy.TeamTank.Pos())
+		}
+		// Drop on death.
+		if soloPlayer.Flags().Has(object.FlagDead) && soloPlayerHasFlag {
+			soloPlayerHasFlag = false
+			t.Enemy.FlagInteraction = true
+			ns.AudioEvent(audio.FlagDrop, ns.Players()[0].Unit())
+			t.Enemy.Flag.Enable(true)
+			t.TeamTank = t.Spawns()[0]
+			ns.PrintStrToAll(fmt.Sprintf("Team %s has dropped the %s flag!", t.Name, t.Enemy.Name))
+			ns.NewTimer(ns.Seconds(30), func() {
+				if t.Enemy.Flag.IsEnabled() && t.Enemy.FlagInteraction {
+					t.ReturnFlagHome(soloPlayer)
+				}
+			})
+
+		}
+		// Grab the flag.
+		if (ns.InCirclef{Center: soloPlayer, R: 25}).Matches(t.Enemy.Flag) && !t.Enemy.Flag.HasTeam(soloPlayer.Team()) && !soloPlayerHasFlag && !soloPlayer.Flags().Has(object.FlagDead) {
+			soloPlayerHasFlag = true
+			enemyFlag := t.Enemy.Flag
+			enemyFlag.Enable(false)
+			t.Enemy.FlagInteraction = false
+			ns.AudioEvent(audio.FlagPickup, ns.Players()[0].Unit())
+			t.TeamTank = soloPlayer
+			ns.PrintStrToAll(fmt.Sprintf("Team %s has the %s flag!", t.Name, t.Enemy.Name))
+		}
+		// Capture the flag.
+		if (ns.InCirclef{Center: soloPlayer, R: 25}).Matches(t.Flag) && t.Flag.HasTeam(soloPlayer.Team()) && t.FlagIsAtBase && soloPlayerHasFlag && !soloPlayer.Flags().Has(object.FlagDead) {
+			soloPlayerHasFlag = false
+			ns.AudioEvent(audio.FlagCapture, ns.Players()[0].Unit())
+			t.TeamTank = t.Spawns()[0]
+			t.Team().ChangeScore(+1)
+			t.Enemy.FlagInteraction = false
+			t.FlagReset()
+			t.Enemy.FlagReset()
+			ns.PrintStrToAll(fmt.Sprintf("Team %s has captured the %s flag!", t.Name, t.Enemy.Name))
+		}
+
+	}
+	if GameModeIsCTF && !soloPlay {
+		if !t.Flag.IsEnabled() {
 			t.Flag.SetPos(t.Enemy.TeamTank.Pos())
 		}
 	}
