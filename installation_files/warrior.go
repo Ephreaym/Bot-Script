@@ -29,6 +29,8 @@ type Warrior struct {
 	cursor            ns.Pointf
 	berserkcursor     ns.Obj
 	vec               ns.Pointf
+	findLootT         Updater
+	weaponPreferenceT Updater
 	startingEquipment struct {
 		Longsword      ns.Obj
 		WoodenShield   ns.Obj
@@ -184,8 +186,6 @@ func (war *Warrior) init() {
 	// On death.
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 	war.LookForWeapon()
-	war.WeaponPreference()
-	war.findLoot()
 	ns.OnChat(war.onWarCommand)
 	//war.onSlowUpdate()
 	ns.NewTimer(ns.Frames(3+war.reactionTime), func() {
@@ -327,14 +327,13 @@ func (war *Warrior) onLostEnemy() {
 }
 
 func (war *Warrior) onCheckBlinkWakeRange() {
-	if !(ns.InCirclef{Center: war.unit, R: 100}).Matches(war.behaviour.targetTeleportWake) {
-		war.unit.Attack(war.target)
-		war.unit.DestroyChat()
-		return
+	if war.behaviour.targetTeleportWake != nil {
+		if !(ns.InCirclef{Center: war.unit, R: 100}).Matches(war.behaviour.targetTeleportWake) {
+			war.unit.Attack(war.target)
+			war.unit.DestroyChat()
+			return
+		}
 	}
-	ns.NewTimer(ns.Frames(1), func() {
-		war.onCheckBlinkWakeRange()
-	})
 }
 
 func (war *Warrior) onHit() {
@@ -422,12 +421,19 @@ func (war *Warrior) UsePotions() {
 }
 
 func (war *Warrior) Update() {
-	if InitLoadComplete {
-		war.UsePotions()
-		if war.unit.HasEnchant(enchant.HELD) && !war.abilities.BerserkerStunActive && !war.abilities.BomberStunActive {
-			ns.CastSpell(spell.SLOW, war.unit, war.unit)
-			war.unit.EnchantOff(enchant.HELD)
-		}
+	if !InitLoadComplete {
+		return
+	}
+	war.UsePotions()
+	war.onCheckBlinkWakeRange()
+	war.BerserkLoop()
+	war.onHarpoonFlyingLoop()
+	war.onHarpoonReelLoop()
+	war.weaponPreferenceT.EachSec(10, war.WeaponPreference)
+	war.findLootT.EachFrame(15, war.findLoot)
+	if war.unit.HasEnchant(enchant.HELD) && !war.abilities.BerserkerStunActive && !war.abilities.BomberStunActive {
+		ns.CastSpell(spell.SLOW, war.unit, war.unit)
+		war.unit.EnchantOff(enchant.HELD)
 	}
 }
 
@@ -554,9 +560,6 @@ func (war *Warrior) WeaponPreference() {
 			//war.unit.Chat("I swapped to my LongSword!")
 		}
 	}
-	ns.NewTimer(ns.Seconds(10), func() {
-		war.WeaponPreference()
-	})
 }
 
 func (war *Warrior) findLoot() {
@@ -632,9 +635,6 @@ func (war *Warrior) findLoot() {
 			war.unit.Equip(war.unit.GetLastItem())
 		}
 	}
-	ns.NewTimer(ns.Frames(15), func() {
-		war.findLoot()
-	})
 }
 
 func (war *Warrior) onWarCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
@@ -769,7 +769,7 @@ func (war *Warrior) BerserkerChargeCooldownManager() {
 		} else {
 			ns.NewTimer(ns.Seconds(1), func() {
 				war.abilities.BerserkerChareCooldownTimer = war.abilities.BerserkerChareCooldownTimer - 1
-				war.BerserkerChargeCooldownManager()
+				war.BerserkerChargeCooldownManager() // FIXME: remove recursion
 			})
 		}
 	} else {
@@ -787,13 +787,13 @@ func (war *Warrior) StopBerserkLoop() {
 }
 
 func (war *Warrior) BerserkLoop() {
-	if war.abilities.BerserkerChargeActive && war.abilities.isAlive {
+	if !war.abilities.BerserkerChargeActive {
+		return
+	}
+	if war.abilities.isAlive {
 		war.cursor = war.berserkcursor.Pos()
 		war.unit.Pause(ns.Frames(1))
 		war.unit.ApplyForce(war.vec.Mul(-12))
-		ns.NewTimer(ns.Frames(1), func() {
-			war.BerserkLoop()
-		})
 	} else {
 		war.StopBerserkLoop()
 	}
@@ -919,9 +919,6 @@ func (war *Warrior) onHarpoonFlyingLoop() {
 	if war.abilities.HarpoonFlying && war.abilities.isAlive {
 		//ns.Effect(effect.SENTRY_RAY, war.unit.Pos(), war.abilities.HarpoonMask.Pos())
 		war.abilities.HarpoonMask.PushTo(war.abilities.HarpoonTarget, -15)
-		ns.NewTimer(ns.Frames(1), func() {
-			war.onHarpoonFlyingLoop()
-		})
 		if (ns.InCirclef{Center: war.abilities.HarpoonMask, R: 50}.Matches(war.abilities.HarpoonTarget)) {
 			war.abilities.HarpoonFlying = false
 			war.abilities.HarpoonAttached = true
@@ -949,14 +946,14 @@ func (war *Warrior) onHarpoonHit() {
 }
 
 func (war *Warrior) onHarpoonReelLoop() {
+	if !war.abilities.HarpoonAttached {
+		return
+	}
 	if war.unit.CanSee(war.abilities.HarpoonTarget) && war.abilities.HarpoonAttached && (ns.InCirclef{Center: war.unit, R: 300}.Matches(war.abilities.HarpoonTarget)) && !war.abilities.HarpoonTarget.Flags().Has(object.FlagDead) && war.abilities.isAlive {
 		//ns.Effect(effect.SENTRY_RAY, war.unit.Pos(), war.abilities.HarpoonTarget.Pos())
 		war.abilities.HarpoonMask.SetPos(war.abilities.HarpoonTarget.Pos())
 		vec := war.abilities.HarpoonTarget.Pos().Sub(war.unit.Pos())
 		war.abilities.HarpoonTarget.ApplyForce(vec.Mul(-0.03))
-		ns.NewTimer(ns.Frames(1), func() {
-			war.onHarpoonReelLoop()
-		})
 	} else {
 		ns.AudioEvent(audio.HarpoonBroken, war.unit)
 		war.abilities.HarpoonFlying = false

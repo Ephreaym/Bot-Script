@@ -21,12 +21,17 @@ func NewConjurer(t *Team) *Conjurer {
 
 // Conjurer bot class.
 type Conjurer struct {
-	team              *Team
-	unit              ns.Obj
-	cursor            ns.Pointf
-	target            ns.Obj
-	mana              int
-	startingEquipment struct {
+	team               *Team
+	unit               ns.Obj
+	cursor             ns.Pointf
+	target             ns.Obj
+	mana               int
+	passiveManaRegenT  Updater
+	weaponPreferenceT  Updater
+	findLootT          Updater
+	checkCreatureCageT Updater
+	checkPixieCountT   Updater
+	startingEquipment  struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
 		StreetShirt    ns.Obj
@@ -164,11 +169,8 @@ func (con *Conjurer) init() {
 	con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
 	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
 	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
-	con.PassiveManaRegen()
 	con.LookForWeapon()
-	con.WeaponPreference()
 	ns.OnChat(con.onConCommand)
-	con.findLoot()
 	con.checkPixieCount()
 }
 
@@ -285,16 +287,13 @@ func (con *Conjurer) onDeath() {
 
 func (con *Conjurer) PassiveManaRegen() {
 	if con.spells.isAlive {
-		ns.NewTimer(ns.Seconds(2), func() {
-			if con.mana < 125 {
-				if !BotMana {
-					con.mana = con.mana + 300
-				}
-				con.mana = con.mana + 1
+		if con.mana < 125 {
+			if !BotMana {
+				con.mana = con.mana + 300
 			}
-			con.PassiveManaRegen()
-			//ns.PrintStrToAll("con mana: " + strconv.Itoa(con.mana))
-		})
+			con.mana = con.mana + 1
+		}
+		//ns.PrintStrToAll("con mana: " + strconv.Itoa(con.mana))
 	}
 }
 
@@ -383,6 +382,11 @@ func (con *Conjurer) checkForMissiles() {
 }
 
 func (con *Conjurer) Update() {
+	con.passiveManaRegenT.EachSec(2, con.PassiveManaRegen)
+	con.weaponPreferenceT.EachSec(10, con.WeaponPreference)
+	con.checkCreatureCageT.EachSec(1, con.checkCreatureCage)
+	con.checkPixieCountT.EachSec(1, con.checkPixieCount)
+	con.findLootT.EachFrame(15, con.findLoot)
 	con.checkForMissiles()
 	con.UsePotions()
 	con.RestoreMana()
@@ -658,9 +662,6 @@ func (con *Conjurer) WeaponPreference() {
 			ns.HasTypeName{"ForceWand"},
 		)
 	}
-	ns.NewTimer(ns.Seconds(10), func() {
-		con.WeaponPreference()
-	})
 }
 
 func (con *Conjurer) findLoot() {
@@ -736,9 +737,6 @@ func (con *Conjurer) findLoot() {
 			con.unit.Pickup(item)
 		}
 	}
-	ns.NewTimer(ns.Frames(15), func() {
-		con.findLoot()
-	})
 }
 
 // Checks the ammount of summons active for the Conjurer bot.
@@ -785,9 +783,6 @@ func (con *Conjurer) checkCreatureCage() {
 			}
 		}
 	}
-	ns.NewTimer(ns.Seconds(1), func() {
-		con.checkCreatureCage()
-	})
 }
 
 // Checks the ammount of Pixies active for the Conjurer bot.
@@ -798,9 +793,6 @@ func (con *Conjurer) checkPixieCount() {
 	} else if allPixies[0].HasOwner(con.unit) {
 		con.spells.PixieCount = 1
 	}
-	ns.NewTimer(ns.Seconds(1), func() {
-		con.checkPixieCount()
-	})
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------ //
