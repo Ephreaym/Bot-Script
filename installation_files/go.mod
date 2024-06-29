@@ -1,13 +1,15 @@
 module BotWars
 
-go 1.19
+go 1.21
+
+toolchain go1.22.4
 
 require (
-	github.com/noxworld-dev/noxscript/ns/v4 v4.12.0
-	github.com/noxworld-dev/opennox-lib v0.0.0-20230831140802-093df546a389
+	github.com/noxworld-dev/noxscript/ns/v4 v4.16.1
+	github.com/noxworld-dev/opennox-lib v0.0.0-20240106132033-e8abe68bd8d5
 )
 
 require (
-	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
+	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
