@@ -33,6 +33,9 @@ type Wizard struct {
 	target            ns.Obj
 	trap              ns.Obj
 	mana              int
+	passiveManaRegenT Updater
+	weaponPreferenceT Updater
+	findLootT         Updater
 	startingEquipment struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
@@ -158,7 +161,6 @@ func (wiz *Wizard) init() {
 	wiz.unit.SetBaseSpeed(83)
 	wiz.spells.isAlive = true
 	wiz.mana = 150
-	wiz.PassiveManaRegen()
 	// Create WizBot3 mouse cursor.
 	wiz.target = NoTarget
 	wiz.cursor = NoTarget.Pos()
@@ -202,9 +204,7 @@ func (wiz *Wizard) init() {
 	wiz.unit.OnEvent(ns.EventEndOfWaypoint, wiz.onEndOfWaypoint)
 	wiz.unit.OnEvent(ns.EventIsHit, wiz.onHit)
 	wiz.LookForWeapon()
-	wiz.WeaponPreference()
 	ns.OnChat(wiz.onWizCommand)
-	wiz.findLoot()
 	// CODE FOR NEW TESTING //!!!! ONWAND
 	//wiz.unit.MonsterStatusEnable(object.MonsterStatus(object.MonsterImmuneFear))
 	//ns.CreateObject("FireStormWand", wiz.unit.Pos())
@@ -239,9 +239,6 @@ func (wiz *Wizard) WeaponPreference() {
 			ns.HasTypeName{"ForceWand"},
 		)
 	}
-	ns.NewTimer(ns.Seconds(10), func() {
-		wiz.WeaponPreference()
-	})
 }
 
 func (wiz *Wizard) onHit() {
@@ -375,15 +372,12 @@ func (wiz *Wizard) onDeath() {
 
 func (wiz *Wizard) PassiveManaRegen() {
 	if wiz.spells.isAlive {
-		ns.NewTimer(ns.Seconds(2), func() {
-			if wiz.mana < 150 {
-				if !BotMana {
-					wiz.mana = wiz.mana + 300
-				}
-				wiz.mana = wiz.mana + 1
+		if wiz.mana < 150 {
+			if !BotMana {
+				wiz.mana = wiz.mana + 300
 			}
-			wiz.PassiveManaRegen()
-		})
+			wiz.mana = wiz.mana + 1
+		}
 	}
 }
 
@@ -512,6 +506,9 @@ func (wiz *Wizard) checkForMissiles() {
 }
 
 func (wiz *Wizard) Update() {
+	wiz.passiveManaRegenT.EachSec(2, wiz.PassiveManaRegen)
+	wiz.weaponPreferenceT.EachSec(10, wiz.WeaponPreference)
+	wiz.findLootT.EachFrame(15, wiz.findLoot)
 	wiz.checkForMissiles()
 	wiz.UsePotions()
 	wiz.RestoreMana()
@@ -684,9 +681,6 @@ func (wiz *Wizard) findLoot() {
 			wiz.unit.Pickup(item)
 		}
 	}
-	ns.NewTimer(ns.Frames(15), func() {
-		wiz.findLoot()
-	})
 }
 
 // Checks the ammount of traps active for the WIzard bot.
@@ -701,7 +695,7 @@ func (wiz *Wizard) checkTrapCount() {
 			wiz.spells.TrapCount = wiz.spells.TrapCount + 1
 			if wiz.spells.TrapCount == 4 {
 				ns.NewTimer(ns.Seconds(5), func() {
-					wiz.checkTrapCount()
+					wiz.checkTrapCount() // FIXME: remove recursion
 				})
 			}
 		}
