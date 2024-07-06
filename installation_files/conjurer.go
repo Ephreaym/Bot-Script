@@ -19,6 +19,12 @@ func NewConjurer(t *Team) *Conjurer {
 	return con
 }
 
+func NewConjurerNoTeam() *Conjurer {
+	con := &Conjurer{}
+	con.init()
+	return con
+}
+
 // Conjurer bot class.
 type Conjurer struct {
 	team               *Team
@@ -100,7 +106,13 @@ func (con *Conjurer) init() {
 	con.behaviour.Escorting = false
 	con.behaviour.Guarding = false
 	// Create ConBot.
-	con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
+	if TeamsEnabled {
+		con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
+	} else {
+		randomIndex := ns.Random(0, len(botSpawnsNoTeams)-1)
+		pick := botSpawnsNoTeams[randomIndex]
+		con.unit = ns.CreateObject("NPC", pick.Pos())
+	}
 	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	con.unit.SetMaxHealth(100)
 	con.unit.SetStrength(55)
@@ -108,24 +120,31 @@ func (con *Conjurer) init() {
 	con.spells.isAlive = true
 	con.mana = 125
 	// Set Team.
+	con.unit.SetDisplayName("Conjurer Bot", nil)
 	if GameModeIsCTF {
 		con.unit.SetOwner(con.team.Spawns()[0])
 	}
-	con.unit.SetTeam(con.team.Team())
-	if con.unit.HasTeam(ns.Teams()[0]) {
-		con.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		con.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		con.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		con.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		con.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		con.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	if TeamsEnabled {
+		con.unit.SetTeam(con.team.Team())
 	} else {
-		con.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		con.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		con.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		con.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		con.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		con.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		con.unit.SetOwner(ns.Object("ConjurerOwner"))
+	}
+	if TeamsEnabled {
+		if con.unit.HasTeam(ns.Teams()[0]) {
+			con.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			con.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			con.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			con.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			con.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			con.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		} else {
+			con.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			con.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			con.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			con.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			con.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			con.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		}
 	}
 	// Create ConBot mouse cursor.
 	con.target = NoTarget
@@ -233,7 +252,6 @@ func (con *Conjurer) onCollide() {
 				} else {
 					con.GoToManaObelisk()
 				}
-
 			})
 		}
 	}
@@ -254,31 +272,28 @@ func (con *Conjurer) onDeath() {
 	con.spells.isAlive = false
 	con.spells.Ready = false
 	con.unit.FlagsEnable(object.FlagNoCollide)
-	con.team.DropEnemyFlag(con.unit)
+	if GameModeIsCTF {
+		con.team.DropEnemyFlag(con.unit)
+	}
 	con.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, con.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
 	if !GameModeIsCTF {
-		if con.unit.HasTeam(ns.Teams()[0]) {
-			ns.Teams()[1].ChangeScore(+1)
-		} else {
-			ns.Teams()[0].ChangeScore(+1)
+		if TeamsEnabled {
+			if con.unit.HasTeam(ns.Teams()[0]) {
+				ns.Teams()[1].ChangeScore(+1)
+			} else {
+				ns.Teams()[0].ChangeScore(+1)
+			}
 		}
-	}
-	if !ItemDropEnabled {
-		con.startingEquipment.StreetPants.Delete()
-		con.startingEquipment.StreetShirt.Delete()
-		con.startingEquipment.StreetSneakers.Delete()
 	}
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, con.unit)
 		con.unit.Delete()
-		if ItemDropEnabled {
-			con.startingEquipment.StreetPants.Delete()
-			con.startingEquipment.StreetShirt.Delete()
-			con.startingEquipment.StreetSneakers.Delete()
-		}
+		con.startingEquipment.StreetPants.Delete()
+		con.startingEquipment.StreetShirt.Delete()
+		con.startingEquipment.StreetSneakers.Delete()
 		if BotRespawn {
 			con.init()
 		}
@@ -325,8 +340,12 @@ func (con *Conjurer) GoToManaObelisk() {
 		)
 		if NearestObeliskWithMana != nil {
 			con.behaviour.ManaOfInterest = NearestObeliskWithMana
-			if con.unit == con.team.TeamTank {
-				if con.unit.CanSee(NearestObeliskWithMana) {
+			if GameModeIsCTF {
+				if con.unit == con.team.TeamTank {
+					if con.unit.CanSee(NearestObeliskWithMana) {
+						con.unit.WalkTo(NearestObeliskWithMana.Pos())
+					}
+				} else {
 					con.unit.WalkTo(NearestObeliskWithMana.Pos())
 				}
 			} else {
@@ -364,10 +383,9 @@ func (con *Conjurer) checkForMissiles() {
 		{
 			arr2 := ns.FindAllObjects(
 				ns.HasTypeName{"NewPlayer", "NPC"},
-				ns.HasTeam{con.team.Enemy.Team()},
 			)
 			for i := 0; i < len(arr2); i++ {
-				if sp2.HasOwner(arr2[i]) {
+				if sp2.HasOwner(arr2[i]) && arr2[i].Team() != con.unit.Team() {
 					con.castCounterspellAtForceOfNature()
 				}
 			}
@@ -586,9 +604,8 @@ func (con *Conjurer) LookForWeapon() {
 
 func (con *Conjurer) LookForNearbyItems() {
 	if !con.behaviour.Busy {
-		if ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver",
-			"LeatherArmoredBoots", "LeatherArmor",
-			"LeatherHelm",
+		con.behaviour.Busy = true
+		if ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver", "LeatherArmoredBoots", "LeatherArmor", "LeatherHelm",
 			"LeatherLeggings", "LeatherArmbands",
 			"RedPotion",
 			"ConjurerHelm",
@@ -1086,7 +1103,12 @@ func (con *Conjurer) castInversion() {
 
 func (con *Conjurer) castBlink() {
 	// Check if cooldowns are ready.
-	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady && con.unit != con.team.TeamTank {
+	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.BlinkReady {
+		if GameModeIsCTF {
+			if con.unit == con.team.TeamTank {
+				return
+			}
+		}
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1409,7 +1431,9 @@ func (con *Conjurer) castBomber() {
 															bomber := ns.CreateObject("Bomber", con.unit)
 															ns.AudioEvent("BomberSummon", bomber)
 															bomber.SetOwner(con.unit)
-															bomber.SetTeam(con.team.Team())
+															if TeamsEnabled {
+																bomber.SetTeam(con.team.Team())
+															}
 															bomber.Follow(con.unit)
 															bomber.MonsterStatusEnable(object.MonStatusAlert)
 															bomber.TrapSpells(spell.BURN, spell.TOXIC_CLOUD, spell.STUN)

@@ -18,7 +18,6 @@ func NewWizard(t *Team) *Wizard {
 	return wiz
 }
 
-// Test idea not sure if this is the way to go.
 func NewWizardNoTeam() *Wizard {
 	wiz := &Wizard{}
 	wiz.init()
@@ -130,30 +129,13 @@ func (wiz *Wizard) init() {
 	wiz.behaviour.Busy = false
 	wiz.behaviour.useWand = false
 	wiz.behaviour.Chatting = false
-	// Create WizBot3.
+	// Create WizBot.
 	if TeamsEnabled {
 		wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
-		if GameModeIsCTF {
-			wiz.unit.SetOwner(wiz.team.Spawns()[0])
-		}
-		wiz.unit.SetTeam(wiz.team.Team())
-		if wiz.unit.HasTeam(ns.Teams()[0]) {
-			wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-			wiz.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-			wiz.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-			wiz.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-			wiz.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-			wiz.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		} else if wiz.unit.HasTeam(ns.Teams()[1]) {
-			wiz.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-			wiz.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-			wiz.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-			wiz.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-			wiz.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-			wiz.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		}
 	} else {
-		wiz.unit = ns.CreateObject("NPC", ns.GetHost())
+		randomIndex := ns.Random(0, len(botSpawnsNoTeams)-1)
+		pick := botSpawnsNoTeams[randomIndex]
+		wiz.unit = ns.CreateObject("NPC", pick.Pos())
 	}
 	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	wiz.unit.SetMaxHealth(75)
@@ -161,6 +143,33 @@ func (wiz *Wizard) init() {
 	wiz.unit.SetBaseSpeed(83)
 	wiz.spells.isAlive = true
 	wiz.mana = 150
+	// Set Team
+	if GameModeIsCTF {
+		wiz.unit.SetOwner(wiz.team.Spawns()[0])
+	}
+	wiz.unit.SetDisplayName("Wizard Bot", nil)
+	if TeamsEnabled {
+		wiz.unit.SetTeam(wiz.team.Team())
+	} else {
+		wiz.unit.SetOwner(ns.Object("WizardOwner"))
+	}
+	if TeamsEnabled {
+		if wiz.unit.HasTeam(ns.Teams()[0]) {
+			wiz.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			wiz.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		} else {
+			wiz.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			wiz.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		}
+	}
 	// Create WizBot3 mouse cursor.
 	wiz.target = NoTarget
 	wiz.cursor = NoTarget.Pos()
@@ -319,7 +328,6 @@ func (wiz *Wizard) onCollide() {
 				} else {
 					wiz.GoToManaObelisk()
 				}
-
 			})
 		}
 	}
@@ -340,30 +348,26 @@ func (wiz *Wizard) onDeath() {
 	wiz.spells.isAlive = false
 	wiz.spells.Ready = false
 	wiz.unit.FlagsEnable(object.FlagNoCollide)
-	wiz.team.DropEnemyFlag(wiz.unit)
+	if GameModeIsCTF {
+		wiz.team.DropEnemyFlag(wiz.unit)
+	}
 	wiz.unit.DestroyChat()
 	ns.AudioEvent(audio.NPCDie, wiz.unit)
 	if !GameModeIsCTF {
-		if wiz.unit.HasTeam(ns.Teams()[0]) {
-			ns.Teams()[1].ChangeScore(+1)
-		} else {
-			ns.Teams()[0].ChangeScore(+1)
+		if TeamsEnabled {
+			if wiz.unit.HasTeam(ns.Teams()[0]) {
+				ns.Teams()[1].ChangeScore(+1)
+			} else {
+				ns.Teams()[0].ChangeScore(+1)
+			}
 		}
-	}
-	if !ItemDropEnabled {
-		wiz.startingEquipment.WizardRobe.Delete()
-		wiz.startingEquipment.StreetPants.Delete()
-		wiz.startingEquipment.StreetSneakers.Delete()
-		wiz.startingEquipment.StreetShirt.Delete()
 	}
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, wiz.unit)
 		wiz.unit.Delete()
-		if ItemDropEnabled {
-			wiz.startingEquipment.StreetPants.Delete()
-			wiz.startingEquipment.StreetSneakers.Delete()
-			wiz.startingEquipment.StreetShirt.Delete()
-		}
+		wiz.startingEquipment.StreetPants.Delete()
+		wiz.startingEquipment.StreetSneakers.Delete()
+		wiz.startingEquipment.StreetShirt.Delete()
 		if BotRespawn {
 			wiz.init()
 		}
@@ -392,8 +396,12 @@ func (wiz *Wizard) GoToManaObelisk() {
 		)
 		if NearestObeliskWithMana != nil {
 			wiz.behaviour.ManaOfInterest = NearestObeliskWithMana
-			if wiz.unit == wiz.team.TeamTank {
-				if wiz.unit.CanSee(NearestObeliskWithMana) {
+			if GameModeIsCTF {
+				if wiz.unit == wiz.team.TeamTank {
+					if wiz.unit.CanSee(NearestObeliskWithMana) {
+						wiz.unit.WalkTo(NearestObeliskWithMana.Pos())
+					}
+				} else {
 					wiz.unit.WalkTo(NearestObeliskWithMana.Pos())
 				}
 			} else {
@@ -426,11 +434,10 @@ func (wiz *Wizard) RestoreManaWithDrainMana() {
 		}
 		ManaSourceEnemyPlayer := ns.FindAllObjects(
 			ns.HasClass(object.ClassPlayer),
-			ns.HasTeam{wiz.team.Enemy.Team()},
 			ns.InCirclef{Center: wiz.unit, R: 200},
 		)
 		for i := 0; i < len(ManaSourceEnemyPlayer); i++ {
-			if ManaSourceEnemyPlayer[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceEnemyPlayer[i]) && ManaSourceEnemyPlayer[i].MaxHealth() <= 100 {
+			if ManaSourceEnemyPlayer[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceEnemyPlayer[i]) && ManaSourceEnemyPlayer[i].MaxHealth() <= 100 && ManaSourceEnemyPlayer[i].Team() != wiz.unit.Team() {
 				wiz.mana = wiz.mana + 1
 				ManaSourceEnemyPlayer[i].SetMana(ManaSourceEnemyPlayer[i].CurrentMana() - 1)
 				wiz.RestoreManaSound()
@@ -438,11 +445,10 @@ func (wiz *Wizard) RestoreManaWithDrainMana() {
 		}
 		ManaSourceEnemyNPC := ns.FindAllObjects(
 			ns.HasTypeName{"NPC"},
-			ns.HasTeam{wiz.team.Enemy.Team()},
 			ns.InCirclef{Center: wiz.unit, R: 200},
 		)
 		for i := 0; i < len(ManaSourceEnemyNPC); i++ {
-			if ManaSourceEnemyNPC[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceEnemyNPC[i]) && ManaSourceEnemyNPC[i].MaxHealth() <= 100 {
+			if ManaSourceEnemyNPC[i].CurrentMana() > 0 && wiz.unit.CanSee(ManaSourceEnemyNPC[i]) && ManaSourceEnemyNPC[i].MaxHealth() <= 100 && ManaSourceEnemyPlayer[i].Team() != wiz.unit.Team() {
 				wiz.mana = wiz.mana + 1
 				ManaSourceEnemyNPC[i].SetMana(ManaSourceEnemyNPC[i].CurrentMana() - 1)
 				wiz.RestoreManaSound()
@@ -462,36 +468,15 @@ func (wiz *Wizard) RestoreManaSound() {
 	}
 }
 
-//func (wiz *Wizard) useWand() {
-//	if !wiz.behaviour.useWand {
-//		wiz.behaviour.useWand = true
-//		wiz.unit.ChatStr("Use Wand!")
-//		{
-//			wiz.unit.LookAtObject(wiz.target)
-//			wiz.unit.Attack(wiz.target.Pos())
-//			wiz.unit.Pause(ns.Frames(400))
-//			wiz.unit.ChatStr("Don't move!")
-//
-//			wiz.unit.Attack(wiz.target)
-//			ns.NewTimer(ns.Seconds(4), func() {
-//				wiz.behaviour.Busy = false
-//				wiz.spells.Ready = true
-//				wiz.behaviour.useWand = false
-//			})
-//		}
-//	}
-//}
-
 func (wiz *Wizard) checkForMissiles() {
 	// Maybe need to add a ns.hasteam condition. Not sure yet.
 	if sp2 := ns.FindClosestObject(wiz.unit, ns.HasTypeName{"DeathBall"}, ns.InCirclef{Center: wiz.unit, R: 500}); sp2 != nil {
 		{
 			arr2 := ns.FindAllObjects(
 				ns.HasTypeName{"NewPlayer", "NPC"},
-				ns.HasTeam{wiz.team.Enemy.Team()},
 			)
 			for i := 0; i < len(arr2); i++ {
-				if sp2.HasOwner(arr2[i]) {
+				if sp2.HasOwner(arr2[i]) && arr2[i].Team() != wiz.unit.Team() {
 					wiz.castCounterspellAtForceOfNature()
 				}
 			}
@@ -565,10 +550,8 @@ func (wiz *Wizard) Update() {
 	if wiz.unit.HasEnchant(enchant.HELD) {
 		wiz.castBlink()
 	}
-	if !wiz.unit.HasEnchant(enchant.SHIELD) || !wiz.unit.HasEnchant(enchant.HASTED) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) {
-
+	if !wiz.unit.HasEnchant(enchant.SHIELD) || !wiz.unit.HasEnchant(enchant.HASTED) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) || wiz.spells.TrapCount <= 3 {
 		wiz.GoToManaObelisk()
-
 	}
 }
 
@@ -911,7 +894,12 @@ func (wiz *Wizard) castInversion() {
 
 func (wiz *Wizard) castInvisibility() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady && wiz.unit != wiz.team.TeamTank {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.spells.Ready && wiz.spells.InvisibilityReady {
+		if GameModeIsCTF {
+			if wiz.unit == wiz.team.TeamTank {
+				return
+			}
+		}
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1137,7 +1125,12 @@ func (wiz *Wizard) castFireballAtHeard() {
 
 func (wiz *Wizard) castBlink() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady && wiz.unit != wiz.team.TeamTank {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.BlinkReady {
+		if GameModeIsCTF {
+			if wiz.unit == wiz.team.TeamTank {
+				return
+			}
+		}
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1186,7 +1179,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.MagicMissilesReady = false
-						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target.Pos())
+						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
 						wiz.mana = wiz.mana - 15
 						// Global cooldown.
 						ns.NewTimer(ns.Frames(3), func() {

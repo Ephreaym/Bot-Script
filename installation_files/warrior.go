@@ -21,6 +21,12 @@ func NewWarrior(t *Team) *Warrior {
 	return war
 }
 
+func NewWarriorNoTeam() *Warrior {
+	war := &Warrior{}
+	war.init()
+	return war
+}
+
 // Warrior bot class.
 type Warrior struct {
 	team              *Team
@@ -116,7 +122,13 @@ func (war *Warrior) init() {
 	war.abilities.HarpoonFlying = false
 	// Select spawnpoint.
 	// Create WarBot.
-	war.unit = ns.CreateObject("NPC", war.team.SpawnPoint())
+	if TeamsEnabled {
+		war.unit = ns.CreateObject("NPC", war.team.SpawnPoint())
+	} else {
+		randomIndex := ns.Random(0, len(botSpawnsNoTeams)-1)
+		pick := botSpawnsNoTeams[randomIndex]
+		war.unit = ns.CreateObject("NPC", pick.Pos())
+	}
 	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
 	war.unit.SetMaxHealth(150)
 	war.unit.SetStrength(125)
@@ -125,21 +137,28 @@ func (war *Warrior) init() {
 	if GameModeIsCTF {
 		war.unit.SetOwner(war.team.Spawns()[0])
 	}
-	war.unit.SetTeam(war.team.Team())
-	if war.unit.HasTeam(ns.Teams()[0]) {
-		war.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		war.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		war.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		war.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		war.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
-		war.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+	if TeamsEnabled {
+		war.unit.SetTeam(war.team.Team())
 	} else {
-		war.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		war.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		war.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		war.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		war.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
-		war.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		war.unit.SetOwner(ns.Object("WarriorOwner"))
+	}
+	war.unit.SetDisplayName("Warrior Bot", nil)
+	if TeamsEnabled {
+		if war.unit.HasTeam(ns.Teams()[0]) {
+			war.unit.SetColor(0, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			war.unit.SetColor(1, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			war.unit.SetColor(2, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			war.unit.SetColor(3, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			war.unit.SetColor(4, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+			war.unit.SetColor(5, color.NRGBA{R: 255, G: 0, B: 0, A: 255})
+		} else {
+			war.unit.SetColor(0, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			war.unit.SetColor(1, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			war.unit.SetColor(2, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			war.unit.SetColor(3, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			war.unit.SetColor(4, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+			war.unit.SetColor(5, color.NRGBA{R: 0, G: 0, B: 255, A: 255})
+		}
 	}
 	// Create WarBot mouse cursor.
 	war.target = NoTarget
@@ -202,21 +221,6 @@ func (war *Warrior) checkChatting() {
 	}
 }
 
-func (war *Warrior) checkVocal() {
-	if !war.behaviour.VocalReady {
-		war.behaviour.VocalReady = true
-		ns.NewTimer(ns.Seconds(2), func() {
-			war.behaviour.VocalReady = false
-		})
-	}
-}
-
-//func (war *Warrior) onSlowUpdate() {
-//	ns.NewTimer(ns.Seconds(1), func() {
-//
-//	})
-//}
-
 func (war *Warrior) onChangeFocus() {
 	war.useHarpoon()
 	war.useBerserkerCharge()
@@ -258,7 +262,7 @@ func (war *Warrior) onCollide() {
 			war.team.CheckRetrievedOwnFlag(caller, war.unit)
 		}
 		// Fix to enable stun when a Warrior is hit by a Bomber.
-		if ns.GetCaller() != nil && ns.GetCaller().HasSubclass(subclass.BOMBER) && ns.GetCaller().HasTeam(war.team.Enemy.team) {
+		if ns.GetCaller() != nil && ns.GetCaller().HasSubclass(subclass.BOMBER) && ns.GetCaller().Team() != war.unit.Team() {
 			war.abilities.BomberStunActive = true
 			ns.NewTimer(ns.Seconds(2), func() {
 				war.abilities.BomberStunActive = false
@@ -337,7 +341,6 @@ func (war *Warrior) onCheckBlinkWakeRange() {
 }
 
 func (war *Warrior) onHit() {
-
 	if war.unit.CurrentHealth() < 100 && !war.behaviour.Busy {
 		war.GoToRedPotion()
 	}
@@ -364,13 +367,18 @@ func (war *Warrior) GoToRedPotion() {
 		if NearestRedPotion != nil {
 			war.behaviour.Busy = true
 			war.unit.AggressionLevel(0.16)
-			if war.unit == war.team.TeamTank {
-				if war.unit.CanSee(NearestRedPotion) {
+			if GameModeIsCTF {
+				if war.unit == war.team.TeamTank {
+					if war.unit.CanSee(NearestRedPotion) {
+						war.unit.WalkTo(NearestRedPotion.Pos())
+					}
+				} else {
 					war.unit.WalkTo(NearestRedPotion.Pos())
 				}
 			} else {
 				war.unit.WalkTo(NearestRedPotion.Pos())
 			}
+
 		}
 	}
 }
@@ -380,31 +388,26 @@ func (war *Warrior) onDeath() {
 	war.StopBerserkLoop()
 	war.unit.DestroyChat()
 	war.unit.FlagsEnable(object.FlagNoCollide)
-	war.team.DropEnemyFlag(war.unit)
+	if GameModeIsCTF {
+		war.team.DropEnemyFlag(war.unit)
+	}
 	ns.AudioEvent(audio.NPCDie, war.unit)
 	// TODO: Change ns.GetHost() to correct caller. Is there no Gvar1 replacement?
 	// ns.GetHost().ChangeScore(+1)
 	if !GameModeIsCTF {
-		if war.unit.HasTeam(ns.Teams()[0]) {
-			ns.Teams()[1].ChangeScore(+1)
-		} else {
-			ns.Teams()[0].ChangeScore(+1)
+		if TeamsEnabled {
+			if war.unit.HasTeam(ns.Teams()[0]) {
+				ns.Teams()[1].ChangeScore(+1)
+			} else {
+				ns.Teams()[0].ChangeScore(+1)
+			}
 		}
-	}
-	if !ItemDropEnabled {
-		war.startingEquipment.Longsword.Delete()
-		war.startingEquipment.WoodenShield.Delete()
-		war.startingEquipment.StreetPants.Delete()
-		war.startingEquipment.StreetSneakers.Delete()
 	}
 	ns.NewTimer(ns.Frames(60), func() {
 		ns.AudioEvent(audio.BlinkCast, war.unit)
 		war.unit.Delete()
-		if ItemDropEnabled {
-			war.startingEquipment.StreetPants.Delete()
-			war.startingEquipment.StreetSneakers.Delete()
-
-		}
+		war.startingEquipment.StreetPants.Delete()
+		war.startingEquipment.StreetSneakers.Delete()
 		if BotRespawn {
 			war.init()
 		}
@@ -726,7 +729,12 @@ func (war *Warrior) onWarCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string)
 
 func (war *Warrior) useBerserkerCharge() {
 	// Check if cooldowns are ready.
-	if !war.abilities.HarpoonFlying && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && war.unit != war.team.TeamTank && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.target.Flags().Has(object.FlagDead) {
+	if !war.abilities.HarpoonFlying && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.target.Flags().Has(object.FlagDead) {
+		if GameModeIsCTF {
+			if war.unit == war.team.TeamTank {
+				return
+			}
+		}
 		// Select target.
 		war.cursor = war.target.Pos()
 		war.vec = war.unit.Pos().Sub(war.cursor).Normalize()
@@ -815,28 +823,30 @@ func (war *Warrior) useWarCry() {
 					// Target enemy players.
 					func(it ns.Obj) bool {
 						if war.unit.CanSee(it) && it.MaxHealth() < 150 && !it.HasEnchant(enchant.ANTI_MAGIC) {
-							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
-							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+							if it.Team() != war.unit.Team() {
+								ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+								it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+							}
 						}
 						return true
 					},
 					ns.InCirclef{Center: war.unit, R: 300},
 					ns.HasClass(object.ClassPlayer),
-					ns.HasTeam{war.team.Enemy.Team()},
 				)
 				// Select target.
 				// Target enemy bots.
 				ns.FindObjects(
 					func(it ns.Obj) bool {
 						if war.unit.CanSee(it) && it.MaxHealth() < 150 && !it.HasEnchant(enchant.ANTI_MAGIC) {
-							ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
-							it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+							if it.Team() != war.unit.Team() {
+								ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+								it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+							}
 						}
 						return true
 					},
 					ns.InCirclef{Center: war.unit, R: 300},
 					ns.HasTypeName{"NPC"},
-					ns.HasTeam{war.team.Enemy.Team()},
 				)
 				//Target enemy monsters small.
 				//	ns.FindObjects(
@@ -942,7 +952,6 @@ func (war *Warrior) onHarpoonHit() {
 		war.abilities.HarpoonAttached = false
 		war.abilities.HarpoonMask.Delete()
 	}
-
 }
 
 func (war *Warrior) onHarpoonReelLoop() {
