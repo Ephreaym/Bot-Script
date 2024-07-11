@@ -28,27 +28,4 @@ Access the Bot Script files here: https://github.com/Ephreaym/Bot-Script/tree/ma
 **3. Host a Game with Bots:**
 Launch OpenNox and host a map on which you have the bots installed. Confirm a successful installation with the message: "Bot script installed successfully!" Currently, bots are enabled for Capture the Flag and Team Arena.
 
-## Server commands
-
-Adjust settings on demand through in-game chat or by editing Bot Script files (not recommended) before launching the map.
-
-**Add bots:**
-- server spawn red war
-- server spawn red con
-- server spawn red wiz
-- server spawn blue war
-- server spawn blue con
-- server spawn blue wiz
-- server spawn bots 3v3
-
-**Bot difficulty options:**
-- server hard bots
-- server normal bots
-- server easy bots
-- server beginner bots
-
-**Server settings:**
-- server enable drops
-- server disabled drops 
-
 Your adventure in OpenNox with the Bot Script begins now! Embrace the challenge and immerse yourself in the next dimension of gaming.
