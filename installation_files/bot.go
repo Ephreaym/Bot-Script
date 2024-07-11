@@ -27,7 +27,7 @@ func init() {
 			const (
 				// Team red.
 				// Warriors.
-				redwarriors01 = 0
+				redwarriors01 = 1
 				redwarriors02 = 0
 				redwarriors03 = 0
 				// Conjurers.

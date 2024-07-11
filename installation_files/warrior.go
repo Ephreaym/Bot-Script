@@ -29,15 +29,16 @@ func NewWarriorNoTeam() *Warrior {
 
 // Warrior bot class.
 type Warrior struct {
-	team              *Team
-	unit              ns.Obj
-	target            ns.Obj
-	cursor            ns.Pointf
-	berserkcursor     ns.Obj
-	vec               ns.Pointf
-	findLootT         Updater
-	weaponPreferenceT Updater
-	startingEquipment struct {
+	team                            *Team
+	unit                            ns.Obj
+	target                          ns.Obj
+	cursor                          ns.Pointf
+	berserkcursor                   ns.Obj
+	vec                             ns.Pointf
+	findLootT                       Updater
+	weaponPreferenceT               Updater
+	BerserkerChargeCooldownManagerT Updater
+	startingEquipment               struct {
 		Longsword      ns.Obj
 		WoodenShield   ns.Obj
 		StreetSneakers ns.Obj
@@ -53,6 +54,7 @@ type Warrior struct {
 		BerserkerStunActive         bool
 		BerserkerChargeResetOnKill  bool
 		BerserkerChareCooldownTimer int
+		BerserkUpdateBool           bool
 		BomberStunActive            bool
 		WarCryReady                 bool // Cooldown is 10 seconds.
 		WarCryActive                bool
@@ -432,6 +434,7 @@ func (war *Warrior) Update() {
 	war.BerserkLoop()
 	war.onHarpoonFlyingLoop()
 	war.onHarpoonReelLoop()
+	war.BerserkerChargeCooldownManager()
 	war.weaponPreferenceT.EachSec(10, war.WeaponPreference)
 	war.findLootT.EachFrame(15, war.findLoot)
 	if war.unit.HasEnchant(enchant.HELD) && !war.abilities.BerserkerStunActive && !war.abilities.BomberStunActive {
@@ -729,7 +732,7 @@ func (war *Warrior) onWarCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string)
 
 func (war *Warrior) useBerserkerCharge() {
 	// Check if cooldowns are ready.
-	if !war.abilities.HarpoonFlying && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.target.Flags().Has(object.FlagDead) {
+	if !war.abilities.HarpoonFlying && !war.abilities.BerserkerChargeActive && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.target.Flags().Has(object.FlagDead) {
 		if GameModeIsCTF {
 			if war.unit == war.team.TeamTank {
 				return
@@ -750,35 +753,41 @@ func (war *Warrior) useBerserkerCharge() {
 			war.unit.LookAtObject(war.target.Pos())
 			war.abilities.BerserkerChargeActive = true
 			war.BerserkLoop()
+			// Stop berserk if no object is hit/max range berserk.
+			ns.NewTimer(ns.Seconds(3), func() {
+				if war.abilities.isAlive && war.abilities.BerserkerChargeActive {
+					war.StopBerserkLoop()
+					war.abilities.Ready = true
+				}
+			})
+			war.abilities.BerserkerChareCooldownTimer = 10
+			war.abilities.BerserkerChargeResetOnKill = false
 		}
-		ns.NewTimer(ns.Seconds(3), func() {
-			if war.abilities.isAlive {
-				war.StopBerserkLoop()
-				war.abilities.Ready = true
-			}
-		})
-		// Stop berserk if no object is hit/max range berserk.
-		ns.NewTimer(ns.Frames(96), func() {
-			if war.abilities.BerserkerChargeActive {
-				war.StopBerserkLoop()
-			}
-		})
-		war.abilities.BerserkerChareCooldownTimer = 10
-		war.abilities.BerserkerChargeResetOnKill = false
-		war.BerserkerChargeCooldownManager()
+
 	}
 }
 
 func (war *Warrior) BerserkerChargeCooldownManager() {
-	if !war.abilities.BerserkerChargeResetOnKill {
-		if war.abilities.BerserkerChareCooldownTimer == 0 {
-			war.abilities.BerserkerChargeReady = true
-			war.abilities.BerserkerChargeResetOnKill = false
+
+	if !war.abilities.BerserkUpdateBool {
+
+		war.abilities.BerserkUpdateBool = true
+		ns.NewTimer(ns.Seconds(1), func() {
+			war.abilities.BerserkUpdateBool = false
+		})
+		if war.abilities.BerserkerChargeActive {
+			return
 		} else {
-			ns.NewTimer(ns.Seconds(1), func() {
-				war.abilities.BerserkerChareCooldownTimer = war.abilities.BerserkerChareCooldownTimer - 1
-				war.BerserkerChargeCooldownManager() // FIXME: remove recursion
-			})
+			if !war.abilities.BerserkerChargeResetOnKill {
+				if war.abilities.BerserkerChareCooldownTimer == 0 {
+					war.abilities.BerserkerChargeReady = true
+					war.abilities.BerserkerChargeResetOnKill = false
+				} else if !war.abilities.BerserkerChargeReady {
+					war.abilities.BerserkerChareCooldownTimer = war.abilities.BerserkerChareCooldownTimer - 1
+				}
+			} else {
+				return
+			}
 		}
 	} else {
 		return
@@ -809,7 +818,7 @@ func (war *Warrior) BerserkLoop() {
 
 func (war *Warrior) useWarCry() {
 	// Check if cooldown is war.abilities.Ready.
-	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive && !war.abilities.HarpoonFlying {
+	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive && !war.abilities.HarpoonFlying && !war.target.Flags().Has(object.FlagDead) {
 		if war.target.MaxHealth() == 150 {
 		} else {
 			// Trigger global cooldown.
@@ -893,7 +902,7 @@ func (war *Warrior) useEyeOfTheWolf() {
 // ------------------ Harpoon ---------------- //
 
 func (war *Warrior) useHarpoon() {
-	if war.abilities.HarpoonReady && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.abilities.BerserkerChargeActive {
+	if war.abilities.HarpoonReady && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.abilities.BerserkerChargeActive && !war.target.Flags().Has(object.FlagDead) {
 		// Create objects, set properties and shoot harpoon.
 		war.abilities.HarpoonTarget = war.target
 		war.abilities.HarpoonReady = false

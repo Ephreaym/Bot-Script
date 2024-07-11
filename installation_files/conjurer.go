@@ -37,6 +37,7 @@ type Conjurer struct {
 	findLootT          Updater
 	checkCreatureCageT Updater
 	checkPixieCountT   Updater
+	ManaRegenBool      bool
 	startingEquipment  struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
@@ -301,15 +302,25 @@ func (con *Conjurer) onDeath() {
 }
 
 func (con *Conjurer) PassiveManaRegen() {
-	if con.spells.isAlive {
-		if con.mana < 125 {
-			if !BotMana {
-				con.mana = con.mana + 300
+	if !con.ManaRegenBool {
+		con.ManaRegenBool = true
+		ns.NewTimer(ns.Seconds(1), func() {
+			con.ManaRegenBool = false
+		})
+		if con.spells.isAlive {
+
+			if con.mana < 125 {
+				if !BotMana {
+					con.mana = con.mana + 300
+				}
+				con.mana = con.mana + 1
 			}
-			con.mana = con.mana + 1
+			//ns.PrintStrToAll("con mana: " + strconv.Itoa(con.mana))
 		}
-		//ns.PrintStrToAll("con mana: " + strconv.Itoa(con.mana))
+	} else {
+		return
 	}
+
 }
 
 func (con *Conjurer) UsePotions() {
@@ -400,7 +411,7 @@ func (con *Conjurer) checkForMissiles() {
 }
 
 func (con *Conjurer) Update() {
-	con.passiveManaRegenT.EachSec(2, con.PassiveManaRegen)
+	con.PassiveManaRegen()
 	con.weaponPreferenceT.EachSec(10, con.WeaponPreference)
 	con.checkCreatureCageT.EachSec(1, con.checkCreatureCage)
 	con.checkPixieCountT.EachSec(1, con.checkPixieCount)
@@ -934,7 +945,7 @@ func (con *Conjurer) castPixieSwarm() {
 
 //func (con *Conjurer) castFistOfVengeance() {
 //	// Check if cooldowns are ready.
-//	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
+//	if con.mana >= 60 && !con.target.Flags().Has(object.FlagDead)&& con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
 //		// Select target.
 //		con.cursor = con.target.Pos()
 //		// Trigger cooldown.
@@ -973,7 +984,7 @@ func (con *Conjurer) castPixieSwarm() {
 
 func (con *Conjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
-	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
+	if con.mana >= 60 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.ForceOfNatureReady && con.spells.Ready {
 		// Select target.
 		// Trigger cooldown.
 		con.spells.Ready = false
@@ -1069,7 +1080,7 @@ func (con *Conjurer) castProtectionFromShock() {
 
 func (con *Conjurer) castInversion() {
 	// Check if cooldowns are ready.
-	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InversionReady {
+	if con.mana >= 10 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.InversionReady {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1142,7 +1153,7 @@ func (con *Conjurer) castBlink() {
 
 func (con *Conjurer) castBurn() {
 	// Check if cooldowns are ready.
-	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !con.target.HasEnchant(enchant.INVULNERABLE) && con.spells.BurnReady && con.spells.Ready && con.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !con.target.HasEnchant(enchant.INVULNERABLE) {
+	if con.mana >= 10 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !con.target.HasEnchant(enchant.INVULNERABLE) && con.spells.BurnReady && con.spells.Ready && con.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !con.target.HasEnchant(enchant.INVULNERABLE) {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.
@@ -1181,7 +1192,7 @@ func (con *Conjurer) castBurn() {
 
 func (con *Conjurer) castStun() {
 	// Check if cooldowns are ready.
-	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready && !con.target.HasEnchant(enchant.HELD) && !con.target.HasEnchant(enchant.SLOWED) && con.target.MaxHealth() != 150 {
+	if con.mana >= 10 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.StunReady && con.spells.Ready && !con.target.HasEnchant(enchant.HELD) && !con.target.HasEnchant(enchant.SLOWED) && con.target.MaxHealth() != 150 {
 		// Select target.
 		// Trigger cooldown.
 		con.spells.Ready = false
@@ -1219,7 +1230,7 @@ func (con *Conjurer) castStun() {
 
 func (con *Conjurer) castToxicCloud() {
 	// Check if cooldowns are ready.
-	if con.mana >= 60 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
+	if con.mana >= 60 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.ToxicCloudReady && con.spells.Ready {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.
@@ -1258,7 +1269,7 @@ func (con *Conjurer) castToxicCloud() {
 
 func (con *Conjurer) castSlow() {
 	// Check if cooldowns are ready.
-	if con.mana >= 10 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready && !con.target.HasEnchant(enchant.SLOWED) && !con.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !con.target.HasEnchant(enchant.HELD) {
+	if con.mana >= 10 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.SlowReady && con.spells.Ready && !con.target.HasEnchant(enchant.SLOWED) && !con.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !con.target.HasEnchant(enchant.HELD) {
 		// Select target.
 		// Trigger cooldown.
 		con.spells.Ready = false
@@ -1296,7 +1307,7 @@ func (con *Conjurer) castSlow() {
 
 func (con *Conjurer) castCounterspell() {
 	// Check if cooldowns are ready.
-	if con.mana >= 20 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !con.unit.HasEnchant(enchant.INVISIBLE) && con.target.HasEnchant(enchant.SHOCK) && con.spells.Ready && con.spells.CounterspellReady && con.unit.CanSee(con.target) {
+	if con.mana >= 20 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !con.unit.HasEnchant(enchant.INVISIBLE) && con.target.HasEnchant(enchant.SHOCK) && con.spells.Ready && con.spells.CounterspellReady && con.unit.CanSee(con.target) {
 		// Trigger cooldown.
 		con.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -1330,7 +1341,7 @@ func (con *Conjurer) castCounterspell() {
 
 func (con *Conjurer) castMeteor() {
 	// Check if cooldowns are ready.
-	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
+	if con.mana >= 30 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.MeteorReady && con.spells.Ready {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.

@@ -26,16 +26,18 @@ func NewWizardNoTeam() *Wizard {
 
 // Wizard bot class.
 type Wizard struct {
-	team              *Team
-	unit              ns.Obj
-	cursor            ns.Pointf
-	target            ns.Obj
-	trap              ns.Obj
-	mana              int
-	passiveManaRegenT Updater
-	weaponPreferenceT Updater
-	findLootT         Updater
-	startingEquipment struct {
+	team                *Team
+	unit                ns.Obj
+	cursor              ns.Pointf
+	target              ns.Obj
+	trap                ns.Obj
+	mana                int
+	passiveManaRegenT   Updater
+	ManaRegenBool       bool
+	WeaponPreferenceBol bool
+	weaponPreferenceT   Updater
+	findLootT           Updater
+	startingEquipment   struct {
 		StreetSneakers ns.Obj
 		StreetPants    ns.Obj
 		StreetShirt    ns.Obj
@@ -71,6 +73,7 @@ type Wizard struct {
 		TrapReady             bool
 		TrapCount             int
 		IsCastingDrainMana    bool
+		checkTrapCountBool    bool
 	}
 	behaviour struct {
 		Busy             bool
@@ -375,14 +378,24 @@ func (wiz *Wizard) onDeath() {
 }
 
 func (wiz *Wizard) PassiveManaRegen() {
-	if wiz.spells.isAlive {
-		if wiz.mana < 150 {
-			if !BotMana {
-				wiz.mana = wiz.mana + 300
+	if !wiz.ManaRegenBool {
+		wiz.ManaRegenBool = true
+		ns.NewTimer(ns.Seconds(1), func() {
+			wiz.ManaRegenBool = false
+		})
+		if wiz.spells.isAlive {
+
+			if wiz.mana < 150 {
+				if !BotMana {
+					wiz.mana = wiz.mana + 300
+				}
+				wiz.mana = wiz.mana + 1
 			}
-			wiz.mana = wiz.mana + 1
 		}
+	} else {
+		return
 	}
+
 }
 
 func (wiz *Wizard) GoToManaObelisk() {
@@ -491,13 +504,14 @@ func (wiz *Wizard) checkForMissiles() {
 }
 
 func (wiz *Wizard) Update() {
-	wiz.passiveManaRegenT.EachSec(2, wiz.PassiveManaRegen)
+	wiz.PassiveManaRegen()
 	wiz.weaponPreferenceT.EachSec(10, wiz.WeaponPreference)
 	wiz.findLootT.EachFrame(15, wiz.findLoot)
 	wiz.checkForMissiles()
 	wiz.UsePotions()
 	wiz.RestoreMana()
 	wiz.RestoreManaWithDrainMana()
+	wiz.checkTrapCount()
 	if wiz.mana > 150 {
 		wiz.mana = 150
 	}
@@ -668,21 +682,27 @@ func (wiz *Wizard) findLoot() {
 
 // Checks the ammount of traps active for the WIzard bot.
 func (wiz *Wizard) checkTrapCount() {
-	allTraps := ns.FindAllObjects(ns.HasTypeName{"Glyph"}, ns.ObjCondFunc(func(it ns.Obj) bool {
-		return it.HasOwner(wiz.unit)
-	}))
-	wiz.spells.TrapCount = 0
-	if allTraps == nil {
-	} else {
-		for i := 0; i < len(allTraps); i++ {
-			wiz.spells.TrapCount = wiz.spells.TrapCount + 1
-			if wiz.spells.TrapCount == 4 {
-				ns.NewTimer(ns.Seconds(5), func() {
-					wiz.checkTrapCount() // FIXME: remove recursion
-				})
+	if !wiz.spells.checkTrapCountBool {
+		wiz.spells.checkTrapCountBool = true
+		ns.NewTimer(ns.Seconds(5), func() {
+			wiz.spells.checkTrapCountBool = false
+		})
+		allTraps := ns.FindAllObjects(ns.HasTypeName{"Glyph"}, ns.ObjCondFunc(func(it ns.Obj) bool {
+			return it.HasOwner(wiz.unit)
+		}))
+		wiz.spells.TrapCount = 0
+		if allTraps == nil {
+		} else {
+			for i := 0; i < len(allTraps); i++ {
+				wiz.spells.TrapCount = wiz.spells.TrapCount + 1
+				if wiz.spells.TrapCount == 4 {
+				}
 			}
 		}
+	} else {
+		return
 	}
+
 }
 
 // ------------------------------------------------------------------------------------------------------------------------------------ //
@@ -726,7 +746,6 @@ func (wiz *Wizard) castTrap() {
 															wiz.trap.SetOwner(wiz.unit)
 															// Global cooldown.
 															ns.NewTimer(ns.Frames(15), func() {
-																wiz.checkTrapCount()
 																wiz.spells.Ready = true
 															})
 															// Trap cooldown.
@@ -789,7 +808,7 @@ func (wiz *Wizard) castShock() {
 
 func (wiz *Wizard) castRingOfFire() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.spells.Ready && wiz.spells.RingOfFireReady && (ns.InCirclef{Center: wiz.unit, R: 40}).Matches(wiz.target) {
+	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.spells.Ready && wiz.spells.RingOfFireReady && (ns.InCirclef{Center: wiz.unit, R: 40}).Matches(wiz.target) && !wiz.target.Flags().Has(object.FlagDead) {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -860,7 +879,7 @@ func (wiz *Wizard) castLesserHeal() {
 
 func (wiz *Wizard) castInversion() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.InversionReady {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.Ready && wiz.spells.InversionReady && !wiz.target.Flags().Has(object.FlagDead) {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
@@ -933,7 +952,7 @@ func (wiz *Wizard) castInvisibility() {
 
 func (wiz *Wizard) castEnergyBolt() {
 	// Check if cooldowns are ready.
-	if wiz.mana > 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
+	if wiz.mana > 10 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.EnergyBoltReady && wiz.spells.Ready && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(wiz.target) {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -970,7 +989,7 @@ func (wiz *Wizard) castEnergyBolt() {
 
 func (wiz *Wizard) castDeathRay() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.INVULNERABLE) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.DeathRayReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.INVULNERABLE) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 		// Select target.
 		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
@@ -1009,7 +1028,7 @@ func (wiz *Wizard) castDeathRay() {
 
 func (wiz *Wizard) castBurn() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.spells.BurnReady && wiz.spells.Ready && wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.spells.BurnReady && wiz.spells.Ready && wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !wiz.target.HasEnchant(enchant.INVULNERABLE) {
 		// Select target.
 		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
@@ -1048,7 +1067,7 @@ func (wiz *Wizard) castBurn() {
 
 func (wiz *Wizard) castFireball() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+	if wiz.mana >= 30 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.FireballReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 		// Select target.
 		wiz.cursor = wiz.target.Pos()
 		// Trigger cooldown.
@@ -1164,7 +1183,7 @@ func (wiz *Wizard) castBlink() {
 
 func (wiz *Wizard) castMissilesOfMagic() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 15 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+	if wiz.mana >= 15 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.target.HasEnchant(enchant.INVULNERABLE) && wiz.unit.CanSee(wiz.target) && wiz.spells.MagicMissilesReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -1202,7 +1221,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 
 func (wiz *Wizard) castSlow() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.SLOWED) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.SlowReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.SLOWED) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 		// Select target.
 		// Trigger cooldown.
 		wiz.spells.Ready = false
@@ -1240,7 +1259,7 @@ func (wiz *Wizard) castSlow() {
 
 //func (wiz *Wizard) castConfuse() {
 //	// Check if cooldowns are ready.
-//	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.ConfuseReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.CONFUSED) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+//	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.ConfuseReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.CONFUSED) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 //		// Select target.
 //		// Trigger cooldown.
 //		wiz.spells.Ready = false
@@ -1278,7 +1297,7 @@ func (wiz *Wizard) castSlow() {
 //
 //func (wiz *Wizard) castTeleportToTarget() {
 //	// Check if cooldowns are ready.
-//	if wiz.mana >= 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.TeleportToTargetReady && wiz.spells.Ready {
+//	if wiz.mana >= 20 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead) && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.spells.TeleportToTargetReady && wiz.spells.Ready {
 //		// Select target.
 //		wiz.cursor = wiz.target.Pos()
 //		// Trigger cooldown.
@@ -1317,7 +1336,7 @@ func (wiz *Wizard) castSlow() {
 //
 //func (wiz *Wizard) castAnchor() {
 //	// Check if cooldowns are ready.
-//	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.AnchorReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.ANCHORED) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+//	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead)&& !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.AnchorReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.ANCHORED) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 //		// Select target.
 //		// Trigger cooldown.
 //		wiz.spells.Ready = false
@@ -1355,7 +1374,7 @@ func (wiz *Wizard) castSlow() {
 //
 //func (wiz *Wizard) castRun() {
 //	// Check if cooldowns are ready.
-//	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.RunReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.RUN) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
+//	if wiz.mana >= 10 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead)&& !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.RunReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.RUN) && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) {
 //		// Select target.
 //		// Trigger cooldown.
 //		wiz.spells.Ready = false
@@ -1393,7 +1412,7 @@ func (wiz *Wizard) castSlow() {
 //
 //func (wiz *Wizard) castFumble() {
 //	// Check if cooldowns are ready.
-//	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FumbleReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && wiz.target.HasClass(class.PLAYER) {
+//	if wiz.mana >= 60 && wiz.spells.isAlive && !wiz.target.Flags().Has(object.FlagDead)&& !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && wiz.unit.CanSee(wiz.target) && wiz.spells.FumbleReady && wiz.spells.Ready && !wiz.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && wiz.target.HasClass(class.PLAYER) {
 //		// Select target.
 //		// Trigger cooldown.
 //		wiz.spells.Ready = false
@@ -1509,7 +1528,7 @@ func (wiz *Wizard) castHaste() {
 
 func (wiz *Wizard) castCounterspell() {
 	// Check if cooldowns are ready.
-	if wiz.mana >= 20 && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.target.HasEnchant(enchant.SHOCK) && wiz.spells.Ready && wiz.spells.CounterspellReady && wiz.unit.CanSee(wiz.target) {
+	if wiz.mana >= 20 && !wiz.target.Flags().Has(object.FlagDead) && wiz.spells.isAlive && !wiz.unit.HasEnchant(enchant.ANTI_MAGIC) && !wiz.unit.HasEnchant(enchant.INVISIBLE) && wiz.target.HasEnchant(enchant.SHOCK) && wiz.spells.Ready && wiz.spells.CounterspellReady && wiz.unit.CanSee(wiz.target) {
 		// Trigger cooldown.
 		wiz.spells.Ready = false
 		// Check reaction time based on difficulty setting.
