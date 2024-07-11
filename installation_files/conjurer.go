@@ -1000,7 +1000,7 @@ func (con *Conjurer) castForceOfNature() {
 						con.unit.LookAtObject(con.target)
 						con.unit.Pause(ns.Frames(36))
 						con.mana = con.mana - 60
-						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target.Pos())
+						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target)
 						// Global cooldown.
 						ns.NewTimer(ns.Frames(3), func() {
 							con.spells.Ready = true

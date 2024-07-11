@@ -1198,7 +1198,7 @@ func (wiz *Wizard) castMissilesOfMagic() {
 						wiz.unit.LookAtObject(wiz.target)
 						wiz.unit.Pause(ns.Frames(wiz.reactionTime))
 						wiz.spells.MagicMissilesReady = false
-						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target)
+						ns.CastSpell(spell.MAGIC_MISSILE, wiz.unit, wiz.target.Pos())
 						wiz.mana = wiz.mana - 15
 						// Global cooldown.
 						ns.NewTimer(ns.Frames(3), func() {

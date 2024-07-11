@@ -4,9 +4,6 @@ import (
 	"github.com/noxworld-dev/noxscript/ns/v4"
 )
 
-type MyBotScriptData struct {
-}
-
 // Global Bot Script variables
 var InitLoadComplete bool
 var BotRespawn bool
@@ -103,6 +100,8 @@ func onCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string) string {
 		switch msg {
 		case "test":
 			ns.PrintStrToAll("Test")
+			updateMyBotScriptData(p, func(data *MyAccountData) {
+			})
 		}
 	}
 	return msg
