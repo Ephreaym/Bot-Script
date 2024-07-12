@@ -16,6 +16,8 @@ var soloPlayerHasFlag bool
 var botSpawnsNoTeams []ns.Obj
 
 // Server settings
+
+// -- General Bot Settings
 var BotDifficulty int
 var TeamsEnabled bool
 

@@ -18,8 +18,14 @@ type MyAccountData struct {
 		Class      player.Class
 		// Order
 	}
-	Server struct {
-		wb int
+	botscript struct {
+		// Active Bots
+		ActiveRedWarBots  int
+		ActiveRedConBots  int
+		ActiveRedWizBots  int
+		ActiveBlueWarBots int
+		ActiveBlueConBots int
+		ActiveBlueWizBots int
 	}
 }
 

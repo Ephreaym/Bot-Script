@@ -84,6 +84,7 @@ type Warrior struct {
 		EscortingTarget    ns.Obj
 		Chatting           bool
 		VocalReady         bool
+		ObjectOfInterest   ns.Obj
 	}
 	inventory struct {
 		crown bool
@@ -208,7 +209,6 @@ func (war *Warrior) init() {
 	war.unit.OnEvent(ns.EventDeath, war.onDeath)
 	war.LookForWeapon()
 	ns.OnChat(war.onWarCommand)
-	//war.onSlowUpdate()
 	ns.NewTimer(ns.Frames(3+war.reactionTime), func() {
 		war.abilities.Ready = true
 	})
@@ -348,6 +348,17 @@ func (war *Warrior) onHit() {
 	}
 }
 
+func (war *Warrior) onCheckIfObjectOfInterestIsPickedUp() {
+	if war.behaviour.ObjectOfInterest == nil {
+		return
+	} else {
+		if war.unit.HasItem(war.behaviour.ObjectOfInterest) {
+			war.behaviour.ObjectOfInterest = nil
+			war.onEndOfWaypoint()
+		}
+	}
+}
+
 func (war *Warrior) onEndOfWaypoint() {
 
 	war.behaviour.Busy = false
@@ -435,6 +446,7 @@ func (war *Warrior) Update() {
 	war.onHarpoonFlyingLoop()
 	war.onHarpoonReelLoop()
 	war.BerserkerChargeCooldownManager()
+	war.onCheckIfObjectOfInterestIsPickedUp()
 	war.weaponPreferenceT.EachSec(10, war.WeaponPreference)
 	war.findLootT.EachFrame(15, war.findLoot)
 	if war.unit.HasEnchant(enchant.HELD) && !war.abilities.BerserkerStunActive && !war.abilities.BomberStunActive {
@@ -446,9 +458,9 @@ func (war *Warrior) Update() {
 func (war *Warrior) LookForWeapon() {
 	if !war.behaviour.Busy {
 		war.behaviour.Busy = true
-		ItemLocation := ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
-		if ItemLocation != nil {
-			war.unit.WalkTo(ItemLocation.Pos())
+		war.behaviour.ObjectOfInterest = ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
+		if war.behaviour.ObjectOfInterest != nil {
+			war.unit.WalkTo(war.behaviour.ObjectOfInterest.Pos())
 		}
 	}
 }
@@ -569,7 +581,7 @@ func (war *Warrior) WeaponPreference() {
 }
 
 func (war *Warrior) findLoot() {
-	const dist = 75
+	const dist = 80
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
@@ -818,7 +830,7 @@ func (war *Warrior) BerserkLoop() {
 
 func (war *Warrior) useWarCry() {
 	// Check if cooldown is war.abilities.Ready.
-	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive && !war.abilities.HarpoonFlying && !war.target.Flags().Has(object.FlagDead) {
+	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive && !war.abilities.HarpoonFlying && !war.target.Flags().Has(object.FlagDead) && war.unit.CanSee(war.target) {
 		if war.target.MaxHealth() == 150 {
 		} else {
 			// Trigger global cooldown.
@@ -902,7 +914,7 @@ func (war *Warrior) useEyeOfTheWolf() {
 // ------------------ Harpoon ---------------- //
 
 func (war *Warrior) useHarpoon() {
-	if war.abilities.HarpoonReady && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.abilities.BerserkerChargeActive && !war.target.Flags().Has(object.FlagDead) {
+	if war.abilities.HarpoonReady && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.abilities.BerserkerChargeActive && !war.target.Flags().Has(object.FlagDead) && war.unit.CanSee(war.target) {
 		// Create objects, set properties and shoot harpoon.
 		war.abilities.HarpoonTarget = war.target
 		war.abilities.HarpoonReady = false

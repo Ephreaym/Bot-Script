@@ -68,13 +68,15 @@ type Conjurer struct {
 		ManaRestoreSound bool
 	}
 	behaviour struct {
-		AntiStuck       bool
-		Busy            bool
-		ManaOfInterest  ns.Obj
-		Escorting       bool
-		EscortingTarget ns.Obj
-		Guarding        bool
-		GuardingPos     ns.Pointf
+		AntiStuck            bool
+		Busy                 bool
+		ManaOfInterest       ns.Obj
+		Escorting            bool
+		EscortingTarget      ns.Obj
+		Guarding             bool
+		GuardingPos          ns.Pointf
+		castingForceOfNatrue bool
+		ObjectOfInterest     ns.Obj
 	}
 	reactionTime int
 }
@@ -228,7 +230,7 @@ func (con *Conjurer) onLookingForTarget() {
 
 func (con *Conjurer) onEnemyHeard() {
 	if !con.unit.CanSee(con.target) {
-		con.castForceOfNature()
+		//con.castForceOfNature()
 		con.castInfravision()
 	}
 }
@@ -245,15 +247,6 @@ func (con *Conjurer) onCollide() {
 			con.team.CheckPickUpEnemyFlag(caller, con.unit)
 			con.team.CheckCaptureEnemyFlag(caller, con.unit)
 			con.team.CheckRetrievedOwnFlag(caller, con.unit)
-		}
-		if caller == con.behaviour.ManaOfInterest {
-			ns.NewTimer(ns.Seconds(1), func() {
-				if con.mana > 110 {
-					con.onEndOfWaypoint()
-				} else {
-					con.GoToManaObelisk()
-				}
-			})
 		}
 	}
 }
@@ -351,6 +344,7 @@ func (con *Conjurer) GoToManaObelisk() {
 		)
 		if NearestObeliskWithMana != nil {
 			con.behaviour.ManaOfInterest = NearestObeliskWithMana
+			con.behaviour.ObjectOfInterest = con.behaviour.ManaOfInterest
 			if GameModeIsCTF {
 				if con.unit == con.team.TeamTank {
 					if con.unit.CanSee(NearestObeliskWithMana) {
@@ -362,6 +356,17 @@ func (con *Conjurer) GoToManaObelisk() {
 			} else {
 				con.unit.WalkTo(NearestObeliskWithMana.Pos())
 			}
+		}
+	}
+}
+
+func (con *Conjurer) onCheckIfObjectOfInterestIsPickedUp() {
+	if con.behaviour.ObjectOfInterest == nil {
+		return
+	} else {
+		if con.behaviour.ObjectOfInterest.CurrentMana() <= 10 {
+			con.behaviour.ObjectOfInterest = nil
+			con.onEndOfWaypoint()
 		}
 	}
 }
@@ -419,6 +424,8 @@ func (con *Conjurer) Update() {
 	con.checkForMissiles()
 	con.UsePotions()
 	con.RestoreMana()
+	con.onCheckIfObjectOfInterestIsPickedUp()
+	con.onFaceDirectionDuringChannel()
 	if con.mana > 125 {
 		con.mana = 125
 	}
@@ -437,22 +444,30 @@ func (con *Conjurer) Update() {
 	if con.unit.CanSee(con.target) && con.unit.HasEnchant(enchant.HELD) || con.unit.HasEnchant(enchant.SLOWED) {
 		con.castBlink()
 	}
-	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
-		if con.unit.CanSee(con.target) {
-			//con.castFistOfVengeance()
-			con.castMeteor()
-			con.castToxicCloud()
-			con.castBurn()
-			con.castCounterspell()
-		}
-	}
 	if con.spells.Ready && con.unit.CanSee(con.target) {
 		if !GameModeIsCTF {
-			con.castStun()
+			if con.target.MaxHealth() < 150 {
+				con.castStun()
+			} else {
+				con.castSlow()
+			}
+		} else {
+			con.castSlow()
 		}
-		con.castSlow()
-
 	}
+	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
+		if con.unit.CanSee(con.target) {
+			con.castFistOfVengeance()
+			con.castMeteor()
+			con.castToxicCloud()
+		}
+	}
+	if con.target.HasEnchant(enchant.HELD) {
+		if con.unit.CanSee(con.target) {
+			con.castBurn()
+		}
+	}
+
 	if !con.unit.CanSee(con.target) && con.spells.Ready {
 		con.castVampirism()
 		if con.mana >= 85 {
@@ -460,10 +475,16 @@ func (con *Conjurer) Update() {
 			con.castProtectionFromShock()
 			con.castProtectionFromFire()
 			con.castProtectionFromPoison()
+			con.castCounterspell()
 		}
 	}
 	if !con.unit.HasEnchant(enchant.VAMPIRISM) || !con.unit.HasEnchant(enchant.PROTECT_FROM_POISON) || !con.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) || !con.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) || con.summons.CreatureCage <= 3 {
 		con.GoToManaObelisk()
+	}
+	if con.unit.CanSee(con.target) {
+		if con.mana <= 20 {
+			con.GoToManaObelisk()
+		}
 	}
 }
 
@@ -693,7 +714,7 @@ func (con *Conjurer) WeaponPreference() {
 }
 
 func (con *Conjurer) findLoot() {
-	const dist = 75
+	const dist = 80
 	// Weapons.
 	weapons := ns.FindAllObjects(
 		ns.InCirclef{Center: con.unit, R: dist},
@@ -823,6 +844,16 @@ func (con *Conjurer) checkPixieCount() {
 	}
 }
 
+// Orientate the con to the target while casting channeled spells
+func (con *Conjurer) onFaceDirectionDuringChannel() {
+	if !con.behaviour.castingForceOfNatrue {
+		return
+	} else {
+		con.unit.LookAtObject(con.target)
+		con.unit.Pause(ns.Frames(1))
+	}
+}
+
 // ------------------------------------------------------------------------------------------------------------------------------------ //
 // ---------------------------------------------------------------- SPELL BOOK -------------------------------------------------------- //
 // ------------------------------------------------------------------------------------------------------------------------------------ //
@@ -943,44 +974,44 @@ func (con *Conjurer) castPixieSwarm() {
 	}
 }
 
-//func (con *Conjurer) castFistOfVengeance() {
-//	// Check if cooldowns are ready.
-//	if con.mana >= 60 && !con.target.Flags().Has(object.FlagDead)&& con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
-//		// Select target.
-//		con.cursor = con.target.Pos()
-//		// Trigger cooldown.
-//		con.spells.Ready = false
-//		// Check reaction time based on difficulty setting.
-//		ns.NewTimer(ns.Frames(con.reactionTime), func() {
-//			// Check for War Cry before chant.
-//			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-//				castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
-//					// Check for War Cry before spell release.
-//					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
-//						// Aim.
-//						con.unit.LookAtObject(con.target)
-//						con.unit.Pause(ns.Frames(con.reactionTime))
-//						con.spells.FistOfVengeanceReady = false
-//						ns.CastSpell(spell.FIST, con.unit, con.cursor)
-//						con.mana = con.mana - 60
-//						// Global cooldown.
-//						ns.NewTimer(ns.Frames(3), func() {
-//							con.spells.Ready = true
-//						})
-//						ns.NewTimer(ns.Seconds(5), func() {
-//							// Fist Of Vengeance cooldown.
-//							con.spells.FistOfVengeanceReady = true
-//						})
-//					}
-//				})
-//			} else {
-//				ns.NewTimer(ns.Frames(con.reactionTime), func() {
-//					con.spells.Ready = true
-//				})
-//			}
-//		})
-//	}
-//}
+func (con *Conjurer) castFistOfVengeance() {
+	// Check if cooldowns are ready.
+	if con.mana >= 60 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.unit.CanSee(con.target) && con.spells.FistOfVengeanceReady && con.spells.Ready {
+		// Select target.
+		con.cursor = con.target.Pos()
+		// Trigger cooldown.
+		con.spells.Ready = false
+		// Check reaction time based on difficulty setting.
+		ns.NewTimer(ns.Frames(con.reactionTime), func() {
+			// Check for War Cry before chant.
+			if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+				castPhonemes(con.unit, []audio.Name{PhUpRight, PhUp, PhDown}, func() {
+					// Check for War Cry before spell release.
+					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
+						// Aim.
+						con.unit.LookAtObject(con.target)
+						con.unit.Pause(ns.Frames(con.reactionTime))
+						con.spells.FistOfVengeanceReady = false
+						ns.CastSpell(spell.FIST, con.unit, con.cursor)
+						con.mana = con.mana - 60
+						// Global cooldown.
+						ns.NewTimer(ns.Frames(3), func() {
+							con.spells.Ready = true
+						})
+						ns.NewTimer(ns.Seconds(5), func() {
+							// Fist Of Vengeance cooldown.
+							con.spells.FistOfVengeanceReady = true
+						})
+					}
+				})
+			} else {
+				ns.NewTimer(ns.Frames(con.reactionTime), func() {
+					con.spells.Ready = true
+				})
+			}
+		})
+	}
+}
 
 func (con *Conjurer) castForceOfNature() {
 	// Check if cooldowns are ready.
@@ -997,8 +1028,10 @@ func (con *Conjurer) castForceOfNature() {
 					if con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) {
 						// Aim.
 						con.spells.ForceOfNatureReady = false
-						con.unit.LookAtObject(con.target)
-						con.unit.Pause(ns.Frames(36))
+						con.behaviour.castingForceOfNatrue = true
+						ns.NewTimer(ns.Frames(40), func() {
+							con.behaviour.castingForceOfNatrue = false
+						})
 						con.mana = con.mana - 60
 						ns.CastSpell(spell.FORCE_OF_NATURE, con.unit, con.target)
 						// Global cooldown.
@@ -1153,7 +1186,7 @@ func (con *Conjurer) castBlink() {
 
 func (con *Conjurer) castBurn() {
 	// Check if cooldowns are ready.
-	if con.mana >= 10 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !con.target.HasEnchant(enchant.INVULNERABLE) && con.spells.BurnReady && con.spells.Ready && con.target.HasEnchant(enchant.REFLECTIVE_SHIELD) && !con.target.HasEnchant(enchant.INVULNERABLE) {
+	if con.mana >= 10 && !con.target.Flags().Has(object.FlagDead) && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && !con.target.HasEnchant(enchant.INVULNERABLE) && con.spells.BurnReady && con.spells.Ready && !con.target.HasEnchant(enchant.INVULNERABLE) {
 		// Select target.
 		con.cursor = con.target.Pos()
 		// Trigger cooldown.
@@ -1176,7 +1209,7 @@ func (con *Conjurer) castBurn() {
 							con.spells.Ready = true
 						})
 						// Burn cooldown.
-						ns.NewTimer(ns.Frames(1), func() {
+						ns.NewTimer(ns.Seconds(2), func() {
 							con.spells.BurnReady = true
 						})
 					}
@@ -1213,7 +1246,7 @@ func (con *Conjurer) castStun() {
 						ns.NewTimer(ns.Frames(3), func() {
 							con.spells.Ready = true
 						})
-						ns.NewTimer(ns.Seconds(5), func() {
+						ns.NewTimer(ns.Seconds(2), func() {
 							// Stun cooldown.
 							con.spells.StunReady = true
 						})

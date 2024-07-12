@@ -567,6 +567,11 @@ func (wiz *Wizard) Update() {
 	if !wiz.unit.HasEnchant(enchant.SHIELD) || !wiz.unit.HasEnchant(enchant.HASTED) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_ELECTRICITY) || !wiz.unit.HasEnchant(enchant.PROTECT_FROM_FIRE) || wiz.spells.TrapCount <= 3 {
 		wiz.GoToManaObelisk()
 	}
+	if wiz.unit.CanSee(wiz.target) {
+		if wiz.mana <= 20 {
+			wiz.GoToManaObelisk()
+		}
+	}
 }
 
 func (wiz *Wizard) LookForWeapon() {
@@ -615,7 +620,7 @@ func (wiz *Wizard) LookForNearbyItems() {
 }
 
 func (wiz *Wizard) findLoot() {
-	const dist = 75
+	const dist = 80
 	weapons := ns.FindAllObjects(
 		ns.InCirclef{Center: wiz.unit, R: dist},
 		ns.HasTypeName{
