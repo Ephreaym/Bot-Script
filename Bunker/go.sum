@@ -1,0 +1,13 @@
+github.com/noxworld-dev/noxscript/ns v1.0.2 h1:PMpKqRi3fEhwAfBM+PZVTopT6o2vL6AmCDQH8zV5QWU=
+github.com/noxworld-dev/noxscript/ns/v4 v4.16.1 h1:QFxwNL/I+DX/u2o6wVWxVeoRE9zqTzNr2O0Tw/eiYBA=
+github.com/noxworld-dev/noxscript/ns/v4 v4.16.1/go.mod h1:H6W25adFWdP6r95qVMThXMad0kgfyi6OncQmk1INecc=
+github.com/noxworld-dev/noxscript/ns/v4 v4.19.1 h1:VXSzkymvis5IW5lYIAinhgbYEbNB/Lbix9yXD9dEoxo=
+github.com/noxworld-dev/noxscript/ns/v4 v4.19.1/go.mod h1:sumxNbzs331R1Ohkxf4uOKE7oZsXYmcltRdP/mz8YJs=
+github.com/noxworld-dev/opennox-lib v0.0.0-20240106132033-e8abe68bd8d5 h1:py/Z0Illi3jZ9MaL9Dpq3wH9MC+s0H8OapZ1pvJH4nU=
+github.com/noxworld-dev/opennox-lib v0.0.0-20240106132033-e8abe68bd8d5/go.mod h1:liEd6wzKFZsgIOX76YGRZaAqhQjEcLzMwlHJ+qk0yoU=
+golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa h1:FRnLl4eNAQl8hwxVVC17teOw8kdjVDVAiFMtgUdTSRQ=
+golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa/go.mod h1:zk2irFbV9DP96SEBUUAy67IdHUaZuSnrz1n472HUCLE=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v2 v2.4.0 h1:D8xgwECY7CYvx+Y2n4sBz93Jn9JRvxdiyyo8CTfuKaY=
+gopkg.in/yaml.v2 v2.4.0/go.mod h1:RDklbk79AGWmwhnvt/jBztapEOGDOx6ZbXqjP6csGnQ=
