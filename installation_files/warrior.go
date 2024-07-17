@@ -37,7 +37,9 @@ type Warrior struct {
 	vec                             ns.Pointf
 	findLootT                       Updater
 	weaponPreferenceT               Updater
+	lookForWeaponT                  Updater
 	BerserkerChargeCooldownManagerT Updater
+	MissileBlockT                   Updater
 	startingEquipment               struct {
 		Longsword      ns.Obj
 		WoodenShield   ns.Obj
@@ -69,25 +71,30 @@ type Warrior struct {
 		RoundChackramReady          bool // for now cooldown 10 seconds.
 	}
 	behaviour struct {
-		listening          bool
-		lookingForHealing  bool
-		charging           bool
-		attacking          bool
-		lookingForTarget   bool
-		AntiStuck          bool
-		SwitchMainWeapon   bool
-		Busy               bool
-		targetTeleportWake ns.Obj
-		Escorting          bool
-		Guarding           bool
-		GuardingPos        ns.Pointf
-		EscortingTarget    ns.Obj
-		Chatting           bool
-		VocalReady         bool
-		ObjectOfInterest   ns.Obj
+		listening                 bool
+		lookingForHealing         bool
+		charging                  bool
+		attacking                 bool
+		lookingForTarget          bool
+		AntiStuck                 bool
+		SwitchMainWeapon          bool
+		Busy                      bool
+		targetTeleportWake        ns.Obj
+		Escorting                 bool
+		Guarding                  bool
+		GuardingPos               ns.Pointf
+		EscortingTarget           ns.Obj
+		Chatting                  bool
+		VocalReady                bool
+		ObjectOfInterest          ns.Obj
+		LongswordAndShieldEquiped bool
+		GreatswordEquiped         bool
+		HammerEquiped             bool
 	}
 	inventory struct {
-		crown bool
+		crown      bool
+		Greatsword ns.Obj
+		WarHammer  ns.Obj
 	}
 	reactionTime int
 }
@@ -127,12 +134,20 @@ func (war *Warrior) init() {
 	// Create WarBot.
 	if TeamsEnabled {
 		war.unit = ns.CreateObject("NPC", war.team.SpawnPoint())
+		if GameModeIsSocial {
+			war.unit.Guard(war.team.SpawnPoint(), war.team.SpawnPoint(), 20)
+		}
 	} else {
 		randomIndex := ns.Random(0, len(botSpawnsNoTeams)-1)
 		pick := botSpawnsNoTeams[randomIndex]
 		war.unit = ns.CreateObject("NPC", pick.Pos())
+		if GameModeIsSocial {
+			war.unit.Guard(pick.Pos(), pick.Pos(), 20)
+		}
 	}
-	war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	if !GameModeIsSocial {
+		war.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	}
 	war.unit.SetMaxHealth(150)
 	war.unit.SetStrength(125)
 	war.unit.SetBaseSpeed(100)
@@ -170,44 +185,52 @@ func (war *Warrior) init() {
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	war.reactionTime = BotDifficulty
 	// Set WarBot properties.
-	war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
-	war.unit.MonsterStatusEnable(object.MonStatusAlert)
-	war.unit.AggressionLevel(0.83)
-	war.unit.Hunt()
-	war.unit.ResumeLevel(1)
-	war.unit.RetreatLevel(0.0)
+	if !GameModeIsSocial {
+		war.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+		war.unit.MonsterStatusEnable(object.MonStatusCanDodge)
+		war.unit.MonsterStatusEnable(object.MonStatusAlert)
+	}
+	war.unit.AggressionLevel(0.16)
+	if !GameModeIsSocial {
+		war.unit.AggressionLevel(0.83)
+		war.unit.Hunt()
+		war.unit.ResumeLevel(1)
+		war.unit.RetreatLevel(0.0)
+	}
 	// Create and equip WarBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
 	war.startingEquipment.Longsword = ns.CreateObject("Longsword", ns.Ptf(150, 150))
 	war.startingEquipment.WoodenShield = ns.CreateObject("WoodenShield", ns.Ptf(150, 150))
 	war.startingEquipment.StreetSneakers = ns.CreateObject("StreetSneakers", ns.Ptf(150, 150))
 	war.startingEquipment.StreetPants = ns.CreateObject("StreetPants", ns.Ptf(150, 150))
+	war.behaviour.LongswordAndShieldEquiped = true
 	war.unit.Equip(war.startingEquipment.Longsword)
 	war.unit.Equip(war.startingEquipment.WoodenShield)
 	war.unit.Equip(war.startingEquipment.StreetSneakers)
 	war.unit.Equip(war.startingEquipment.StreetPants)
 	// Select a WarBot loadout (tactical preference, dialog). TODO: Give different audio and chat for each set so they feel like different characters.
 	// On looking for enemy.
-	war.unit.OnEvent(ns.EventLookingForEnemy, war.onLookingForEnemy)
-	// On heard.
-	war.unit.OnEvent(ns.EventEnemyHeard, war.onEnemyHeard)
-	// Enemy sighted.
-	war.unit.OnEvent(ns.EventEnemySighted, war.onEnemySighted)
-	// Enemy lost.
-	war.unit.OnEvent(ns.EventLostEnemy, war.onLostEnemy)
-	// On end of waypoint.
-	war.unit.OnEvent(ns.EventEndOfWaypoint, war.onEndOfWaypoint)
-	// On change focus.
-	war.unit.OnEvent(ns.EventChangeFocus, war.onChangeFocus)
-	// On collision.
-	war.unit.OnEvent(ns.EventCollision, war.onCollide)
-	// On hit.
-	war.unit.OnEvent(ns.EventIsHit, war.onHit)
-	// Retreat.
-	war.unit.OnEvent(ns.EventRetreat, war.onRetreat)
-	// On death.
-	war.unit.OnEvent(ns.EventDeath, war.onDeath)
-	war.LookForWeapon()
+	if !GameModeIsSocial {
+		war.unit.OnEvent(ns.EventLookingForEnemy, war.onLookingForEnemy)
+		// On heard.
+		war.unit.OnEvent(ns.EventEnemyHeard, war.onEnemyHeard)
+		// Enemy sighted.
+		war.unit.OnEvent(ns.EventEnemySighted, war.onEnemySighted)
+		// Enemy lost.
+		war.unit.OnEvent(ns.EventLostEnemy, war.onLostEnemy)
+		// On end of waypoint.
+		war.unit.OnEvent(ns.EventEndOfWaypoint, war.onEndOfWaypoint)
+		// On change focus.
+		war.unit.OnEvent(ns.EventChangeFocus, war.onChangeFocus)
+		// On collision.
+		war.unit.OnEvent(ns.EventCollision, war.onCollide)
+		// On hit.
+		war.unit.OnEvent(ns.EventIsHit, war.onHit)
+		// Retreat.
+		war.unit.OnEvent(ns.EventRetreat, war.onRetreat)
+		// On death.
+		war.unit.OnEvent(ns.EventDeath, war.onDeath)
+		war.LookForWeapon()
+	}
 	ns.OnChat(war.onWarCommand)
 	ns.NewTimer(ns.Frames(3+war.reactionTime), func() {
 		war.abilities.Ready = true
@@ -282,16 +305,17 @@ func (war *Warrior) onCollide() {
 		// Berserker Charge damage and cooldown reset after a kill with Berserker Charge.
 		if war.abilities.BerserkerChargeActive && war.abilities.isAlive && !ns.GetCaller().Flags().Has(object.FlagDead) {
 			if ns.GetCaller() != nil && !ns.GetCaller().Flags().Has(object.FlagDead) && war.abilities.isAlive && ns.GetCaller().HasClass(class.PLAYER) || ns.GetCaller().HasClass(class.MONSTER) {
+				war.abilities.BerserkerChargeActive = false
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
 				ns.AudioEvent(audio.FleshHitFlesh, war.unit)
 				ns.GetCaller().Damage(war.unit, 150, 2)
+				war.StopBerserkLoop()
 				if ns.GetCaller().Flags().Has(object.FlagDead) {
 					war.abilities.BerserkerChargeResetOnKill = true
 					ns.NewTimer(ns.Frames(war.reactionTime+3), func() {
 						war.abilities.BerserkerChargeReady = true
 					})
 				}
-				war.StopBerserkLoop()
 			} else if ns.GetCaller() != nil && war.abilities.isAlive && ns.GetCaller().HasClass(class.IMMOBILE) && !ns.GetCaller().HasClass(class.DOOR) && !ns.GetCaller().HasClass(class.FIRE) && !ns.GetCaller().HasClass(class.MISSILE) && !ns.GetCaller().Flags().Has(object.FlagDead) {
 				war.abilities.BerserkerStunActive = true
 				ns.AudioEvent(audio.BerserkerChargeOff, war.unit)
@@ -336,7 +360,6 @@ func (war *Warrior) onCheckBlinkWakeRange() {
 	if war.behaviour.targetTeleportWake != nil {
 		if !(ns.InCirclef{Center: war.unit, R: 100}).Matches(war.behaviour.targetTeleportWake) {
 			war.unit.Attack(war.target)
-			war.unit.DestroyChat()
 			return
 		}
 	}
@@ -360,17 +383,12 @@ func (war *Warrior) onCheckIfObjectOfInterestIsPickedUp() {
 }
 
 func (war *Warrior) onEndOfWaypoint() {
-
 	war.behaviour.Busy = false
 	war.unit.AggressionLevel(0.83)
 	if GameModeIsCTF {
 		war.team.CheckAttackOrDefend(war.unit)
-		war.LookForNearbyItems()
 	} else {
-
 		war.unit.Hunt()
-		war.LookForNearbyItems()
-
 	}
 }
 
@@ -440,15 +458,16 @@ func (war *Warrior) Update() {
 	if !InitLoadComplete {
 		return
 	}
+	//war.MissileBlockT.EachFrame(15, war.onDefensiveWeaponChoice)
 	war.UsePotions()
 	war.onCheckBlinkWakeRange()
 	war.BerserkLoop()
 	war.onHarpoonFlyingLoop()
 	war.onHarpoonReelLoop()
-	war.BerserkerChargeCooldownManager()
+	war.BerserkerChargeCooldownManagerT.EachFrame(30, war.BerserkerChargeCooldownManager)
 	war.onCheckIfObjectOfInterestIsPickedUp()
-	war.weaponPreferenceT.EachSec(10, war.WeaponPreference)
 	war.findLootT.EachFrame(15, war.findLoot)
+	//war.weaponPreferenceT.EachFrame(90, war.WeaponPreference)
 	if war.unit.HasEnchant(enchant.HELD) && !war.abilities.BerserkerStunActive && !war.abilities.BomberStunActive {
 		ns.CastSpell(spell.SLOW, war.unit, war.unit)
 		war.unit.EnchantOff(enchant.HELD)
@@ -456,91 +475,25 @@ func (war *Warrior) Update() {
 }
 
 func (war *Warrior) LookForWeapon() {
-	if !war.behaviour.Busy {
-		war.behaviour.Busy = true
-		war.behaviour.ObjectOfInterest = ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
-		if war.behaviour.ObjectOfInterest != nil {
-			war.unit.WalkTo(war.behaviour.ObjectOfInterest.Pos())
-		}
-	}
-}
-
-func (war *Warrior) LookForNearbyItems() {
-	if !war.behaviour.Busy {
-		war.behaviour.Busy = true
-		if ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
-			//"LeatherHelm",
-			"GreatSword", "WarHammer", //"MorningStar", "BattleAxe", "Sword", "OgreAxe",
-			//"LeatherLeggings", "LeatherArmbands",
-			"RoundChakram", //"FanChakram",
-			//"CurePoisonPotion",
-			// Plate armor.
-			//"OrnateHelm",
-			//"SteelHelm",
-			//"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
-
-			// Chainmail armor.
-			//	"ChainCoif",
-			//"ChainTunic", "ChainLeggings",
-			//"LeatherBoots", "MedievalCloak", "MedievalShirt", "MedievalPants",
-			"RedPotion"},
-			ns.InCirclef{Center: war.unit, R: 200}) != nil {
-			if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"GreatSword", "WarHammer", "RoundChakram", "RedPotion"}) == 0 {
-				ItemLocation := ns.FindAllObjects(ns.HasTypeName{ //"LeatherArmoredBoots", "LeatherArmor",
-					//"LeatherHelm",
-					"GreatSword", "WarHammer", // "MorningStar", "BattleAxe", "Sword", "OgreAxe",
-					//"LeatherLeggings", "LeatherArmbands",
-					"RoundChakram", //"FanChakram",
-					//"CurePoisonPotion",
-					// Plate armor.
-					//"OrnateHelm",
-					//"SteelHelm",
-					//"Breastplate", "PlateLeggings", "PlateBoots", "PlateArms", "SteelShield",
-
-					// Chainmail armor.
-					//"ChainCoif",
-					//"ChainTunic", "ChainLeggings",
-					//"LeatherBoots", "MedievalCloak", "MedievalShirt",
-					//"MedievalPants",
-					"RedPotion"},
-					ns.InCirclef{Center: war.unit, R: 200},
-				)
-				if war.unit.CanSee(ItemLocation[0]) {
-					war.unit.WalkTo(ItemLocation[0].Pos())
-				}
+	if war.inventory.Greatsword == nil && war.inventory.WarHammer == nil {
+		if !war.behaviour.Busy {
+			war.behaviour.Busy = true
+			war.behaviour.ObjectOfInterest = ns.FindClosestObject(war.unit, ns.HasTypeName{"GreatSword", "WarHammer"})
+			if war.behaviour.ObjectOfInterest != nil {
+				war.unit.WalkTo(war.behaviour.ObjectOfInterest.Pos())
 			}
 		}
 	}
-	ns.NewTimer(ns.Seconds(5), func() {
-		// prevent bots getting stuck to stay in loop.
-		if war.behaviour.AntiStuck {
-			war.behaviour.AntiStuck = false
-			if GameModeIsCTF {
-				war.team.CheckAttackOrDefend(war.unit)
-			} else {
-				war.behaviour.Busy = false
-				war.unit.Hunt()
-				war.unit.AggressionLevel(0.83)
-			}
-			ns.NewTimer(ns.Seconds(6), func() {
-				war.behaviour.AntiStuck = true
-			})
-		}
-	})
 }
 
 func (war *Warrior) ThrowChakram() {
 	if war.abilities.RoundChackramReady && war.unit.InItems().FindObjects(nil, ns.HasTypeName{"RoundChakram"}) != 0 {
 		war.abilities.RoundChackramReady = false
-		//war.unit.Chat("I have a Chakram")
 		war.unit.InItems().FindObjects(
 			func(it ns.Obj) bool {
 				war.unit.Equip(it)
 				war.unit.LookAtObject(war.target)
 				war.unit.HitRanged(war.target.Pos())
-				ns.NewTimer(ns.Frames(5), func() {
-					war.WeaponPreference()
-				})
 				ns.NewTimer(ns.Seconds(10), func() {
 					war.abilities.RoundChackramReady = true
 				})
@@ -551,31 +504,72 @@ func (war *Warrior) ThrowChakram() {
 	}
 }
 
-func (war *Warrior) WeaponPreference() {
-	// Priority list to get the prefered weapon.
-	// TODO: Add stun and range conditions.
-	if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"GreatSword"}) != 0 && war.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"GreatSword"}) == 0 {
-		war.unit.InItems().FindObjects(
-			func(it ns.Obj) bool {
-				war.unit.Equip(it)
-				//war.unit.Chat("I swapped to my GreatSword!")
-				return true
-			},
-			ns.HasTypeName{"GreatSword"},
-		)
-	} else if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"WarHammer"}) != 0 && war.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"WarHammer"}) == 0 {
-		war.unit.InItems().FindObjects(
-			func(it ns.Obj) bool {
-				war.unit.Equip(it)
-				//war.unit.Chat("I swapped to my WarHammer!")
-				return true
-			},
-			ns.HasTypeName{"WarHammer"},
-		)
+func (war *Warrior) equipLongswordAndShield() {
+	if war.startingEquipment.Longsword == nil || war.startingEquipment.WoodenShield == nil {
+		return
+	} else if war.behaviour.LongswordAndShieldEquiped {
+		return
 	} else {
-		if war.unit.InItems().FindObjects(nil, ns.HasTypeName{"WarHammer", "GreatSword"}) == 0 {
-			war.unit.Equip(war.startingEquipment.Longsword)
-			//war.unit.Chat("I swapped to my LongSword!")
+		war.behaviour.LongswordAndShieldEquiped = true
+		war.behaviour.GreatswordEquiped = false
+		war.behaviour.HammerEquiped = false
+		war.unit.Equip(war.startingEquipment.Longsword)
+		war.unit.Equip(war.startingEquipment.WoodenShield)
+	}
+}
+
+func (war *Warrior) equipGreatsword() {
+	if war.inventory.Greatsword == nil {
+		return
+	} else if war.behaviour.GreatswordEquiped {
+		return
+	} else {
+		war.behaviour.LongswordAndShieldEquiped = false
+		war.behaviour.GreatswordEquiped = true
+		war.behaviour.HammerEquiped = false
+		war.unit.Equip(war.inventory.Greatsword)
+	}
+}
+
+func (war *Warrior) equipWarHammer() {
+	if war.inventory.WarHammer == nil {
+		return
+	} else if war.behaviour.HammerEquiped {
+		return
+	} else {
+		war.behaviour.LongswordAndShieldEquiped = false
+		war.behaviour.GreatswordEquiped = false
+		war.behaviour.HammerEquiped = true
+		war.unit.Equip(war.inventory.WarHammer)
+	}
+}
+
+func (war *Warrior) WeaponPreference() {
+	if !war.behaviour.HammerEquiped && war.inventory.WarHammer != nil {
+		war.equipWarHammer()
+	}
+}
+
+func (war *Warrior) onDefensiveWeaponChoice() {
+	// Sword and shield on stun
+	if war.abilities.BerserkerStunActive && war.unit.HasEnchant(enchant.HELD) {
+		war.equipLongswordAndShield()
+		// Reflect Force of Nature
+	} else if sp2 := ns.FindClosestObject(war.unit, ns.HasTypeName{"DeathBall", "Fireball"}, ns.InCirclef{Center: war.unit, R: 100}); sp2 != nil {
+		{
+			arr2 := ns.FindAllObjects(
+				ns.HasTypeName{"NewPlayer", "NPC"},
+			)
+			for i := 0; i < len(arr2); i++ {
+				if sp2.HasOwner(arr2[i]) && arr2[i].Team() != war.unit.Team() {
+					// FIXME: Equip weapon
+				}
+			}
+		}
+		// Reflect Missile attacks
+	} else if sp := ns.FindClosestObject(war.unit, ns.HasClass(object.ClassMissile), ns.InCirclef{Center: war.unit, R: 100}); sp != nil {
+		if sp.HasOwner(war.target) {
+			// FIXME: Equip weapon
 		}
 	}
 }
@@ -586,7 +580,7 @@ func (war *Warrior) findLoot() {
 	meleeweapons := ns.FindAllObjects(
 		ns.InCirclef{Center: war.unit, R: dist},
 		ns.HasTypeName{
-			"GreatSword", "WarHammer", "MorningStar", "BattleAxe", "Sword", "OgreAxe",
+			"MorningStar", "BattleAxe", "Sword", "OgreAxe",
 			//"StaffWooden",
 		},
 	)
@@ -594,6 +588,32 @@ func (war *Warrior) findLoot() {
 		if war.unit.CanSee(item) {
 			war.unit.Pickup(item)
 			war.unit.Equip(war.unit.GetLastItem())
+		}
+	}
+
+	greatswords := ns.FindAllObjects(
+		ns.InCirclef{Center: war.unit, R: dist},
+		ns.HasTypeName{
+			"GreatSword",
+		},
+	)
+	for _, item := range greatswords {
+		if war.unit.CanSee(item) {
+			war.inventory.Greatsword = item
+			war.equipGreatsword()
+		}
+	}
+
+	hammers := ns.FindAllObjects(
+		ns.InCirclef{Center: war.unit, R: dist},
+		ns.HasTypeName{
+			"WarHammer",
+		},
+	)
+	for _, item := range hammers {
+		if war.unit.CanSee(item) {
+			war.inventory.WarHammer = item
+			war.equipWarHammer()
 		}
 	}
 
@@ -757,6 +777,7 @@ func (war *Warrior) useBerserkerCharge() {
 		war.abilities.Ready = false
 		war.abilities.BerserkerChargeReady = false
 		war.abilities.BerserkerChargeActive = true
+		war.abilities.BerserkerTarget = true
 		// Check reaction time based on difficulty setting.
 		//ns.NewTimer(ns.Frames(war.reactionTime), func() {
 		if war.abilities.BerserkerChargeActive && war.abilities.isAlive {
@@ -780,34 +801,24 @@ func (war *Warrior) useBerserkerCharge() {
 }
 
 func (war *Warrior) BerserkerChargeCooldownManager() {
-
-	if !war.abilities.BerserkUpdateBool {
-
-		war.abilities.BerserkUpdateBool = true
-		ns.NewTimer(ns.Seconds(1), func() {
-			war.abilities.BerserkUpdateBool = false
-		})
-		if war.abilities.BerserkerChargeActive {
-			return
-		} else {
-			if !war.abilities.BerserkerChargeResetOnKill {
-				if war.abilities.BerserkerChareCooldownTimer == 0 {
-					war.abilities.BerserkerChargeReady = true
-					war.abilities.BerserkerChargeResetOnKill = false
-				} else if !war.abilities.BerserkerChargeReady {
-					war.abilities.BerserkerChareCooldownTimer = war.abilities.BerserkerChareCooldownTimer - 1
-				}
-			} else {
-				return
-			}
-		}
-	} else {
+	if war.abilities.BerserkerChargeActive {
 		return
+	} else {
+		if !war.abilities.BerserkerChargeResetOnKill {
+			if war.abilities.BerserkerChareCooldownTimer == 0 {
+				war.abilities.BerserkerChargeReady = true
+				war.abilities.BerserkerChargeResetOnKill = false
+			} else if !war.abilities.BerserkerChargeReady {
+				war.abilities.BerserkerChareCooldownTimer = war.abilities.BerserkerChareCooldownTimer - 1
+			}
+		} else {
+			return
+		}
 	}
 }
 
 func (war *Warrior) StopBerserkLoop() {
-	if war.abilities.isAlive {
+	if war.abilities.isAlive && war.abilities.BerserkerTarget {
 		war.abilities.Ready = true
 		war.abilities.BerserkerChargeActive = false
 		war.abilities.BerserkerTarget = false
@@ -819,7 +830,7 @@ func (war *Warrior) BerserkLoop() {
 	if !war.abilities.BerserkerChargeActive {
 		return
 	}
-	if war.abilities.isAlive {
+	if war.abilities.isAlive && war.abilities.BerserkerTarget {
 		war.cursor = war.berserkcursor.Pos()
 		war.unit.Pause(ns.Frames(1))
 		war.unit.ApplyForce(war.vec.Mul(-12))
@@ -844,10 +855,16 @@ func (war *Warrior) useWarCry() {
 					// Target enemy players.
 					func(it ns.Obj) bool {
 						if war.unit.CanSee(it) && it.MaxHealth() < 150 && !it.HasEnchant(enchant.ANTI_MAGIC) {
-							if it.Team() != war.unit.Team() {
+							if TeamsEnabled {
+								if it.Team() != war.unit.Team() {
+									ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+									it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+								}
+							} else {
 								ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
 								it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
 							}
+
 						}
 						return true
 					},
@@ -859,9 +876,14 @@ func (war *Warrior) useWarCry() {
 				ns.FindObjects(
 					func(it ns.Obj) bool {
 						if war.unit.CanSee(it) && it.MaxHealth() < 150 && !it.HasEnchant(enchant.ANTI_MAGIC) {
-							if it.Team() != war.unit.Team() {
-								ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
-								it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+							if TeamsEnabled {
+								if it.Team() != war.unit.Team() {
+									ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+									it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+								} else {
+									ns.CastSpell(spell.COUNTERSPELL, war.unit, it)
+									it.Enchant(enchant.ANTI_MAGIC, ns.Seconds(3))
+								}
 							}
 						}
 						return true
@@ -920,11 +942,9 @@ func (war *Warrior) useHarpoon() {
 		war.abilities.HarpoonReady = false
 		war.abilities.HarpoonFlying = true
 		war.unit.LookAtObject(war.abilities.HarpoonTarget)
-		ns.NewTimer(ns.Frames(1), func() {})
 		war.abilities.HarpoonMask = ns.CreateObject("HarpoonBolt", war.unit)
 		war.abilities.HarpoonMask.FlagsEnable(object.FlagNoCollide)
 		ns.AudioEvent(audio.HarpoonInvoke, war.unit)
-		war.onHarpoonFlyingLoop()
 		// No target hit.
 		ns.NewTimer(ns.Frames(15), func() {
 			if war.abilities.HarpoonFlying {
@@ -978,8 +998,7 @@ func (war *Warrior) onHarpoonHit() {
 func (war *Warrior) onHarpoonReelLoop() {
 	if !war.abilities.HarpoonAttached {
 		return
-	}
-	if war.unit.CanSee(war.abilities.HarpoonTarget) && war.abilities.HarpoonAttached && (ns.InCirclef{Center: war.unit, R: 300}.Matches(war.abilities.HarpoonTarget)) && !war.abilities.HarpoonTarget.Flags().Has(object.FlagDead) && war.abilities.isAlive {
+	} else if war.unit.CanSee(war.abilities.HarpoonTarget) && war.abilities.HarpoonAttached && (ns.InCirclef{Center: war.unit, R: 300}.Matches(war.abilities.HarpoonTarget)) && !war.abilities.HarpoonTarget.Flags().Has(object.FlagDead) && war.abilities.isAlive {
 		//ns.Effect(effect.SENTRY_RAY, war.unit.Pos(), war.abilities.HarpoonTarget.Pos())
 		war.abilities.HarpoonMask.SetPos(war.abilities.HarpoonTarget.Pos())
 		vec := war.abilities.HarpoonTarget.Pos().Sub(war.unit.Pos())

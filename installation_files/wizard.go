@@ -135,12 +135,20 @@ func (wiz *Wizard) init() {
 	// Create WizBot.
 	if TeamsEnabled {
 		wiz.unit = ns.CreateObject("NPC", wiz.team.SpawnPoint())
+		if GameModeIsSocial {
+			wiz.unit.Guard(wiz.team.SpawnPoint(), wiz.team.SpawnPoint(), 20)
+		}
 	} else {
 		randomIndex := ns.Random(0, len(botSpawnsNoTeams)-1)
 		pick := botSpawnsNoTeams[randomIndex]
 		wiz.unit = ns.CreateObject("NPC", pick.Pos())
+		if GameModeIsSocial {
+			wiz.unit.Guard(pick.Pos(), pick.Pos(), 20)
+		}
 	}
-	wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	if !GameModeIsSocial {
+		wiz.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	}
 	wiz.unit.SetMaxHealth(75)
 	wiz.unit.SetStrength(35)
 	wiz.unit.SetBaseSpeed(83)
@@ -179,14 +187,18 @@ func (wiz *Wizard) init() {
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	wiz.reactionTime = BotDifficulty
 	// Set WizBot3 properties.
-	wiz.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
-	wiz.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	wiz.unit.MonsterStatusEnable(object.MonStatusAlert)
+	if !GameModeIsSocial {
+		wiz.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+		wiz.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+		wiz.unit.MonsterStatusEnable(object.MonStatusAlert)
+	}
 	wiz.unit.AggressionLevel(0.16)
-	ns.NewTimer(ns.Seconds(3), func() {
-		wiz.unit.AggressionLevel(0.83)
-	})
-	wiz.unit.Hunt()
+	if !GameModeIsSocial {
+		ns.NewTimer(ns.Seconds(3), func() {
+			wiz.unit.AggressionLevel(0.83)
+		})
+		wiz.unit.Hunt()
+	}
 	wiz.unit.ResumeLevel(0.8)
 	wiz.unit.RetreatLevel(0.2)
 	// Create and equip WizBot3 starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
@@ -198,24 +210,26 @@ func (wiz *Wizard) init() {
 	wiz.unit.Equip(wiz.startingEquipment.StreetPants)
 	wiz.unit.Equip(wiz.startingEquipment.StreetShirt)
 	wiz.unit.Equip(wiz.startingEquipment.WizardRobe)
-	// Buff on respawn.
-	wiz.buffInitial()
-	// On retreat.
-	wiz.unit.OnEvent(ns.EventRetreat, wiz.onRetreat)
-	// Enemy sighted.
-	wiz.unit.OnEvent(ns.EventEnemySighted, wiz.onEnemySighted)
-	// On heard.
-	wiz.unit.OnEvent(ns.EventEnemyHeard, wiz.onEnemyHeard)
-	// On collision.
-	wiz.unit.OnEvent(ns.EventCollision, wiz.onCollide)
-	// Trap. TODO: define when to, ns.EventLosEnemy is placeholder. IDEA: When no enemy is in sight.
-	wiz.unit.OnEvent(ns.EventLostEnemy, wiz.onLostEnemy)
-	// On Death.
-	wiz.unit.OnEvent(ns.EventDeath, wiz.onDeath)
-	wiz.unit.OnEvent(ns.EventLookingForEnemy, wiz.onLookingForTarget)
-	wiz.unit.OnEvent(ns.EventEndOfWaypoint, wiz.onEndOfWaypoint)
-	wiz.unit.OnEvent(ns.EventIsHit, wiz.onHit)
-	wiz.LookForWeapon()
+	if !GameModeIsSocial {
+		// Buff on respawn.
+		wiz.buffInitial()
+		// On retreat.
+		wiz.unit.OnEvent(ns.EventRetreat, wiz.onRetreat)
+		// Enemy sighted.
+		wiz.unit.OnEvent(ns.EventEnemySighted, wiz.onEnemySighted)
+		// On heard.
+		wiz.unit.OnEvent(ns.EventEnemyHeard, wiz.onEnemyHeard)
+		// On collision.
+		wiz.unit.OnEvent(ns.EventCollision, wiz.onCollide)
+		// Trap. TODO: define when to, ns.EventLosEnemy is placeholder. IDEA: When no enemy is in sight.
+		wiz.unit.OnEvent(ns.EventLostEnemy, wiz.onLostEnemy)
+		// On Death.
+		wiz.unit.OnEvent(ns.EventDeath, wiz.onDeath)
+		wiz.unit.OnEvent(ns.EventLookingForEnemy, wiz.onLookingForTarget)
+		wiz.unit.OnEvent(ns.EventEndOfWaypoint, wiz.onEndOfWaypoint)
+		wiz.unit.OnEvent(ns.EventIsHit, wiz.onHit)
+		wiz.LookForWeapon()
+	}
 	ns.OnChat(wiz.onWizCommand)
 	// CODE FOR NEW TESTING //!!!! ONWAND
 	//wiz.unit.MonsterStatusEnable(object.MonsterStatus(object.MonsterImmuneFear))

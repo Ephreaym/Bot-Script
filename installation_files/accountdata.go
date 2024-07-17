@@ -19,7 +19,11 @@ type MyAccountData struct {
 		// Order
 	}
 	botscript struct {
-		// Active Bots
+		// FFA Active Bots
+		ActiveWarBots int
+		ActiveConBots int
+		ActiveWizBots int
+		// Team Active Bots
 		ActiveRedWarBots  int
 		ActiveRedConBots  int
 		ActiveRedWizBots  int

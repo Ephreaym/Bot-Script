@@ -111,12 +111,20 @@ func (con *Conjurer) init() {
 	// Create ConBot.
 	if TeamsEnabled {
 		con.unit = ns.CreateObject("NPC", con.team.SpawnPoint())
+		if GameModeIsSocial {
+			con.unit.Guard(con.team.SpawnPoint(), con.team.SpawnPoint(), 20)
+		}
 	} else {
 		randomIndex := ns.Random(0, len(botSpawnsNoTeams)-1)
 		pick := botSpawnsNoTeams[randomIndex]
 		con.unit = ns.CreateObject("NPC", pick.Pos())
+		if GameModeIsSocial {
+			con.unit.Guard(pick.Pos(), pick.Pos(), 20)
+		}
 	}
-	con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	if !GameModeIsSocial {
+		con.unit.Enchant(enchant.INVULNERABLE, script.Frames(150))
+	}
 	con.unit.SetMaxHealth(100)
 	con.unit.SetStrength(55)
 	con.unit.SetBaseSpeed(88)
@@ -155,16 +163,20 @@ func (con *Conjurer) init() {
 	// Set difficulty (0 = Botlike, 15 = hard, 30 = normal, 45 = easy, 60 = beginner)
 	con.reactionTime = BotDifficulty
 	// Set ConBot properties.
-	con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
-	con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
-	con.unit.MonsterStatusEnable(object.MonStatusAlert)
+	if !GameModeIsSocial {
+		con.unit.MonsterStatusEnable(object.MonStatusAlwaysRun)
+		con.unit.MonsterStatusEnable(object.MonStatusCanCastSpells)
+		con.unit.MonsterStatusEnable(object.MonStatusAlert)
+	}
 	con.unit.AggressionLevel(0.16)
-	ns.NewTimer(ns.Seconds(4), func() {
-		con.unit.AggressionLevel(0.83)
-	})
-	con.unit.Hunt()
-	con.unit.ResumeLevel(0.8)
-	con.unit.RetreatLevel(0.4)
+	if !GameModeIsSocial {
+		ns.NewTimer(ns.Seconds(4), func() {
+			con.unit.AggressionLevel(0.83)
+		})
+		con.unit.Hunt()
+		con.unit.ResumeLevel(0.8)
+		con.unit.RetreatLevel(0.4)
+	}
 	// Create and equip ConBot starting equipment. TODO: Change location of item creation OR stop them from respawning automatically.
 	con.startingEquipment.StreetSneakers = ns.CreateObject("StreetSneakers", ns.Ptf(150, 150))
 	con.startingEquipment.StreetPants = ns.CreateObject("StreetPants", ns.Ptf(150, 150))
@@ -173,27 +185,29 @@ func (con *Conjurer) init() {
 	con.unit.Equip(con.startingEquipment.StreetShirt)
 	con.unit.Equip(con.startingEquipment.StreetSneakers)
 	// Buff on respawn.
-	con.buffInitial()
-	// Enemy sighted.
-	con.unit.OnEvent(ns.EventEnemySighted, con.onEnemySighted)
-	// On Collision.
-	con.unit.OnEvent(ns.EventCollision, con.onCollide)
-	// Retreat.
-	con.unit.OnEvent(ns.EventRetreat, con.onRetreat)
-	// Enemy lost.
-	con.unit.OnEvent(ns.EventLostEnemy, con.onLostEnemy)
-	// On death.
-	con.unit.OnEvent(ns.EventDeath, con.onDeath)
-	// On heard.
-	con.unit.OnEvent(ns.EventEnemyHeard, con.onEnemyHeard)
-	con.unit.OnEvent(ns.EventIsHit, con.onHit)
-	// Looking for enemies.
-	con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
-	//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
-	con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
-	con.LookForWeapon()
+	if !GameModeIsSocial {
+		con.buffInitial()
+		// Enemy sighted.
+		con.unit.OnEvent(ns.EventEnemySighted, con.onEnemySighted)
+		// On Collision.
+		con.unit.OnEvent(ns.EventCollision, con.onCollide)
+		// Retreat.
+		con.unit.OnEvent(ns.EventRetreat, con.onRetreat)
+		// Enemy lost.
+		con.unit.OnEvent(ns.EventLostEnemy, con.onLostEnemy)
+		// On death.
+		con.unit.OnEvent(ns.EventDeath, con.onDeath)
+		// On heard.
+		con.unit.OnEvent(ns.EventEnemyHeard, con.onEnemyHeard)
+		con.unit.OnEvent(ns.EventIsHit, con.onHit)
+		// Looking for enemies.
+		con.unit.OnEvent(ns.EventLookingForEnemy, con.onLookingForTarget)
+		//con.unit.OnEvent(ns.EventChangeFocus, con.onChangeFocus)
+		con.unit.OnEvent(ns.EventEndOfWaypoint, con.onEndOfWaypoint)
+		con.LookForWeapon()
+		con.checkPixieCount()
+	}
 	ns.OnChat(con.onConCommand)
-	con.checkPixieCount()
 }
 
 func (con *Conjurer) onHit() {
@@ -457,7 +471,7 @@ func (con *Conjurer) Update() {
 	}
 	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
 		if con.unit.CanSee(con.target) {
-			con.castFistOfVengeance()
+			//con.castFistOfVengeance()
 			con.castMeteor()
 			con.castToxicCloud()
 		}
@@ -849,7 +863,9 @@ func (con *Conjurer) onFaceDirectionDuringChannel() {
 	if !con.behaviour.castingForceOfNatrue {
 		return
 	} else {
-		con.unit.LookAtObject(con.target)
+		if con.unit.CanSee(con.target) {
+			con.unit.LookAtObject(con.target)
+		}
 		con.unit.Pause(ns.Frames(1))
 	}
 }
