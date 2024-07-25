@@ -237,6 +237,9 @@ func (wiz *Wizard) init() {
 }
 
 func (wiz *Wizard) checkChatting() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.behaviour.Chatting {
 		wiz.behaviour.Chatting = true
 		ns.NewTimer(ns.Seconds(2), func() {
@@ -246,6 +249,9 @@ func (wiz *Wizard) checkChatting() {
 }
 
 func (wiz *Wizard) WeaponPreference() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	// Priority list to get the prefered weapon.
 	// TODO: Add stun and range conditions.
 	if wiz.unit.InItems().FindObjects(nil, ns.HasTypeName{"FireStormWand"}) != 0 && wiz.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"FireStormWand"}) == 0 {
@@ -268,12 +274,18 @@ func (wiz *Wizard) WeaponPreference() {
 }
 
 func (wiz *Wizard) onHit() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if wiz.mana <= 20 && !wiz.behaviour.Busy {
 		wiz.GoToManaObelisk()
 	}
 }
 
 func (wiz *Wizard) UsePotions() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if wiz.unit.CanSee(wiz.target) {
 		if wiz.unit.CurrentHealth() <= 25 && wiz.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
 			ns.AudioEvent(audio.LesserHealEffect, wiz.unit)
@@ -291,6 +303,9 @@ func (wiz *Wizard) UsePotions() {
 }
 
 func (wiz *Wizard) onEndOfWaypoint() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	wiz.behaviour.Busy = false
 	wiz.unit.AggressionLevel(0.83)
 	if wiz.mana <= 49 {
@@ -310,13 +325,22 @@ func (wiz *Wizard) onEndOfWaypoint() {
 }
 
 func (wiz *Wizard) buffInitial() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	wiz.castForceField()
 }
 
 func (wiz *Wizard) onLookingForTarget() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 }
 
 func (wiz *Wizard) onEnemyHeard() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.unit.CanSee(wiz.target) {
 		wiz.castFireballAtHeard()
 		wiz.castInvisibility()
@@ -324,6 +348,9 @@ func (wiz *Wizard) onEnemyHeard() {
 }
 
 func (wiz *Wizard) onEnemySighted() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	wiz.target = ns.GetCaller()
 	if !wiz.unit.HasEnchant(enchant.INVISIBLE) {
 		wiz.castSlow()
@@ -331,6 +358,9 @@ func (wiz *Wizard) onEnemySighted() {
 }
 
 func (wiz *Wizard) onCollide() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if wiz.spells.isAlive {
 		caller := ns.GetCaller()
 		if GameModeIsCTF {
@@ -351,10 +381,16 @@ func (wiz *Wizard) onCollide() {
 }
 
 func (wiz *Wizard) onRetreat() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	wiz.castBlink()
 }
 
 func (wiz *Wizard) onLostEnemy() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 
 	if GameModeIsCTF {
 		wiz.team.WalkToOwnFlag(wiz.unit)
@@ -362,6 +398,10 @@ func (wiz *Wizard) onLostEnemy() {
 }
 
 func (wiz *Wizard) onDeath() {
+	if !BotRespawn {
+		BotRespawn = true
+		return
+	}
 	wiz.spells.isAlive = false
 	wiz.spells.Ready = false
 	wiz.unit.FlagsEnable(object.FlagNoCollide)
@@ -385,13 +425,16 @@ func (wiz *Wizard) onDeath() {
 		wiz.startingEquipment.StreetPants.Delete()
 		wiz.startingEquipment.StreetSneakers.Delete()
 		wiz.startingEquipment.StreetShirt.Delete()
-		if BotRespawn {
+		if wiz.unit.IsEnabled() {
 			wiz.init()
 		}
 	})
 }
 
 func (wiz *Wizard) PassiveManaRegen() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.ManaRegenBool {
 		wiz.ManaRegenBool = true
 		ns.NewTimer(ns.Seconds(1), func() {
@@ -413,6 +456,9 @@ func (wiz *Wizard) PassiveManaRegen() {
 }
 
 func (wiz *Wizard) GoToManaObelisk() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.behaviour.Busy {
 		wiz.behaviour.Busy = true
 		wiz.unit.AggressionLevel(0.16)
@@ -439,6 +485,9 @@ func (wiz *Wizard) GoToManaObelisk() {
 }
 
 func (wiz *Wizard) RestoreMana() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if wiz.mana < 150 {
 		for i := 0; i < len(AllManaObelisksOnMap); i++ {
 			if AllManaObelisksOnMap[i].CurrentMana() > 0 && wiz.unit.CanSee(AllManaObelisksOnMap[i]) && (ns.InCirclef{Center: wiz.unit, R: 50}).Matches(AllManaObelisksOnMap[i]) {
@@ -451,6 +500,9 @@ func (wiz *Wizard) RestoreMana() {
 }
 
 func (wiz *Wizard) RestoreManaWithDrainMana() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if wiz.mana < 150 && wiz.spells.IsCastingDrainMana {
 		for i := 0; i < len(AllManaObelisksOnMap); i++ {
 			if AllManaObelisksOnMap[i].CurrentMana() > 0 && wiz.unit.CanSee(AllManaObelisksOnMap[i]) && (ns.InCirclef{Center: wiz.unit, R: 200}).Matches(AllManaObelisksOnMap[i]) {
@@ -485,6 +537,9 @@ func (wiz *Wizard) RestoreManaWithDrainMana() {
 }
 
 func (wiz *Wizard) RestoreManaSound() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.audio.ManaRestoreSound {
 		wiz.castDrainMana()
 		wiz.audio.ManaRestoreSound = true
@@ -496,6 +551,9 @@ func (wiz *Wizard) RestoreManaSound() {
 }
 
 func (wiz *Wizard) checkForMissiles() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	// Maybe need to add a ns.hasteam condition. Not sure yet.
 	if sp2 := ns.FindClosestObject(wiz.unit, ns.HasTypeName{"DeathBall"}, ns.InCirclef{Center: wiz.unit, R: 500}); sp2 != nil {
 		{
@@ -518,6 +576,9 @@ func (wiz *Wizard) checkForMissiles() {
 }
 
 func (wiz *Wizard) Update() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	wiz.PassiveManaRegen()
 	wiz.weaponPreferenceT.EachSec(10, wiz.WeaponPreference)
 	wiz.findLootT.EachFrame(15, wiz.findLoot)
@@ -545,7 +606,9 @@ func (wiz *Wizard) Update() {
 			wiz.castRingOfFire()
 			wiz.castSlow()
 			wiz.castEnergyBolt()
-			wiz.castMissilesOfMagic()
+			if TeamsEnabled {
+				wiz.castMissilesOfMagic()
+			}
 			wiz.castCounterspell()
 			//wiz.castConfuse()
 			//wiz.castAnchor()
@@ -589,6 +652,9 @@ func (wiz *Wizard) Update() {
 }
 
 func (wiz *Wizard) LookForWeapon() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.behaviour.Busy {
 		wiz.behaviour.Busy = true
 		ItemLocation := ns.FindClosestObject(wiz.unit, ns.HasTypeName{"FireStormWand", "LesserFireballWand", "ForceWand"})
@@ -599,6 +665,9 @@ func (wiz *Wizard) LookForWeapon() {
 }
 
 func (wiz *Wizard) LookForNearbyItems() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.behaviour.Busy {
 		wiz.behaviour.Busy = true
 		if ns.FindAllObjects(ns.HasTypeName{
@@ -634,6 +703,9 @@ func (wiz *Wizard) LookForNearbyItems() {
 }
 
 func (wiz *Wizard) findLoot() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	const dist = 80
 	weapons := ns.FindAllObjects(
 		ns.InCirclef{Center: wiz.unit, R: dist},
@@ -701,6 +773,9 @@ func (wiz *Wizard) findLoot() {
 
 // Checks the ammount of traps active for the WIzard bot.
 func (wiz *Wizard) checkTrapCount() {
+	if wiz.unit.Flags().Has(object.FlagDead) || wiz.unit == nil || !wiz.unit.IsEnabled() {
+		return
+	}
 	if !wiz.spells.checkTrapCountBool {
 		wiz.spells.checkTrapCountBool = true
 		ns.NewTimer(ns.Seconds(5), func() {

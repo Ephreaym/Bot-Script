@@ -30,6 +30,9 @@ type MyAccountData struct {
 		ActiveBlueWarBots int
 		ActiveBlueConBots int
 		ActiveBlueWizBots int
+		// Server settings
+		BotDifficultySetting int
+		BotManaSetting       bool
 	}
 }
 

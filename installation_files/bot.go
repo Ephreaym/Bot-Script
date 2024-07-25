@@ -25,6 +25,8 @@ func init() {
 						bots = append(bots, NewWizardNoTeam())
 					}
 				})
+			} else {
+				ns.PrintStrToAll("Your map doesn't support FFA for bots. Check out the GitHub page on how to patch your map.")
 			}
 			return
 		}
@@ -117,7 +119,9 @@ func init() {
 func UpdateBots() {
 	for _, bot := range bots {
 		if !GameModeIsSocial {
-			bot.Update()
+			if bot != nil {
+				bot.Update()
+			}
 		}
 	}
 }

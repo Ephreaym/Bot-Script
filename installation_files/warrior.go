@@ -238,6 +238,9 @@ func (war *Warrior) init() {
 }
 
 func (war *Warrior) checkChatting() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if !war.behaviour.Chatting {
 		war.behaviour.Chatting = true
 		ns.NewTimer(ns.Seconds(2), func() {
@@ -247,19 +250,31 @@ func (war *Warrior) checkChatting() {
 }
 
 func (war *Warrior) onChangeFocus() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	war.useHarpoon()
 	war.useBerserkerCharge()
 	war.useWarCry()
 }
 
 func (war *Warrior) onLookingForEnemy() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 }
 
 func (war *Warrior) onEnemyHeard() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	war.ThrowChakram()
 }
 
 func (war *Warrior) onCollide() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.abilities.isAlive {
 		// When the Warriors hits a wall with Berserker Charge.
 		if ns.GetCaller() == nil {
@@ -331,6 +346,9 @@ func (war *Warrior) onCollide() {
 }
 
 func (war *Warrior) onEnemySighted() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	war.target = ns.GetCaller()
 	war.useHarpoon()
 	war.useBerserkerCharge()
@@ -339,9 +357,15 @@ func (war *Warrior) onEnemySighted() {
 }
 
 func (war *Warrior) onRetreat() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 }
 
 func (war *Warrior) onLostEnemy() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 
 	war.behaviour.targetTeleportWake = ns.FindClosestObject(war.unit, ns.HasTypeName{"TeleportWake"})
 	if war.behaviour.targetTeleportWake != nil {
@@ -357,6 +381,9 @@ func (war *Warrior) onLostEnemy() {
 }
 
 func (war *Warrior) onCheckBlinkWakeRange() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.behaviour.targetTeleportWake != nil {
 		if !(ns.InCirclef{Center: war.unit, R: 100}).Matches(war.behaviour.targetTeleportWake) {
 			war.unit.Attack(war.target)
@@ -366,12 +393,18 @@ func (war *Warrior) onCheckBlinkWakeRange() {
 }
 
 func (war *Warrior) onHit() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.unit.CurrentHealth() < 100 && !war.behaviour.Busy {
 		war.GoToRedPotion()
 	}
 }
 
 func (war *Warrior) onCheckIfObjectOfInterestIsPickedUp() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.behaviour.ObjectOfInterest == nil {
 		return
 	} else {
@@ -383,6 +416,9 @@ func (war *Warrior) onCheckIfObjectOfInterestIsPickedUp() {
 }
 
 func (war *Warrior) onEndOfWaypoint() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	war.behaviour.Busy = false
 	war.unit.AggressionLevel(0.83)
 	if GameModeIsCTF {
@@ -393,6 +429,9 @@ func (war *Warrior) onEndOfWaypoint() {
 }
 
 func (war *Warrior) GoToRedPotion() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if !war.behaviour.Busy {
 		NearestRedPotion := ns.FindClosestObject(war.unit, ns.HasTypeName{"RedPotion"})
 		if NearestRedPotion != nil {
@@ -415,6 +454,10 @@ func (war *Warrior) GoToRedPotion() {
 }
 
 func (war *Warrior) onDeath() {
+	if !BotRespawn {
+		BotRespawn = true
+		return
+	}
 	war.abilities.isAlive = false
 	war.StopBerserkLoop()
 	war.unit.DestroyChat()
@@ -439,13 +482,16 @@ func (war *Warrior) onDeath() {
 		war.unit.Delete()
 		war.startingEquipment.StreetPants.Delete()
 		war.startingEquipment.StreetSneakers.Delete()
-		if BotRespawn {
+		if war.unit.IsEnabled() {
 			war.init()
 		}
 	})
 }
 
 func (war *Warrior) UsePotions() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.unit.CurrentHealth() <= 100 && war.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
 		ns.AudioEvent(audio.LesserHealEffect, war.unit)
 		RedPotion := war.unit.Items(ns.HasTypeName{"RedPotion"})
@@ -455,6 +501,9 @@ func (war *Warrior) UsePotions() {
 }
 
 func (war *Warrior) Update() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if !InitLoadComplete {
 		return
 	}
@@ -475,6 +524,9 @@ func (war *Warrior) Update() {
 }
 
 func (war *Warrior) LookForWeapon() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.inventory.Greatsword == nil && war.inventory.WarHammer == nil {
 		if !war.behaviour.Busy {
 			war.behaviour.Busy = true
@@ -487,6 +539,9 @@ func (war *Warrior) LookForWeapon() {
 }
 
 func (war *Warrior) ThrowChakram() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.abilities.RoundChackramReady && war.unit.InItems().FindObjects(nil, ns.HasTypeName{"RoundChakram"}) != 0 {
 		war.abilities.RoundChackramReady = false
 		war.unit.InItems().FindObjects(
@@ -505,6 +560,9 @@ func (war *Warrior) ThrowChakram() {
 }
 
 func (war *Warrior) equipLongswordAndShield() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.startingEquipment.Longsword == nil || war.startingEquipment.WoodenShield == nil {
 		return
 	} else if war.behaviour.LongswordAndShieldEquiped {
@@ -519,6 +577,9 @@ func (war *Warrior) equipLongswordAndShield() {
 }
 
 func (war *Warrior) equipGreatsword() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.inventory.Greatsword == nil {
 		return
 	} else if war.behaviour.GreatswordEquiped {
@@ -532,6 +593,9 @@ func (war *Warrior) equipGreatsword() {
 }
 
 func (war *Warrior) equipWarHammer() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.inventory.WarHammer == nil {
 		return
 	} else if war.behaviour.HammerEquiped {
@@ -545,12 +609,18 @@ func (war *Warrior) equipWarHammer() {
 }
 
 func (war *Warrior) WeaponPreference() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if !war.behaviour.HammerEquiped && war.inventory.WarHammer != nil {
 		war.equipWarHammer()
 	}
 }
 
 func (war *Warrior) onDefensiveWeaponChoice() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	// Sword and shield on stun
 	if war.abilities.BerserkerStunActive && war.unit.HasEnchant(enchant.HELD) {
 		war.equipLongswordAndShield()
@@ -575,6 +645,9 @@ func (war *Warrior) onDefensiveWeaponChoice() {
 }
 
 func (war *Warrior) findLoot() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	const dist = 80
 	// Melee weapons.
 	meleeweapons := ns.FindAllObjects(
@@ -763,6 +836,9 @@ func (war *Warrior) onWarCommand(t ns.Team, p ns.Player, obj ns.Obj, msg string)
 // ------------------------------------------------------------- WARRIOR ABILITIES --------------------------------------------------------------- //
 
 func (war *Warrior) useBerserkerCharge() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	// Check if cooldowns are ready.
 	if !war.abilities.HarpoonFlying && !war.abilities.BerserkerChargeActive && war.abilities.BerserkerChargeIsEnabled && war.unit.CanSee(war.target) && war.abilities.Ready && war.abilities.BerserkerChargeReady && war.abilities.isAlive && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.target.Flags().Has(object.FlagDead) {
 		if GameModeIsCTF {
@@ -801,6 +877,9 @@ func (war *Warrior) useBerserkerCharge() {
 }
 
 func (war *Warrior) BerserkerChargeCooldownManager() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.abilities.BerserkerChargeActive {
 		return
 	} else {
@@ -818,6 +897,9 @@ func (war *Warrior) BerserkerChargeCooldownManager() {
 }
 
 func (war *Warrior) StopBerserkLoop() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.abilities.isAlive && war.abilities.BerserkerTarget {
 		war.abilities.Ready = true
 		war.abilities.BerserkerChargeActive = false
@@ -827,6 +909,9 @@ func (war *Warrior) StopBerserkLoop() {
 }
 
 func (war *Warrior) BerserkLoop() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if !war.abilities.BerserkerChargeActive {
 		return
 	}
@@ -840,6 +925,9 @@ func (war *Warrior) BerserkLoop() {
 }
 
 func (war *Warrior) useWarCry() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	// Check if cooldown is war.abilities.Ready.
 	if war.abilities.WarCryReady && !war.abilities.BerserkerChargeActive && !war.abilities.HarpoonFlying && !war.target.Flags().Has(object.FlagDead) && war.unit.CanSee(war.target) {
 		if war.target.MaxHealth() == 150 {
@@ -917,6 +1005,9 @@ func (war *Warrior) useWarCry() {
 }
 
 func (war *Warrior) useEyeOfTheWolf() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	// Check if cooldown is war.abilities.Ready.
 	if war.abilities.EyeOfTheWolfReady {
 		// Trigger cooldown.
@@ -936,6 +1027,9 @@ func (war *Warrior) useEyeOfTheWolf() {
 // ------------------ Harpoon ---------------- //
 
 func (war *Warrior) useHarpoon() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.abilities.HarpoonReady && !war.target.HasEnchant(enchant.INVULNERABLE) && !war.abilities.BerserkerChargeActive && !war.target.Flags().Has(object.FlagDead) && war.unit.CanSee(war.target) {
 		// Create objects, set properties and shoot harpoon.
 		war.abilities.HarpoonTarget = war.target
@@ -967,6 +1061,9 @@ func (war *Warrior) useHarpoon() {
 }
 
 func (war *Warrior) onHarpoonFlyingLoop() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if war.abilities.HarpoonFlying && war.abilities.isAlive {
 		//ns.Effect(effect.SENTRY_RAY, war.unit.Pos(), war.abilities.HarpoonMask.Pos())
 		war.abilities.HarpoonMask.PushTo(war.abilities.HarpoonTarget, -15)
@@ -979,6 +1076,9 @@ func (war *Warrior) onHarpoonFlyingLoop() {
 }
 
 func (war *Warrior) onHarpoonHit() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	prev := war.abilities.HarpoonTarget.CurrentHealth()
 	war.abilities.HarpoonTarget.Damage(war.unit, 1, damage.IMPALE)
 	if prev != war.abilities.HarpoonTarget.CurrentHealth() {
@@ -996,6 +1096,9 @@ func (war *Warrior) onHarpoonHit() {
 }
 
 func (war *Warrior) onHarpoonReelLoop() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+		return
+	}
 	if !war.abilities.HarpoonAttached {
 		return
 	} else if war.unit.CanSee(war.abilities.HarpoonTarget) && war.abilities.HarpoonAttached && (ns.InCirclef{Center: war.unit, R: 300}.Matches(war.abilities.HarpoonTarget)) && !war.abilities.HarpoonTarget.Flags().Has(object.FlagDead) && war.abilities.isAlive {

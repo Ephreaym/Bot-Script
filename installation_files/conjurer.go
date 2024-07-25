@@ -51,6 +51,7 @@ type Conjurer struct {
 		FistOfVengeanceReady bool // No real cooldown, mana cost 60.
 		StunReady            bool // No real cooldown.
 		PixieCount           int
+		PixieSwarmReady      bool
 		ForceOfNatureReady   bool
 		InversionReady       bool
 		ToxicCloudReady      bool // 60 mana.
@@ -94,6 +95,7 @@ func (con *Conjurer) init() {
 	con.spells.PixieCount = 0
 	con.spells.ForceOfNatureReady = true
 	con.spells.ToxicCloudReady = true
+	con.spells.PixieSwarmReady = true
 	// Defensive spells.
 	con.spells.BlinkReady = true
 	con.spells.CounterspellReady = true
@@ -211,12 +213,18 @@ func (con *Conjurer) init() {
 }
 
 func (con *Conjurer) onHit() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if con.mana <= 20 && !con.behaviour.Busy {
 		con.GoToManaObelisk()
 	}
 }
 
 func (con *Conjurer) onEndOfWaypoint() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.behaviour.Busy = false
 	con.unit.AggressionLevel(0.83)
 	if con.mana <= 49 {
@@ -235,14 +243,23 @@ func (con *Conjurer) onEndOfWaypoint() {
 }
 
 func (con *Conjurer) buffInitial() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.castVampirism()
 }
 
 func (con *Conjurer) onLookingForTarget() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.castInfravision()
 }
 
 func (con *Conjurer) onEnemyHeard() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.unit.CanSee(con.target) {
 		//con.castForceOfNature()
 		con.castInfravision()
@@ -250,11 +267,17 @@ func (con *Conjurer) onEnemyHeard() {
 }
 
 func (con *Conjurer) onEnemySighted() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.target = ns.GetCaller()
 	con.castForceOfNature()
 }
 
 func (con *Conjurer) onCollide() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if con.spells.isAlive {
 		caller := ns.GetCaller()
 		if GameModeIsCTF {
@@ -266,10 +289,16 @@ func (con *Conjurer) onCollide() {
 }
 
 func (con *Conjurer) onRetreat() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.castBlink()
 }
 
 func (con *Conjurer) onLostEnemy() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.castInfravision()
 	if GameModeIsCTF {
 		con.team.WalkToOwnFlag(con.unit)
@@ -277,6 +306,10 @@ func (con *Conjurer) onLostEnemy() {
 }
 
 func (con *Conjurer) onDeath() {
+	if !BotRespawn {
+		BotRespawn = true
+		return
+	}
 	con.spells.isAlive = false
 	con.spells.Ready = false
 	con.unit.FlagsEnable(object.FlagNoCollide)
@@ -302,13 +335,16 @@ func (con *Conjurer) onDeath() {
 		con.startingEquipment.StreetPants.Delete()
 		con.startingEquipment.StreetShirt.Delete()
 		con.startingEquipment.StreetSneakers.Delete()
-		if BotRespawn {
+		if con.unit.IsEnabled() {
 			con.init()
 		}
 	})
 }
 
 func (con *Conjurer) PassiveManaRegen() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.ManaRegenBool {
 		con.ManaRegenBool = true
 		ns.NewTimer(ns.Seconds(1), func() {
@@ -331,6 +367,9 @@ func (con *Conjurer) PassiveManaRegen() {
 }
 
 func (con *Conjurer) UsePotions() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if con.unit.CanSee(con.target) {
 		if con.unit.CurrentHealth() <= 25 && con.unit.InItems().FindObjects(nil, ns.HasTypeName{"RedPotion"}) != 0 {
 			ns.AudioEvent(audio.LesserHealEffect, con.unit)
@@ -348,6 +387,9 @@ func (con *Conjurer) UsePotions() {
 }
 
 func (con *Conjurer) GoToManaObelisk() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.behaviour.Busy {
 		con.behaviour.Busy = true
 		con.unit.AggressionLevel(0.16)
@@ -375,6 +417,9 @@ func (con *Conjurer) GoToManaObelisk() {
 }
 
 func (con *Conjurer) onCheckIfObjectOfInterestIsPickedUp() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if con.behaviour.ObjectOfInterest == nil {
 		return
 	} else {
@@ -386,6 +431,9 @@ func (con *Conjurer) onCheckIfObjectOfInterestIsPickedUp() {
 }
 
 func (con *Conjurer) RestoreMana() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if con.mana < 125 {
 		for i := 0; i < len(AllManaObelisksOnMap); i++ {
 			if AllManaObelisksOnMap[i].CurrentMana() > 0 && con.unit.CanSee(AllManaObelisksOnMap[i]) && (ns.InCirclef{Center: con.unit, R: 50}).Matches(AllManaObelisksOnMap[i]) {
@@ -398,6 +446,9 @@ func (con *Conjurer) RestoreMana() {
 }
 
 func (con *Conjurer) RestoreManaSound() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.audio.ManaRestoreSound {
 		con.audio.ManaRestoreSound = true
 		ns.AudioEvent(audio.RestoreMana, con.unit)
@@ -408,6 +459,9 @@ func (con *Conjurer) RestoreManaSound() {
 }
 
 func (con *Conjurer) checkForMissiles() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	// Maybe need to add a ns.hasteam condition. Not sure yet.
 	if sp2 := ns.FindClosestObject(con.unit, ns.HasTypeName{"DeathBall"}, ns.InCirclef{Center: con.unit, R: 500}); sp2 != nil {
 		{
@@ -430,6 +484,9 @@ func (con *Conjurer) checkForMissiles() {
 }
 
 func (con *Conjurer) Update() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	con.PassiveManaRegen()
 	con.weaponPreferenceT.EachSec(10, con.WeaponPreference)
 	con.checkCreatureCageT.EachSec(1, con.checkCreatureCage)
@@ -471,7 +528,7 @@ func (con *Conjurer) Update() {
 	}
 	if con.target.HasEnchant(enchant.HELD) || con.target.HasEnchant(enchant.SLOWED) {
 		if con.unit.CanSee(con.target) {
-			//con.castFistOfVengeance()
+			con.castFistOfVengeance()
 			con.castMeteor()
 			con.castToxicCloud()
 		}
@@ -503,6 +560,9 @@ func (con *Conjurer) Update() {
 }
 
 func (con *Conjurer) summonRandomCreature() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	random := ns.Random(1, 3)
 	if random == 1 {
 		if con.summons.CreatureCage == 3 {
@@ -519,6 +579,9 @@ func (con *Conjurer) summonRandomCreature() {
 }
 
 func (con *Conjurer) summonRandomLargeCreature() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	random := ns.Random(1, 6)
 	if random == 1 {
 		con.castSummonMechanicalGolem()
@@ -541,6 +604,9 @@ func (con *Conjurer) summonRandomLargeCreature() {
 }
 
 func (con *Conjurer) summonRandomMediumCreature() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	random := ns.Random(1, 20)
 	if random == 1 {
 		con.castSummonBlackBear()
@@ -605,6 +671,9 @@ func (con *Conjurer) summonRandomMediumCreature() {
 }
 
 func (con *Conjurer) summonRandomSmallCreature() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	random := ns.Random(1, 10)
 	if random == 1 {
 		con.castSummonWasp()
@@ -639,6 +708,9 @@ func (con *Conjurer) summonRandomSmallCreature() {
 }
 
 func (con *Conjurer) LookForWeapon() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.behaviour.Busy {
 		con.behaviour.Busy = true
 		ItemLocation := ns.FindClosestObject(con.unit, ns.HasTypeName{"CrossBow", "InfinitePainWand"})
@@ -649,6 +721,9 @@ func (con *Conjurer) LookForWeapon() {
 }
 
 func (con *Conjurer) LookForNearbyItems() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.behaviour.Busy {
 		con.behaviour.Busy = true
 		if ns.FindAllObjects(ns.HasTypeName{"CrossBow", "InfinitePainWand", "InfinitePainWand", "LesserFireballWand", "Quiver", "LeatherArmoredBoots", "LeatherArmor", "LeatherHelm",
@@ -704,6 +779,9 @@ func (con *Conjurer) LookForNearbyItems() {
 }
 
 func (con *Conjurer) WeaponPreference() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	// Priority list to get the prefered weapon.
 	// TODO: Add stun and range conditions.
 	if con.unit.InItems().FindObjects(nil, ns.HasTypeName{"CrossBow"}) != 0 && con.unit.InEquipment().FindObjects(nil, ns.HasTypeName{"CrossBow"}) == 0 {
@@ -728,6 +806,9 @@ func (con *Conjurer) WeaponPreference() {
 }
 
 func (con *Conjurer) findLoot() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	const dist = 80
 	// Weapons.
 	weapons := ns.FindAllObjects(
@@ -804,6 +885,9 @@ func (con *Conjurer) findLoot() {
 
 // Checks the ammount of summons active for the Conjurer bot.
 func (con *Conjurer) checkCreatureCage() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	// Get all active sommons that belong to the Conjuer bot.
 	if con.summons.CreatureCage == 4 {
 	} else {
@@ -850,6 +934,9 @@ func (con *Conjurer) checkCreatureCage() {
 
 // Checks the ammount of Pixies active for the Conjurer bot.
 func (con *Conjurer) checkPixieCount() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	allPixies := ns.FindAllObjects(ns.HasTypeName{"Pixie"})
 	if allPixies == nil {
 		con.spells.PixieCount = 0
@@ -860,6 +947,9 @@ func (con *Conjurer) checkPixieCount() {
 
 // Orientate the con to the target while casting channeled spells
 func (con *Conjurer) onFaceDirectionDuringChannel() {
+	if con.unit.Flags().Has(object.FlagDead) || con.unit == nil || !con.unit.IsEnabled() {
+		return
+	}
 	if !con.behaviour.castingForceOfNatrue {
 		return
 	} else {
@@ -966,6 +1056,7 @@ func (con *Conjurer) castPixieSwarm() {
 	if con.mana >= 30 && con.spells.isAlive && !con.unit.HasEnchant(enchant.ANTI_MAGIC) && con.spells.Ready && con.spells.PixieCount == 0 {
 		// Trigger cooldown.
 		con.spells.Ready = false
+		con.spells.PixieSwarmReady = false
 		// Check reaction time based on difficulty setting.
 		ns.NewTimer(ns.Frames(con.reactionTime), func() {
 			// Check for War Cry before chant.
@@ -978,6 +1069,9 @@ func (con *Conjurer) castPixieSwarm() {
 						// Global cooldown.
 						ns.NewTimer(ns.Frames(3), func() {
 							con.spells.Ready = true
+						})
+						ns.NewTimer(ns.Frames(60), func() {
+							con.spells.PixieSwarmReady = true
 						})
 					}
 				})
