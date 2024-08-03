@@ -90,6 +90,7 @@ type Warrior struct {
 		LongswordAndShieldEquiped bool
 		GreatswordEquiped         bool
 		HammerEquiped             bool
+		blinkWakeOutOfRange       bool
 	}
 	inventory struct {
 		crown      bool
@@ -113,6 +114,7 @@ func (war *Warrior) init() {
 	war.abilities.BomberStunActive = false
 	war.behaviour.Busy = false
 	war.behaviour.Chatting = false
+	war.behaviour.blinkWakeOutOfRange = false
 	// Inventory
 	war.inventory.crown = false
 	// Reset abilities WarBot.
@@ -366,9 +368,9 @@ func (war *Warrior) onLostEnemy() {
 	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
 		return
 	}
-
 	war.behaviour.targetTeleportWake = ns.FindClosestObject(war.unit, ns.HasTypeName{"TeleportWake"})
 	if war.behaviour.targetTeleportWake != nil {
+		war.behaviour.blinkWakeOutOfRange = true
 		war.onCheckBlinkWakeRange()
 		war.unit.WalkTo(war.behaviour.targetTeleportWake.Pos())
 	}
@@ -381,11 +383,12 @@ func (war *Warrior) onLostEnemy() {
 }
 
 func (war *Warrior) onCheckBlinkWakeRange() {
-	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() {
+	if war.unit.Flags().Has(object.FlagDead) || war.unit == nil || !war.unit.IsEnabled() || !war.behaviour.blinkWakeOutOfRange {
 		return
 	}
 	if war.behaviour.targetTeleportWake != nil {
 		if !(ns.InCirclef{Center: war.unit, R: 100}).Matches(war.behaviour.targetTeleportWake) {
+			war.behaviour.blinkWakeOutOfRange = false
 			war.unit.Attack(war.target)
 			return
 		}
