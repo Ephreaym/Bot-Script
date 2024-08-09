@@ -26,6 +26,6 @@ Seize the opportunity to be part of the Bot Script revolution. OpenNox awaits, a
 Access the Bot Script files here: https://github.com/Ephreaym/Bot-Script/tree/main/installation_files Place the files into your desired map folder, e.g., C:\Program Files (x86)\Nox\Maps\Estate.
 
 **3. Host a Game with Bots:**
-Launch OpenNox and host a map on which you have the bots installed. Confirm a successful installation with the message: "Bot script installed successfully!" Currently, bots are enabled for Capture the Flag and Team Arena.
+Launch OpenNox and host a map on which you have the bots installed. Confirm a successful installation with the message: "Bot script installed successfully!" Currently, bots are enabled for Capture the Flag and Team Arena. FFA works if you patch your maps. You'll have to place 3 objects into your map (outside of the actual playing zone) with the map editor.
 
 Your adventure in OpenNox with the Bot Script begins now! Embrace the challenge and immerse yourself in the next dimension of gaming.
